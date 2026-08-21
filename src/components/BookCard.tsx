@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     fontSize: 48,
   },
   notDownloadedOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0, 0, 0, 0.35)',
     justifyContent: 'center',
     alignItems: 'center',

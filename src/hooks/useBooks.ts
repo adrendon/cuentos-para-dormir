@@ -1,15 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Book, BookAdditionalInfo, BookTexts, FilterType } from '../types/book';
-import { bookCatalog, getCoverColor, isBookEmbedded } from '../assets/books/bookAssets';
+import { bookCatalog } from '../assets/books/bookAssets';
 import { isBookDownloaded, BOOKS_LOCAL_DIR } from '../services/downloadService';
 
 const READ_BOOKS_KEY = '@cuentos_read_books';
 const FAVORITE_BOOKS_KEY = '@cuentos_favorite_books';
+const EMBEDDED_COPIED_KEY = '@cuentos_embedded_copied';
 
 /**
- * Parse TSV-formatted Texts.csv content and extract ES column values.
+ * Parse TSV-formatted Texts.csv and extract ES column.
  */
 function parseTextsCSV(content: string): BookTexts {
   const lines = content.split('\n').filter(line => line.trim().length > 0);
@@ -41,7 +42,8 @@ function parseTextsCSV(content: string): BookTexts {
 
 /**
  * Hook to load and manage the list of books.
- * Checks both embedded assets and locally downloaded books.
+ * Always shows ALL books from catalog.
+ * Marks which ones are available (embedded+copied or downloaded).
  */
 export function useBooks() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -56,72 +58,71 @@ export function useBooks() {
 
   const loadBooksData = async () => {
     try {
+      // Ensure books directory exists
+      const booksDir = await FileSystem.getInfoAsync(BOOKS_LOCAL_DIR);
+      if (!booksDir.exists) {
+        await FileSystem.makeDirectoryAsync(BOOKS_LOCAL_DIR, { intermediates: true });
+      }
+
+      // Load read/fav state
       const [readStored, favStored] = await Promise.all([
         AsyncStorage.getItem(READ_BOOKS_KEY),
         AsyncStorage.getItem(FAVORITE_BOOKS_KEY),
       ]);
-
       const readSet = readStored ? new Set<string>(JSON.parse(readStored)) : new Set<string>();
       const favSet = favStored ? new Set<string>(JSON.parse(favStored)) : new Set<string>();
       setReadBooks(readSet);
       setFavoriteBooks(favSet);
 
+      // Build book list from catalog — ALWAYS show all books
       const loadedBooks: Book[] = [];
 
       for (const entry of bookCatalog) {
-        const { folderName, coverColor, embedded } = entry;
+        const { folderName, coverColor, embedded, title, author } = entry;
+        const bookLocalPath = `${BOOKS_LOCAL_DIR}${folderName}`;
 
-        // Determine if this book is available (embedded or downloaded)
-        let isAvailable = false;
-        let bookBasePath = '';
+        // Check if this book is available locally
+        const isAvailable = await isBookDownloaded(folderName);
 
-        if (embedded) {
-          // Embedded book — always available
-          isAvailable = true;
-          bookBasePath = `${BOOKS_LOCAL_DIR}${folderName}`;
-          // For embedded, also check asset directory
-        } else {
-          // Check if downloaded
-          isAvailable = await isBookDownloaded(folderName);
-          bookBasePath = `${BOOKS_LOCAL_DIR}${folderName}`;
-        }
-
-        // Load metadata if available
-        let texts: BookTexts = {
-          title: folderName.replace(/([A-Z])/g, ' $1').trim(),
-          author: '',
-          illustrator: '',
-          description: '',
-        };
-
-        let additionalInfo: BookAdditionalInfo = {
-          commonPages: [],
-          imageType: 'webp',
-          numberOfPages: 20,
-          resolution: 'h1080xr1610',
-        };
+        // Try to load detailed metadata if available
+        let bookTitle = title;
+        let bookAuthor = author;
+        let illustrator = '';
+        let description = '';
+        let numberOfPages = 20;
+        let imageType = 'webp';
+        let resolution = 'h1080xr1610';
+        let commonPages: number[] = [];
+        let hasVoicework = false;
 
         if (isAvailable) {
+          // Read Texts.csv for real title
           try {
             const textsContent = await FileSystem.readAsStringAsync(
-              `${bookBasePath}/Texts.csv`
+              `${bookLocalPath}/Texts.csv`
             );
-            texts = parseTextsCSV(textsContent);
+            const parsed = parseTextsCSV(textsContent);
+            if (parsed.title) bookTitle = parsed.title;
+            if (parsed.author) bookAuthor = parsed.author;
+            illustrator = parsed.illustrator;
+            description = parsed.description;
           } catch {}
 
+          // Read AdditionalInfo.json
           try {
             const infoContent = await FileSystem.readAsStringAsync(
-              `${bookBasePath}/AdditionalInfo.json`
+              `${bookLocalPath}/AdditionalInfo.json`
             );
-            additionalInfo = JSON.parse(infoContent);
+            const info: BookAdditionalInfo = JSON.parse(infoContent);
+            numberOfPages = info.numberOfPages;
+            imageType = info.imageType;
+            resolution = info.resolution;
+            commonPages = info.commonPages;
           } catch {}
-        }
 
-        // Check voicework
-        let hasVoicework = false;
-        if (isAvailable) {
+          // Check voicework
           try {
-            const voiceDir = await FileSystem.getInfoAsync(`${bookBasePath}/voicework_es`);
+            const voiceDir = await FileSystem.getInfoAsync(`${bookLocalPath}/voicework_es`);
             hasVoicework = voiceDir.exists;
           } catch {}
         }
@@ -129,15 +130,15 @@ export function useBooks() {
         loadedBooks.push({
           id: folderName,
           folderName,
-          title: texts.title || folderName.replace(/([A-Z])/g, ' $1').trim(),
-          author: texts.author,
-          illustrator: texts.illustrator,
-          description: texts.description,
+          title: bookTitle,
+          author: bookAuthor,
+          illustrator,
+          description,
           coverColor,
-          numberOfPages: additionalInfo.numberOfPages,
-          imageType: additionalInfo.imageType,
-          resolution: additionalInfo.resolution,
-          commonPages: additionalInfo.commonPages,
+          numberOfPages,
+          imageType,
+          resolution,
+          commonPages,
           hasVoicework,
           isRead: readSet.has(folderName),
           isFavorite: favSet.has(folderName),

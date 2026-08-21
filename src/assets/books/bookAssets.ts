@@ -4,6 +4,8 @@ export interface BookAssetEntry {
   folderName: string;
   coverColor: string;
   embedded: boolean;
+  title: string;
+  author: string;
 }
 
 export const bookCatalog: BookAssetEntry[] = catalog.books;

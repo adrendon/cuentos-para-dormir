@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { setupPlayer } from '../src/services/audioService';
+import { setupEmbeddedBooks } from '../src/services/embeddedBooksService';
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -16,6 +17,9 @@ export default function RootLayout() {
     try {
       // Setup audio player
       await setupPlayer();
+
+      // Copy embedded book to local storage on first launch
+      await setupEmbeddedBooks();
     } catch (error) {
       console.error('Error initializing app:', error);
     } finally {
@@ -26,7 +30,7 @@ export default function RootLayout() {
 
   return (
     <>
-      <StatusBar style="light" backgroundColor="#003A1A" />
+      <StatusBar style="light" />
       <Stack
         screenOptions={{
           headerShown: false,

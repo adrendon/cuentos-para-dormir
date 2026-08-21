@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Book, BookPage, Gender } from '../types/book';
+import { BOOKS_LOCAL_DIR } from '../services/downloadService';
 
 /**
  * Hook to load and manage pages for a specific book.
- * Pages are loaded based on the user's gender selection (boy/girl folder).
+ * Reads pages from documentDirectory/books/{folderName}/Pages/{gender}/
  */
 export function useBookPages(book: Book | undefined, gender: Gender) {
   const [pages, setPages] = useState<BookPage[]>([]);
@@ -13,47 +14,66 @@ export function useBookPages(book: Book | undefined, gender: Gender) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (book) {
+    if (book && book.isDownloaded) {
       loadPages(book, gender);
+    } else {
+      setPages([]);
+      setIsLoading(false);
     }
-  }, [book?.id, gender]);
+  }, [book?.id, book?.isDownloaded, gender]);
 
   const loadPages = async (bookData: Book, genderFolder: Gender) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const bookBasePath = `${FileSystem.documentDirectory}books/${bookData.folderName}`;
+      const bookBasePath = `${BOOKS_LOCAL_DIR}${bookData.folderName}`;
       const pagesPath = `${bookBasePath}/Pages/${genderFolder}`;
-      
-      // Check if pages directory exists
+
+      // Check if gender-specific pages exist
       const dirInfo = await FileSystem.getInfoAsync(pagesPath);
-      
+
+      let targetPath = pagesPath;
       if (!dirInfo.exists) {
-        // Try common pages folder as fallback
+        // Try common pages folder
         const commonPath = `${bookBasePath}/Pages/common`;
         const commonInfo = await FileSystem.getInfoAsync(commonPath);
-        
         if (commonInfo.exists) {
-          const pageFiles = await loadPageFiles(commonPath, bookData.imageType);
-          setPages(pageFiles);
+          targetPath = commonPath;
         } else {
-          // Generate page list based on AdditionalInfo
-          const generatedPages = generatePageList(bookData, genderFolder);
-          setPages(generatedPages);
+          // Try the other gender
+          const otherGender = genderFolder === 'boy' ? 'girl' : 'boy';
+          const otherPath = `${bookBasePath}/Pages/${otherGender}`;
+          const otherInfo = await FileSystem.getInfoAsync(otherPath);
+          if (otherInfo.exists) {
+            targetPath = otherPath;
+          } else {
+            setError('No se encontraron páginas');
+            setIsLoading(false);
+            return;
+          }
         }
-      } else {
-        const pageFiles = await loadPageFiles(pagesPath, bookData.imageType);
-        setPages(pageFiles);
       }
+
+      // Read directory and sort
+      const files = await FileSystem.readDirectoryAsync(targetPath);
+      const imageFiles = files
+        .filter(f => f.endsWith('.webp') || f.endsWith('.png') || f.endsWith('.jpg'))
+        .sort((a, b) => {
+          const numA = extractPageNumber(a);
+          const numB = extractPageNumber(b);
+          return numA - numB;
+        });
+
+      const loadedPages: BookPage[] = imageFiles.map(file => ({
+        pageNumber: extractPageNumber(file),
+        uri: `${targetPath}/${file}`,
+      }));
+
+      setPages(loadedPages);
     } catch (err) {
       console.error('Error loading pages:', err);
       setError('No se pudieron cargar las páginas');
-      // Fallback: generate from metadata
-      if (book) {
-        const generated = generatePageList(book, genderFolder);
-        setPages(generated);
-      }
     } finally {
       setIsLoading(false);
     }
@@ -95,73 +115,21 @@ export function useBookPages(book: Book | undefined, gender: Gender) {
   };
 }
 
-/**
- * Load page files from a directory, sorted numerically.
- */
-async function loadPageFiles(
-  directoryPath: string,
-  imageType: string
-): Promise<BookPage[]> {
-  try {
-    const files = await FileSystem.readDirectoryAsync(directoryPath);
-    
-    // Filter for image files and sort numerically
-    const imageFiles = files
-      .filter(f => f.endsWith(`.${imageType}`) || f.endsWith('.webp') || f.endsWith('.png'))
-      .sort((a, b) => {
-        const numA = extractPageNumber(a);
-        const numB = extractPageNumber(b);
-        return numA - numB;
-      });
-
-    return imageFiles.map((file, index) => ({
-      pageNumber: extractPageNumber(file),
-      uri: `${directoryPath}/${file}`,
-    }));
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Extract numeric page number from filename (e.g., "page_005.webp" → 5)
- */
 function extractPageNumber(filename: string): number {
   const match = filename.match(/(\d+)/);
   return match ? parseInt(match[1], 10) : 0;
 }
 
 /**
- * Generate a page list from book metadata when actual files aren't available.
- * Used as fallback during development or when assets aren't copied yet.
- */
-function generatePageList(book: Book, gender: Gender): BookPage[] {
-  const pages: BookPage[] = [];
-  const basePath = `${FileSystem.documentDirectory}books/${book.folderName}/Pages/${gender}`;
-  
-  // Generate pages based on numberOfPages from metadata
-  for (let i = 1; i <= book.numberOfPages; i++) {
-    const paddedNum = i.toString().padStart(3, '0');
-    pages.push({
-      pageNumber: i,
-      uri: `${basePath}/page_${paddedNum}.${book.imageType}`,
-    });
-  }
-
-  return pages;
-}
-
-/**
- * Get the cover image URI for a book (typically page_005 or first available page)
- */
-export function getBookCoverUri(book: Book, gender: Gender): string {
-  const basePath = `${FileSystem.documentDirectory}books/${book.folderName}/Pages/${gender}`;
-  return `${basePath}/page_005.${book.imageType}`;
-}
-
-/**
- * Get the audio file URI for a book's background music
+ * Get the audio file URI for a book's background music.
  */
 export function getBookAudioUri(book: Book): string {
-  return `${FileSystem.documentDirectory}books/${book.folderName}/${book.folderName}.mp3`;
+  return `${BOOKS_LOCAL_DIR}${book.folderName}/${book.folderName}.mp3`;
+}
+
+/**
+ * Get cover image URI for a book (first page).
+ */
+export function getBookCoverUri(book: Book, gender: Gender): string {
+  return `${BOOKS_LOCAL_DIR}${book.folderName}/Pages/${gender}/page_001.${book.imageType}`;
 }

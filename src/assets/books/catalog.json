@@ -3,47 +3,65 @@
     {
       "folderName": "ADayInReverse",
       "coverColor": "#09911a",
-      "embedded": true
+      "embedded": true,
+      "title": "Un Día al Revés",
+      "author": "Little Stories"
     },
     {
       "folderName": "AFunWalk",
       "coverColor": "#00838f",
-      "embedded": false
+      "embedded": false,
+      "title": "Un Paseo Divertido",
+      "author": "Little Stories"
     },
     {
       "folderName": "AGoodIdea",
       "coverColor": "#283593",
-      "embedded": false
+      "embedded": false,
+      "title": "Una Buena Idea",
+      "author": "Little Stories"
     },
     {
       "folderName": "AGreatFriendship",
       "coverColor": "#558b2f",
-      "embedded": false
+      "embedded": false,
+      "title": "Una Gran Amistad",
+      "author": "Little Stories"
     },
     {
       "folderName": "ALittleAntsBigJob",
       "coverColor": "#4e342e",
-      "embedded": false
+      "embedded": false,
+      "title": "El Gran Trabajo de una Hormiguita",
+      "author": "Little Stories"
     },
     {
       "folderName": "AllIsNotLost",
       "coverColor": "#1565c0",
-      "embedded": false
+      "embedded": false,
+      "title": "No Todo Está Perdido",
+      "author": "Little Stories"
     },
     {
       "folderName": "APerfectHome",
       "coverColor": "#6a1b9a",
-      "embedded": false
+      "embedded": false,
+      "title": "Un Hogar Perfecto",
+      "author": "Little Stories"
     },
     {
       "folderName": "Belka",
       "coverColor": "#4e342e",
-      "embedded": false
+      "embedded": false,
+      "title": "Belka",
+      "author": "Little Stories"
     },
     {
       "folderName": "BirdsChoir",
       "coverColor": "#00838f",
-      "embedded": false
+      "embedded": false,
+      "title": "El Coro de los Pájaros",
+      "author": "Little Stories"
     }
   ]
 }
