@@ -1,0 +1,208 @@
+{
+  "books": [
+    {
+      "folderName": "ElDragonValiente",
+      "coverColor": "#61bfce"
+    },
+    {
+      "folderName": "LaEstrellaPerdida",
+      "coverColor": "#1a237e"
+    },
+    {
+      "folderName": "ElOsoDormilon",
+      "coverColor": "#4e342e"
+    },
+    {
+      "folderName": "NightSecret",
+      "coverColor": "#1a1a4e"
+    },
+    {
+      "folderName": "TheCoolestDragon",
+      "coverColor": "#2e7d32"
+    },
+    {
+      "folderName": "TheBeautifulWeb",
+      "coverColor": "#6a1b9a"
+    },
+    {
+      "folderName": "TheElixirOfHealth",
+      "coverColor": "#00695c"
+    },
+    {
+      "folderName": "TheDinoWhoCheatedAtTag",
+      "coverColor": "#f57f17"
+    },
+    {
+      "folderName": "TheBirthdayPresent",
+      "coverColor": "#d81b60"
+    },
+    {
+      "folderName": "TheShiveringCat",
+      "coverColor": "#5d4037"
+    },
+    {
+      "folderName": "TheJoyfulLamb",
+      "coverColor": "#66bb6a"
+    },
+    {
+      "folderName": "TheBigConcertRescue",
+      "coverColor": "#7b1fa2"
+    },
+    {
+      "folderName": "TheDeepSeaFestival",
+      "coverColor": "#0277bd"
+    },
+    {
+      "folderName": "MysteriousSickness",
+      "coverColor": "#4a148c"
+    },
+    {
+      "folderName": "TheTrappedFirefly",
+      "coverColor": "#1b5e20"
+    },
+    {
+      "folderName": "LateToTheParty",
+      "coverColor": "#e65100"
+    },
+    {
+      "folderName": "SlowDownSeal",
+      "coverColor": "#0097a7"
+    },
+    {
+      "folderName": "AGreatFriendship",
+      "coverColor": "#558b2f"
+    },
+    {
+      "folderName": "FamilyLove",
+      "coverColor": "#c62828"
+    },
+    {
+      "folderName": "ThePurpleSparrow",
+      "coverColor": "#6a1b9a"
+    },
+    {
+      "folderName": "TheBeeSavesTheHive",
+      "coverColor": "#f9a825"
+    },
+    {
+      "folderName": "TheLittleAstronaut",
+      "coverColor": "#1a237e"
+    },
+    {
+      "folderName": "NewFriends",
+      "coverColor": "#2e7d32"
+    },
+    {
+      "folderName": "BirdsChoir",
+      "coverColor": "#00838f"
+    },
+    {
+      "folderName": "TheTrickiestFox",
+      "coverColor": "#e65100"
+    },
+    {
+      "folderName": "AGoodIdea",
+      "coverColor": "#283593"
+    },
+    {
+      "folderName": "ChangeCanBeGood",
+      "coverColor": "#00695c"
+    },
+    {
+      "folderName": "ALittleAntsBigJob",
+      "coverColor": "#4e342e"
+    },
+    {
+      "folderName": "TheBestTeacher",
+      "coverColor": "#ad1457"
+    },
+    {
+      "folderName": "TheFinding",
+      "coverColor": "#1565c0"
+    },
+    {
+      "folderName": "TheSheepIsLost",
+      "coverColor": "#2e7d32"
+    },
+    {
+      "folderName": "WhereIsMyRoar",
+      "coverColor": "#e65100"
+    },
+    {
+      "folderName": "MyDadIsAGiant",
+      "coverColor": "#1565c0"
+    },
+    {
+      "folderName": "GoodWeather",
+      "coverColor": "#0097a7"
+    },
+    {
+      "folderName": "VeggiesAreYummy",
+      "coverColor": "#33691e"
+    },
+    {
+      "folderName": "LetsPlayTogether",
+      "coverColor": "#f57f17"
+    },
+    {
+      "folderName": "GrowingAGarden",
+      "coverColor": "#2e7d32"
+    },
+    {
+      "folderName": "AFunWalk",
+      "coverColor": "#00838f"
+    },
+    {
+      "folderName": "ImaginaryIsland",
+      "coverColor": "#0277bd"
+    },
+    {
+      "folderName": "LonelyPuppy",
+      "coverColor": "#5d4037"
+    },
+    {
+      "folderName": "ForestSchool",
+      "coverColor": "#1b5e20"
+    },
+    {
+      "folderName": "Belka",
+      "coverColor": "#4e342e"
+    },
+    {
+      "folderName": "Dolphin",
+      "coverColor": "#0277bd"
+    },
+    {
+      "folderName": "Farm",
+      "coverColor": "#558b2f"
+    },
+    {
+      "folderName": "Star",
+      "coverColor": "#1a237e"
+    },
+    {
+      "folderName": "Panda",
+      "coverColor": "#2e7d32"
+    },
+    {
+      "folderName": "Firefly",
+      "coverColor": "#1b5e20"
+    },
+    {
+      "folderName": "SeaLily",
+      "coverColor": "#0097a7"
+    },
+    {
+      "folderName": "BraveEaglet",
+      "coverColor": "#3e2723"
+    },
+    {
+      "folderName": "MagicChristmasTree",
+      "coverColor": "#1b5e20"
+    },
+    {
+      "folderName": "ADayInReverse",
+      "coverColor": "#09911a"
+    }
+  ]
+}
