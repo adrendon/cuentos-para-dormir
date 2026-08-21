@@ -29,7 +29,6 @@ App de cuentos infantiles con audio de fondo y narración por página para Andro
 
 ### Pendiente / TODO
 - [ ] Push notifications (Firebase Cloud Messaging) — removido por incompatibilidad con build limpio
-- [ ] Foreground service para audio con pantalla bloqueada (expo-audio soporta `staysActiveInBackground`)
 - [ ] Animaciones de entrada escalonada en la biblioteca
 - [ ] Más libros (hay 92 en el catálogo original, 9 integrados actualmente)
 - [ ] Tema claro/oscuro según hora del día
