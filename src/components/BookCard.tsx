@@ -9,26 +9,36 @@ import {
 } from 'react-native';
 import { Book } from '../types/book';
 import { Colors } from '../theme/colors';
+import { DownloadButton } from './DownloadButton';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2; // 2 columns with padding
-const CARD_HEIGHT = CARD_WIDTH * 1.4;
+const CARD_WIDTH = (width - 48) / 2;
+const CARD_HEIGHT = CARD_WIDTH * 1.5;
 
 interface BookCardProps {
   book: Book;
   coverUri?: string;
   onPress: (book: Book) => void;
-  animationDelay?: number;
+  onDownloadComplete: (bookId: string) => void;
 }
 
-export function BookCard({ book, coverUri, onPress, animationDelay = 0 }: BookCardProps) {
+export function BookCard({ book, coverUri, onPress, onDownloadComplete }: BookCardProps) {
+  const isAvailable = book.isDownloaded || book.isEmbedded;
+
+  const handlePress = () => {
+    if (isAvailable) {
+      onPress(book);
+    }
+    // If not available, do nothing — user must download first
+  };
+
   return (
     <TouchableOpacity
       style={[styles.container, { backgroundColor: book.coverColor }]}
-      onPress={() => onPress(book)}
-      activeOpacity={0.85}
+      onPress={handlePress}
+      activeOpacity={isAvailable ? 0.85 : 1}
       accessibilityRole="button"
-      accessibilityLabel={`Abrir cuento: ${book.title}`}
+      accessibilityLabel={`${isAvailable ? 'Abrir' : 'Descargar'} cuento: ${book.title}`}
     >
       {/* Cover Image */}
       <View style={styles.imageContainer}>
@@ -43,6 +53,13 @@ export function BookCard({ book, coverUri, onPress, animationDelay = 0 }: BookCa
             <Text style={styles.placeholderEmoji}>📖</Text>
           </View>
         )}
+
+        {/* Overlay for not-downloaded books */}
+        {!isAvailable && (
+          <View style={styles.notDownloadedOverlay}>
+            <Text style={styles.cloudIcon}>☁️</Text>
+          </View>
+        )}
       </View>
 
       {/* Title */}
@@ -52,8 +69,18 @@ export function BookCard({ book, coverUri, onPress, animationDelay = 0 }: BookCa
         </Text>
       </View>
 
+      {/* Download button for non-available books */}
+      {!isAvailable && (
+        <View style={styles.downloadContainer}>
+          <DownloadButton
+            folderName={book.folderName}
+            onDownloadComplete={() => onDownloadComplete(book.id)}
+          />
+        </View>
+      )}
+
       {/* Read indicator */}
-      {book.isRead && (
+      {isAvailable && book.isRead && (
         <View style={styles.readBadge}>
           <Text style={styles.readBadgeText}>✓</Text>
         </View>
@@ -100,16 +127,30 @@ const styles = StyleSheet.create({
   placeholderEmoji: {
     fontSize: 48,
   },
+  notDownloadedOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cloudIcon: {
+    fontSize: 32,
+  },
   titleContainer: {
     paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingVertical: 6,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   title: {
     color: Colors.textWhite,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     textAlign: 'center',
+  },
+  downloadContainer: {
+    paddingHorizontal: 8,
+    paddingBottom: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   readBadge: {
     position: 'absolute',

@@ -27,6 +27,8 @@ export interface Book {
   hasVoicework: boolean;
   isRead: boolean;
   isFavorite: boolean;
+  isDownloaded: boolean;
+  isEmbedded: boolean;
 }
 
 export interface BookPage {

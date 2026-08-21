@@ -2,39 +2,48 @@
   "books": [
     {
       "folderName": "ADayInReverse",
-      "coverColor": "#09911a"
+      "coverColor": "#09911a",
+      "embedded": true
     },
     {
       "folderName": "AFunWalk",
-      "coverColor": "#00838f"
+      "coverColor": "#00838f",
+      "embedded": false
     },
     {
       "folderName": "AGoodIdea",
-      "coverColor": "#283593"
+      "coverColor": "#283593",
+      "embedded": false
     },
     {
       "folderName": "AGreatFriendship",
-      "coverColor": "#558b2f"
+      "coverColor": "#558b2f",
+      "embedded": false
     },
     {
       "folderName": "ALittleAntsBigJob",
-      "coverColor": "#4e342e"
+      "coverColor": "#4e342e",
+      "embedded": false
     },
     {
       "folderName": "AllIsNotLost",
-      "coverColor": "#1565c0"
+      "coverColor": "#1565c0",
+      "embedded": false
     },
     {
       "folderName": "APerfectHome",
-      "coverColor": "#6a1b9a"
+      "coverColor": "#6a1b9a",
+      "embedded": false
     },
     {
       "folderName": "Belka",
-      "coverColor": "#4e342e"
+      "coverColor": "#4e342e",
+      "embedded": false
     },
     {
       "folderName": "BirdsChoir",
-      "coverColor": "#00838f"
+      "coverColor": "#00838f",
+      "embedded": false
     }
   ]
 }

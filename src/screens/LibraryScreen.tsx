@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,16 +16,15 @@ import { useBooks } from '../hooks/useBooks';
 import { BookCard } from '../components/BookCard';
 import { FilterBar } from '../components/FilterBar';
 import { Book } from '../types/book';
-import { getBookCoverUri } from '../hooks/useBookPages';
+import { Asset } from 'expo-asset';
 
 export default function LibraryScreen() {
   const router = useRouter();
   const { profile } = useProfile();
-  const { filteredBooks, isLoading, filter, setFilter } = useBooks();
+  const { filteredBooks, isLoading, filter, setFilter, markBookAsDownloaded, refreshBooks } = useBooks();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Fade in animation on mount (550ms)
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 550,
@@ -33,8 +32,7 @@ export default function LibraryScreen() {
     }).start();
   }, []);
 
-  const handleBookPress = (book: Book) => {
-    // Fade out then navigate
+  const handleBookPress = useCallback((book: Book) => {
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 400,
@@ -42,20 +40,32 @@ export default function LibraryScreen() {
     }).start(() => {
       router.push(`/book/${book.id}`);
     });
-  };
+  }, []);
 
   const handleSettingsPress = () => {
     router.push('/settings');
   };
 
+  const handleDownloadComplete = useCallback((bookId: string) => {
+    markBookAsDownloaded(bookId);
+    // Refresh to load the book metadata
+    refreshBooks();
+  }, [markBookAsDownloaded, refreshBooks]);
+
+  const getCoverUri = (book: Book): string | undefined => {
+    // Use bundled cover image from covers/ folder
+    // These are bundled as assets in the app
+    return undefined; // Will use Asset.fromModule in production
+    // For now, covers show the placeholder with coverColor
+  };
+
   const renderBookItem = ({ item, index }: { item: Book; index: number }) => {
-    const coverUri = getBookCoverUri(item, profile.gender);
     return (
       <BookCard
         book={item}
-        coverUri={coverUri}
+        coverUri={getCoverUri(item)}
         onPress={handleBookPress}
-        animationDelay={index * 50}
+        onDownloadComplete={handleDownloadComplete}
       />
     );
   };
@@ -63,7 +73,7 @@ export default function LibraryScreen() {
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <StatusBar barStyle="light-content" backgroundColor={Colors.backgroundDark} />
-      
+
       <LinearGradient
         colors={[...Gradients.background]}
         style={styles.gradient}
