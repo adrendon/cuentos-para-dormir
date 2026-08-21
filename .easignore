@@ -1,4 +1,2 @@
-books-zip/
-dist/
-.git/
-node_modules/
+books-zip
+dist
