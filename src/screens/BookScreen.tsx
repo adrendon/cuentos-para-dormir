@@ -10,7 +10,6 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import TrackPlayer, { Event, useTrackPlayerEvents } from 'react-native-track-player';
 import { Colors } from '../theme/colors';
 import { useBooks } from '../hooks/useBooks';
 import { useBookPages, getBookAudioUri } from '../hooks/useBookPages';
@@ -24,6 +23,7 @@ import {
   stopMusic,
   setVolume,
   getVolume,
+  setOnPlaybackFinished,
 } from '../services/audioService';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -102,9 +102,11 @@ export default function BookScreen() {
   }, []);
 
   // Handle track player events - navigate back when audio ends
-  useTrackPlayerEvents([Event.PlaybackQueueEnded], async () => {
-    handleGoBack();
-  });
+  useEffect(() => {
+    setOnPlaybackFinished(() => {
+      handleGoBack();
+    });
+  }, []);
 
   // Handle hardware back button
   useEffect(() => {

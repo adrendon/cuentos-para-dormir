@@ -1,82 +1,73 @@
-import TrackPlayer, {
-  AppKilledPlaybackBehavior,
-  Capability,
-  Event,
-  RepeatMode,
-} from 'react-native-track-player';
+import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 
 /**
- * Audio service for background music playback using react-native-track-player.
- * Supports foreground service on Android for playback with screen locked.
+ * Audio service using expo-av for background music playback.
+ * expo-av supports background audio on Android with proper audio mode configuration.
  */
 
+let soundInstance: Audio.Sound | null = null;
 let isSetup = false;
 
 /**
- * Initialize TrackPlayer with required capabilities.
- * Call this once at app startup.
+ * Initialize audio mode for background playback.
  */
 export async function setupPlayer(): Promise<boolean> {
   if (isSetup) return true;
 
   try {
-    await TrackPlayer.setupPlayer({
-      autoHandleInterruptions: true,
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: false,
+      staysActiveInBackground: true,
+      interruptionModeIOS: InterruptionModeIOS.DuckOthers,
+      interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
+      shouldDuckAndroid: true,
+      playThroughEarpieceAndroid: false,
     });
-
-    await TrackPlayer.updateOptions({
-      android: {
-        appKilledPlaybackBehavior: AppKilledPlaybackBehavior.ContinuePlayback,
-      },
-      capabilities: [
-        Capability.Play,
-        Capability.Pause,
-        Capability.Stop,
-      ],
-      compactCapabilities: [
-        Capability.Play,
-        Capability.Pause,
-        Capability.Stop,
-      ],
-      notificationCapabilities: [
-        Capability.Play,
-        Capability.Pause,
-        Capability.Stop,
-      ],
-    });
-
-    await TrackPlayer.setRepeatMode(RepeatMode.Off);
     isSetup = true;
     return true;
   } catch (error) {
-    console.error('Error setting up TrackPlayer:', error);
+    console.error('Error setting up audio:', error);
     return false;
   }
 }
 
 /**
  * Play background music for a book.
- * @param bookTitle - Title shown in notification
- * @param audioUri - URI or require() of the audio file
  */
 export async function playBookMusic(
   bookTitle: string,
   audioUri: string
 ): Promise<void> {
   try {
-    await TrackPlayer.reset();
+    // Stop any currently playing sound
+    await stopMusic();
 
-    await TrackPlayer.add({
-      id: 'book-music',
-      url: audioUri,
-      title: bookTitle,
-      artist: 'Cuentos para Dormir',
+    const { sound } = await Audio.Sound.createAsync(
+      { uri: audioUri },
+      { shouldPlay: true, isLooping: false, volume: 1.0 }
+    );
+    soundInstance = sound;
+
+    // Set up playback finished callback
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (status.isLoaded && status.didJustFinish) {
+        // Audio finished - this can trigger navigation back
+        onPlaybackFinished?.();
+      }
     });
-
-    await TrackPlayer.play();
   } catch (error) {
     console.error('Error playing book music:', error);
   }
+}
+
+// Callback for when playback finishes
+let onPlaybackFinished: (() => void) | null = null;
+
+/**
+ * Register a callback for when the audio finishes playing.
+ */
+export function setOnPlaybackFinished(callback: () => void): void {
+  onPlaybackFinished = callback;
 }
 
 /**
@@ -84,7 +75,9 @@ export async function playBookMusic(
  */
 export async function pauseMusic(): Promise<void> {
   try {
-    await TrackPlayer.pause();
+    if (soundInstance) {
+      await soundInstance.pauseAsync();
+    }
   } catch (error) {
     console.error('Error pausing music:', error);
   }
@@ -95,18 +88,24 @@ export async function pauseMusic(): Promise<void> {
  */
 export async function resumeMusic(): Promise<void> {
   try {
-    await TrackPlayer.play();
+    if (soundInstance) {
+      await soundInstance.playAsync();
+    }
   } catch (error) {
     console.error('Error resuming music:', error);
   }
 }
 
 /**
- * Stop and reset the player
+ * Stop and unload the player
  */
 export async function stopMusic(): Promise<void> {
   try {
-    await TrackPlayer.reset();
+    if (soundInstance) {
+      await soundInstance.stopAsync();
+      await soundInstance.unloadAsync();
+      soundInstance = null;
+    }
   } catch (error) {
     console.error('Error stopping music:', error);
   }
@@ -117,7 +116,9 @@ export async function stopMusic(): Promise<void> {
  */
 export async function setVolume(volume: number): Promise<void> {
   try {
-    await TrackPlayer.setVolume(Math.max(0, Math.min(1, volume)));
+    if (soundInstance) {
+      await soundInstance.setVolumeAsync(Math.max(0, Math.min(1, volume)));
+    }
   } catch (error) {
     console.error('Error setting volume:', error);
   }
@@ -128,7 +129,13 @@ export async function setVolume(volume: number): Promise<void> {
  */
 export async function getVolume(): Promise<number> {
   try {
-    return await TrackPlayer.getVolume();
+    if (soundInstance) {
+      const status = await soundInstance.getStatusAsync();
+      if (status.isLoaded) {
+        return status.volume;
+      }
+    }
+    return 1.0;
   } catch {
     return 1.0;
   }
@@ -149,33 +156,9 @@ export async function restoreVolume(): Promise<void> {
 }
 
 /**
- * PlaybackService - registered at app entry point.
- * Handles remote events (notification controls, audio focus, queue end).
+ * PlaybackService placeholder - not needed with expo-av
+ * Kept for API compatibility with the rest of the app.
  */
 export async function PlaybackService(): Promise<void> {
-  TrackPlayer.addEventListener(Event.RemotePause, () => {
-    TrackPlayer.pause();
-  });
-
-  TrackPlayer.addEventListener(Event.RemotePlay, () => {
-    TrackPlayer.play();
-  });
-
-  TrackPlayer.addEventListener(Event.RemoteStop, () => {
-    TrackPlayer.stop();
-  });
-
-  TrackPlayer.addEventListener(Event.RemoteDuck, async (event) => {
-    if (event.paused) {
-      await TrackPlayer.pause();
-    } else if (event.permanent) {
-      await TrackPlayer.stop();
-    } else {
-      // Duck volume temporarily
-      await TrackPlayer.setVolume(0.3);
-      setTimeout(async () => {
-        await TrackPlayer.setVolume(1.0);
-      }, 1000);
-    }
-  });
+  // No-op: expo-av handles background audio via Audio mode config
 }
