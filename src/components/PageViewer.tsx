@@ -13,7 +13,7 @@ import PagerView from 'react-native-pager-view';
 import { BookPage } from '../types/book';
 import { Colors } from '../theme/colors';
 
-const { width, height } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('screen');
 
 interface PageViewerProps {
   pages: BookPage[];
@@ -46,17 +46,15 @@ export function PageViewer({
     if (currentPage < pages.length - 1) {
       const next = currentPage + 1;
       pagerRef.current?.setPage(next);
-      onPageChange(next);
     }
-  }, [currentPage, pages.length, onPageChange]);
+  }, [currentPage, pages.length]);
 
   const goPrev = useCallback(() => {
     if (currentPage > 0) {
       const prev = currentPage - 1;
       pagerRef.current?.setPage(prev);
-      onPageChange(prev);
     }
-  }, [currentPage, onPageChange]);
+  }, [currentPage]);
 
   if (pages.length === 0) {
     return (
@@ -75,7 +73,6 @@ export function PageViewer({
         initialPage={currentPage}
         onPageSelected={handlePageSelected}
         orientation="horizontal"
-        overdrag={false}
       >
         {pages.map((page, index) => {
           const textForPage = pageTexts?.get(page.pageNumber);
@@ -83,21 +80,19 @@ export function PageViewer({
           return (
             <View
               key={`page-${page.pageNumber}`}
-              style={[styles.pageContainer, { backgroundColor: coverColor }]}
+              style={styles.pageContainer}
             >
+              {/* Fullscreen image - cover entire screen */}
               <Image
                 source={{ uri: page.uri }}
                 style={styles.pageImage}
-                resizeMode="contain"
+                resizeMode="cover"
               />
 
-              {/* Text overlay */}
+              {/* Text overlay at bottom */}
               {showText && textForPage && (
                 <View style={styles.textOverlay}>
-                  <ScrollView
-                    style={styles.textScroll}
-                    showsVerticalScrollIndicator={false}
-                  >
+                  <ScrollView showsVerticalScrollIndicator={false}>
                     <Text style={styles.pageText}>{textForPage}</Text>
                   </ScrollView>
                 </View>
@@ -107,12 +102,12 @@ export function PageViewer({
         })}
       </PagerView>
 
-      {/* Navigation arrows */}
+      {/* Left arrow */}
       {currentPage > 0 && (
         <TouchableOpacity
           style={[styles.arrow, styles.arrowLeft]}
           onPress={goPrev}
-          accessibilityLabel="Página anterior"
+          activeOpacity={0.7}
         >
           <Image
             source={require('../assets/ui/ic_left_arrow.png')}
@@ -121,11 +116,12 @@ export function PageViewer({
         </TouchableOpacity>
       )}
 
+      {/* Right arrow */}
       {currentPage < pages.length - 1 && (
         <TouchableOpacity
           style={[styles.arrow, styles.arrowRight]}
           onPress={goNext}
-          accessibilityLabel="Página siguiente"
+          activeOpacity={0.7}
         >
           <Image
             source={require('../assets/ui/ic_right_arrow.png')}
@@ -134,7 +130,7 @@ export function PageViewer({
         </TouchableOpacity>
       )}
 
-      {/* Page indicator */}
+      {/* Page counter */}
       <View style={styles.pageIndicator}>
         <Text style={styles.pageNumber}>
           {currentPage + 1} / {pages.length}
@@ -147,18 +143,21 @@ export function PageViewer({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#000',
   },
   pager: {
     flex: 1,
   },
   pageContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#000',
   },
   pageImage: {
-    width: '100%',
-    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
   },
   emptyContainer: {
     flex: 1,
@@ -169,62 +168,56 @@ const styles = StyleSheet.create({
     color: Colors.textWhite,
     fontSize: 16,
     marginTop: 12,
-    fontWeight: '500',
   },
   textOverlay: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingBottom: 24,
-    maxHeight: '35%',
-  },
-  textScroll: {
-    maxHeight: 120,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 20,
+    maxHeight: SCREEN_HEIGHT * 0.3,
   },
   pageText: {
-    color: Colors.textWhite,
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '500',
+    color: '#FFFFFF',
+    fontSize: 15,
+    lineHeight: 22,
     textAlign: 'center',
   },
   arrow: {
     position: 'absolute',
-    top: '45%',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    top: SCREEN_HEIGHT / 2 - 30,
+    width: 60,
+    height: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 10,
+    zIndex: 20,
   },
   arrowLeft: {
-    left: 8,
+    left: 4,
   },
   arrowRight: {
-    right: 8,
+    right: 4,
   },
   arrowIcon: {
-    width: 24,
-    height: 24,
-    tintColor: '#FFFFFF',
+    width: 40,
+    height: 40,
+    tintColor: 'rgba(255, 255, 255, 0.8)',
   },
   pageIndicator: {
     position: 'absolute',
-    bottom: 8,
-    right: 12,
+    bottom: 6,
+    right: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    zIndex: 20,
   },
   pageNumber: {
-    color: Colors.textWhite,
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '600',
   },
