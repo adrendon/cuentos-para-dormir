@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   Image,
   StyleSheet,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { Book } from '../types/book';
 import { Colors } from '../theme/colors';
@@ -21,10 +22,30 @@ interface BookCardProps {
   coverUri?: string;
   onPress: (book: Book) => void;
   onDownloadComplete: (bookId: string) => void;
+  index?: number;
 }
 
-export function BookCard({ book, coverUri, onPress, onDownloadComplete }: BookCardProps) {
+export function BookCard({ book, coverUri, onPress, onDownloadComplete, index = 0 }: BookCardProps) {
   const isAvailable = book.isDownloaded || book.isEmbedded;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        delay: index * 80,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 350,
+        delay: index * 80,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const handlePress = () => {
     if (isAvailable) {
@@ -34,13 +55,14 @@ export function BookCard({ book, coverUri, onPress, onDownloadComplete }: BookCa
   };
 
   return (
-    <TouchableOpacity
-      style={[styles.container, { backgroundColor: book.coverColor }]}
-      onPress={handlePress}
-      activeOpacity={isAvailable ? 0.85 : 1}
-      accessibilityRole="button"
-      accessibilityLabel={`${isAvailable ? 'Abrir' : 'Descargar'} cuento: ${book.title}`}
-    >
+    <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
+      <TouchableOpacity
+        style={[styles.container, { backgroundColor: book.coverColor }]}
+        onPress={handlePress}
+        activeOpacity={isAvailable ? 0.85 : 1}
+        accessibilityRole="button"
+        accessibilityLabel={`${isAvailable ? 'Abrir' : 'Descargar'} cuento: ${book.title}`}
+      >
       {/* Cover Image */}
       <View style={styles.imageContainer}>
         {(() => {
@@ -100,6 +122,7 @@ export function BookCard({ book, coverUri, onPress, onDownloadComplete }: BookCa
         </View>
       )}
     </TouchableOpacity>
+    </Animated.View>
   );
 }
 

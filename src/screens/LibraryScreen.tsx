@@ -66,6 +66,7 @@ export default function LibraryScreen() {
         coverUri={getCoverUri(item)}
         onPress={handleBookPress}
         onDownloadComplete={handleDownloadComplete}
+        index={index}
       />
     );
   };
