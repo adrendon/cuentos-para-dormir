@@ -56,6 +56,7 @@ export default function BookScreen() {
 
   const [mode, setMode] = useState<BookMode>('select');
   const [isPlaying, setIsPlaying] = useState(false);
+  const [autoNarrate, setAutoNarrate] = useState(false);
   const [showText, setShowText] = useState(true);
   const [showEndScreen, setShowEndScreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
@@ -116,15 +117,24 @@ export default function BookScreen() {
     }
   }, [mode, stopNarration]);
 
-  const startReading = useCallback((withMusic: boolean) => {
+  const startReading = useCallback((withMusic: boolean, withVoiceover: boolean) => {
     setMode('reading');
     setShowText(true);
+    setAutoNarrate(withVoiceover);
     if (withMusic && book) {
       const audioUri = getBookAudioUri(book);
       playBookMusic(book.title, audioUri);
       setIsPlaying(true);
+      // If voiceover, duck the music
+      if (withVoiceover) {
+        duckVolume();
+      }
     }
-  }, [book]);
+    // Auto-play narration for first page if listen mode
+    if (withVoiceover && pages.length > 0) {
+      toggleNarration(pages[0].pageNumber);
+    }
+  }, [book, pages, toggleNarration]);
 
   const handleToggleMusic = useCallback(async () => {
     if (isPlaying) {
@@ -154,11 +164,17 @@ export default function BookScreen() {
   const handlePageChange = useCallback(async (pageIndex: number) => {
     setCurrentPage(pageIndex);
     setShowControls(true);
+    // Stop current narration
     if (isNarrating) {
       await stopNarration();
+    }
+    // Auto-narrate if in listen mode
+    if (autoNarrate && pages[pageIndex]) {
+      await toggleNarration(pages[pageIndex].pageNumber);
+    } else {
       await restoreVolume();
     }
-  }, [isNarrating, stopNarration]);
+  }, [isNarrating, stopNarration, autoNarrate, pages, toggleNarration]);
 
   if (!book) {
     return (
@@ -186,16 +202,16 @@ export default function BookScreen() {
         <Text style={styles.modeAuthor}>{author || book.author}</Text>
 
         <View style={styles.modeButtons}>
-          {/* Read mode */}
-          <TouchableOpacity style={styles.modeBtn} onPress={() => startReading(true)}>
+          {/* Read mode - with background music, no voiceover */}
+          <TouchableOpacity style={styles.modeBtn} onPress={() => startReading(true, false)}>
             <Image source={require('../assets/ui/ic_book_read.png')} style={styles.modeBtnIcon} />
-            <Text style={styles.modeBtnText}>Leer con música</Text>
+            <Text style={styles.modeBtnText}>Leer</Text>
           </TouchableOpacity>
 
-          {/* Listen mode */}
-          <TouchableOpacity style={styles.modeBtn} onPress={() => startReading(false)}>
+          {/* Listen mode - with voiceover narration */}
+          <TouchableOpacity style={styles.modeBtn} onPress={() => startReading(true, true)}>
             <Image source={require('../assets/ui/ic_book_listen.png')} style={styles.modeBtnIcon} />
-            <Text style={styles.modeBtnText}>Leer sin música</Text>
+            <Text style={styles.modeBtnText}>Escuchar</Text>
           </TouchableOpacity>
         </View>
       </View>
