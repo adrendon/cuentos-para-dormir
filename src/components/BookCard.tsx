@@ -13,7 +13,7 @@ import { DownloadButton } from './DownloadButton';
 import { getBookCover } from '../assets/books/coverRegistry';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2;
+const CARD_WIDTH = (width - 48) / 3;
 const CARD_HEIGHT = CARD_WIDTH * 1.5;
 
 interface BookCardProps {

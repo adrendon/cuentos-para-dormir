@@ -122,7 +122,7 @@ export default function LibraryScreen() {
             data={filteredBooks}
             renderItem={renderBookItem}
             keyExtractor={(item) => item.id}
-            numColumns={2}
+            numColumns={3}
             contentContainerStyle={styles.gridContent}
             columnWrapperStyle={styles.gridRow}
             showsVerticalScrollIndicator={false}

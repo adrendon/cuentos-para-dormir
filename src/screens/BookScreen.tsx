@@ -14,6 +14,7 @@ import { Colors } from '../theme/colors';
 import { useBooks } from '../hooks/useBooks';
 import { useBookPages, getBookAudioUri } from '../hooks/useBookPages';
 import { useBookTexts } from '../hooks/useBookTexts';
+import { useVoicework } from '../hooks/useVoicework';
 import { useProfile } from '../hooks/useProfile';
 import { PageViewer } from '../components/PageViewer';
 import {
@@ -23,6 +24,8 @@ import {
   stopMusic,
   setVolume,
   getVolume,
+  duckVolume,
+  restoreVolume,
 } from '../services/audioService';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -46,6 +49,8 @@ export default function BookScreen() {
     profile.gender,
     profile.name
   );
+
+  const { isNarrating, toggleNarration, stopNarration } = useVoicework(book?.folderName);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [showText, setShowText] = useState(true);
@@ -137,10 +142,28 @@ export default function BookScreen() {
     }
   }, [isPlaying]);
 
-  const handlePageChange = useCallback((pageIndex: number) => {
+  const handleToggleNarration = useCallback(async () => {
+    if (!pages[currentPage]) return;
+    const pageNum = pages[currentPage].pageNumber;
+
+    if (isNarrating) {
+      await stopNarration();
+      await restoreVolume(); // Restore background music volume
+    } else {
+      await duckVolume(); // Lower background music
+      await toggleNarration(pageNum);
+    }
+  }, [currentPage, pages, isNarrating, toggleNarration, stopNarration]);
+
+  // Stop narration when page changes
+  const handlePageChange = useCallback(async (pageIndex: number) => {
     setCurrentPage(pageIndex);
     setShowControls(true);
-  }, []);
+    if (isNarrating) {
+      await stopNarration();
+      await restoreVolume();
+    }
+  }, [isNarrating, stopNarration]);
 
   const handleTapScreen = useCallback(() => {
     setShowControls(prev => !prev);
@@ -226,6 +249,15 @@ export default function BookScreen() {
 
           {/* Right controls */}
           <View style={styles.rightControls}>
+            {/* Narrate this page */}
+            <TouchableOpacity
+              style={[styles.controlButton, isNarrating && styles.controlButtonActive]}
+              onPress={handleToggleNarration}
+              accessibilityLabel={isNarrating ? 'Detener narración' : 'Escuchar narración'}
+            >
+              <Text style={styles.controlIcon}>{isNarrating ? '⏹' : '🎧'}</Text>
+            </TouchableOpacity>
+
             {/* Toggle text */}
             <TouchableOpacity
               style={styles.controlButton}
@@ -278,6 +310,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  controlButtonActive: {
+    backgroundColor: Colors.chipOrange,
   },
   controlIcon: {
     color: Colors.textWhite,
