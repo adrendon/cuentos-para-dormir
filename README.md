@@ -1,33 +1,37 @@
 # Cuentos para Dormir
 
-App de cuentos infantiles con audio de fondo para Android. Lector de historias ilustradas con texto personalizado, música ambiental y sistema de descarga de libros bajo demanda.
+App de cuentos infantiles con audio de fondo y narración por página para Android. Lector de historias ilustradas con texto personalizado, música ambiental, y sistema de descarga de libros bajo demanda desde GitHub.
 
 ## Estado actual
 
 ### Implementado
 - Splash screen con transición fade
-- Onboarding (nombre, género niño/niña, avatar animal)
-- Biblioteca con grid de portadas y filtros (todos / favoritos / no leídos)
+- Onboarding (nombre, género niño/niña, avatar animal) — solo primera vez
+- Biblioteca con grid de 3 columnas, portadas reales y filtros (todos / favoritos / no leídos)
 - Visor de cuento fullscreen en portrait con swipe horizontal
 - Texto personalizado por página (reemplaza `{NAME:P1}` con el nombre del niño)
 - Páginas diferenciadas por género (carpetas `boy/` y `girl/`)
-- Audio de fondo del cuento con botón silenciar/activar
-- Botón mostrar/ocultar texto superpuesto
+- Audio de fondo del cuento con botón silenciar 🔊/🔇
+- Narración por página con botón 🎧 (reproduce `voicework_es/voiceN.mp3`)
+- Duck de volumen: baja música de fondo automáticamente durante narración
+- Botón mostrar/ocultar texto superpuesto (Aa)
 - Controles auto-hide (aparecen al tocar, desaparecen a los 4s)
 - Pantalla de "Fin" con créditos al llegar a la última página
 - Keep-awake (pantalla no se apaga durante lectura)
 - Sistema de descarga de libros desde GitHub con barra de progreso
+- Descompresión ZIP en el dispositivo (fflate)
 - Persistencia de perfil, favoritos y libros leídos (AsyncStorage)
 - Pantalla de ajustes (nombre, género, avatar, música on/off)
+- Portadas bundleadas para todos los libros del catálogo
+- Primer libro (ADayInReverse) se descarga automáticamente al primer arranque
+- Orientación portrait siempre (bloqueada a nivel nativo)
 - Expo Doctor: 21/21 checks pasando
 
 ### Pendiente / TODO
-- [ ] Push notifications (Firebase Cloud Messaging) — removido temporalmente por incompatibilidad con build limpio
-- [ ] Audio de narración por página (`voicework_es/`) — los archivos existen pero no se reproducen aún
-- [ ] Foreground service para audio con pantalla bloqueada (requiere `react-native-track-player` que fue reemplazado por `expo-audio`)
-- [ ] Subir los ZIPs de los libros a GitHub para que la descarga funcione
-- [ ] Más libros (hay 92 en el catálogo original, 9 integrados actualmente)
+- [ ] Push notifications (Firebase Cloud Messaging) — removido por incompatibilidad con build limpio
+- [ ] Foreground service para audio con pantalla bloqueada (expo-audio soporta `staysActiveInBackground`)
 - [ ] Animaciones de entrada escalonada en la biblioteca
+- [ ] Más libros (hay 92 en el catálogo original, 9 integrados actualmente)
 - [ ] Tema claro/oscuro según hora del día
 
 ## Stack técnico
@@ -39,7 +43,7 @@ App de cuentos infantiles con audio de fondo para Android. Lector de historias i
 | React | 19.2.3 | Componentes |
 | TypeScript | 6.0.3 | Tipado |
 | expo-router | 57.x | Navegación file-based |
-| expo-audio | 57.x | Reproducción de música de fondo |
+| expo-audio | 57.x | Música de fondo + narración por página |
 | expo-file-system/legacy | 57.x | Lectura/escritura de archivos locales |
 | fflate | 0.8.2 | Descompresión ZIP en JS |
 | react-native-pager-view | 8.0.2 | Swipe horizontal de páginas |
@@ -55,18 +59,18 @@ cuentos-app/
 │   ├── _layout.tsx               # Root layout, init audio + embedded books
 │   ├── index.tsx                 # Splash → onboarding o library
 │   ├── onboarding.tsx            # Primera vez: nombre, género, avatar
-│   ├── library.tsx               # Biblioteca principal (grid de cuentos)
-│   ├── book/[id].tsx             # Visor de cuento
+│   ├── library.tsx               # Biblioteca principal (grid 3 columnas)
+│   ├── book/[id].tsx             # Visor de cuento fullscreen
 │   └── settings.tsx              # Ajustes de perfil
 ├── src/
 │   ├── assets/books/             # Libro embebido + portadas
-│   │   ├── ADayInReverse/        # Libro completo embebido (24MB)
+│   │   ├── ADayInReverse/        # Libro completo (se descarga al primer arranque)
 │   │   ├── covers/               # Portadas de los 9 libros (1.4MB)
-│   │   ├── catalog.json          # Catálogo con metadata y coverColor
+│   │   ├── catalog.json          # Catálogo: metadata, coverColor, embedded flag
 │   │   ├── bookAssets.ts         # API del catálogo
 │   │   └── coverRegistry.ts     # require() estáticos de portadas
 │   ├── components/
-│   │   ├── BookCard.tsx          # Card del grid con portada + descarga
+│   │   ├── BookCard.tsx          # Card 3-col con portada + botón descarga
 │   │   ├── PageViewer.tsx        # Pager fullscreen + texto overlay
 │   │   ├── DownloadButton.tsx    # Botón con barra de progreso
 │   │   ├── FilterBar.tsx         # Chips: todos/favoritos/no leídos
@@ -74,20 +78,20 @@ cuentos-app/
 │   │   └── AnimalSelector.tsx    # Grid de animales avatar
 │   ├── hooks/
 │   │   ├── useBooks.ts           # Lista de libros + estado descarga
-│   │   ├── useBookPages.ts      # Páginas del libro actual
+│   │   ├── useBookPages.ts      # Páginas del libro (boy/girl/common)
 │   │   ├── useBookTexts.ts      # Texto personalizado por página
+│   │   ├── useVoicework.ts      # Narración por página (voicework_es/)
 │   │   └── useProfile.ts        # Perfil del niño (AsyncStorage)
 │   ├── screens/                  # Pantallas principales
 │   ├── services/
-│   │   ├── audioService.ts       # expo-audio: play/pause/stop/volume
+│   │   ├── audioService.ts       # expo-audio: play/pause/stop/volume/duck
 │   │   ├── downloadService.ts   # Descarga ZIP + extracción con fflate
-│   │   ├── embeddedBooksService.ts # Setup primer arranque
-│   │   └── notificationService.ts # FCM (deshabilitado)
+│   │   └── embeddedBooksService.ts # Descarga del primer libro al arranque
 │   ├── theme/colors.ts           # Paleta de colores
 │   └── types/book.ts            # Tipos TypeScript
-├── books-zip/                    # ZIPs para descarga (excluido de EAS)
+├── books-zip/                    # ZIPs para descarga (en GitHub, excluido de EAS)
 ├── assets/                       # Íconos y splash
-├── app.json                      # Config Expo
+├── app.json                      # Config Expo (portrait, package name)
 ├── eas.json                      # Config EAS Build
 ├── .easignore                    # Excluye books-zip del upload a EAS
 └── .npmrc                        # legacy-peer-deps para install
@@ -95,31 +99,41 @@ cuentos-app/
 
 ## Estructura de un libro
 
-Cada cuento es una carpeta con:
-
 ```
 {BookFolderName}/
 ├── Pages/
-│   ├── boy/          # Imágenes para niño
+│   ├── boy/              # Imágenes cuando el perfil es niño
 │   │   ├── page_001.webp
-│   │   ├── page_002.webp
 │   │   └── ...
-│   ├── girl/         # Imágenes para niña
-│   └── common/       # Páginas compartidas
-├── {BookFolderName}.mp3    # Música de fondo
-├── Texts.csv               # Textos en múltiples idiomas (TSV)
-├── AdditionalInfo.json     # Metadata: numberOfPages, imageType, etc.
-└── voicework_es/           # (Opcional) narración por página
+│   ├── girl/             # Imágenes cuando el perfil es niña
+│   └── common/           # Páginas compartidas (fallback)
+├── {BookFolderName}.mp3  # Música de fondo
+├── Texts.csv             # Textos multiidioma (TSV, columna ES)
+├── AdditionalInfo.json   # Metadata: numberOfPages, imageType, resolution
+└── voicework_es/         # Narración por página
     ├── VoiceworkInfo.json
-    ├── voice0-name.mp3
-    ├── voice1.mp3
+    ├── voice0-name.mp3   # Pronunciación del nombre
+    ├── voice1.mp3        # Narración página 1
+    ├── voice2.mp3        # Narración página 2
     └── ...
 ```
 
 ### Texts.csv (formato TSV)
 - Columnas: Key, EN, RU, DE, FR, IT, PT, **ES**, JA, ID, MS, AR
-- Keys: `title`, `author`, `illustrator`, `boy.description`, `boy.page.1`, `boy.page.2`, etc.
-- Placeholder `{NAME:P1}` se reemplaza con el nombre del niño
+- Keys importantes: `title`, `author`, `illustrator`, `boy.page.1`, `boy.page.2`, `girl.page.1`...
+- Placeholder `{NAME:P1}` → se reemplaza con el nombre del niño en el visor
+
+## Flujo de la app
+
+1. **Splash** (2.5s) → fade out
+2. **Onboarding** (solo primera vez): nombre → género → avatar
+3. **Biblioteca**: grid 3 columnas con portadas. Los no descargados muestran botón "Descargar" con barra de progreso
+4. **Visor**: fullscreen portrait, swipe entre páginas, texto personalizado superpuesto
+   - 🎧 Escuchar narración de la página
+   - Aa Mostrar/ocultar texto
+   - 🔊/🔇 Silenciar música de fondo
+   - ← Volver (detiene todo el audio)
+5. **Ajustes**: cambiar nombre, género, avatar, música on/off
 
 ## Comandos
 
@@ -136,43 +150,36 @@ npx tsc --noEmit
 # Bundle local (verificar que Metro funciona)
 npx expo export --platform android --output-dir dist
 
-# Build APK en la nube
-EAS_SKIP_AUTO_FINGERPRINT=1 eas build --platform android --profile preview --non-interactive
+# Build APK en la nube (EAS)
+EAS_SKIP_AUTO_FINGERPRINT=1 eas build --platform android --profile preview --non-interactive --no-wait
 
-# Desarrollo local (requiere emulador o dispositivo)
+# Desarrollo local (requiere dispositivo conectado)
 npx expo start
 ```
 
-## Generar ZIPs de libros
+## Sistema de descarga de libros
 
-Los libros se descargan como ZIP desde GitHub. Para generar los ZIPs:
-
-```bash
-cd /ruta/a/books/originales
-for book in ADayInReverse AFunWalk AGoodIdea ...; do
-  zip -r "books-zip/${book}.zip" "$book/" -x "*.DS_Store"
-done
-```
-
-Los ZIPs se guardan en `books-zip/` y se pushean a GitHub. La app los descarga desde:
+Los libros se almacenan como ZIP en este mismo repo en `books-zip/`. La app descarga desde:
 ```
 https://github.com/adrendon/cuentos-para-dormir/raw/main/books-zip/{FolderName}.zip
 ```
 
-## Flujo de la app
+El `.easignore` excluye `books-zip/` del upload a EAS Build (solo sube ~23MB de código + assets).
 
-1. **Splash** (2.5s) → fade out
-2. **Onboarding** (solo primera vez): nombre → género → avatar → biblioteca
-3. **Biblioteca**: grid 2 columnas, portadas, filtros. Libros no descargados muestran botón "Descargar"
-4. **Visor**: fullscreen portrait, swipe, texto personalizado, audio de fondo, controles al tocar
-5. **Ajustes**: cambiar nombre, género, avatar, música on/off
+Para generar nuevos ZIPs:
+```bash
+cd /ruta/a/books/originales
+for book in NombreLibro1 NombreLibro2; do
+  zip -r "books-zip/${book}.zip" "$book/" -x "*.DS_Store"
+done
+```
 
-## Notas importantes
+## Notas técnicas
 
-- **Node.js 22** requerido (no usar 24+ por incompatibilidad con expo-modules-core)
-- **expo-file-system/legacy** — SDK 57 tiene nueva API de filesystem, usamos el import legacy para compatibilidad
-- **`.easignore`** excluye `books-zip/` y `dist/` del upload a EAS (reduce de 312MB a 23MB)
-- **`expo-av` deprecado** — reemplazado por `expo-audio` en SDK 57
-- **`react-native-track-player` removido** — no compatible con build limpio de EAS, usar expo-audio
+- **Node.js 22** requerido (24+ incompatible con expo-modules-core)
+- **expo-file-system/legacy** — SDK 57 tiene nueva API, usamos legacy import
+- **expo-audio** reemplaza a expo-av (deprecado en SDK 57)
+- **react-native-track-player removido** — incompatible con EAS build limpio
 - **Package name**: `com.cuentos.dormir`
 - **Android target**: API 27+ (Android 8.1+)
+- **Orientación**: portrait siempre (configurado en app.json)
