@@ -3,7 +3,7 @@
     "name": "Cuentos para Dormir",
     "slug": "cuentos-para-dormir",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "landscape",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "assetBundlePatterns": [

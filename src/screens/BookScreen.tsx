@@ -84,8 +84,9 @@ export default function BookScreen() {
     }
 
     return () => {
-      // ALWAYS stop music when leaving screen
+      // ALWAYS stop all audio when leaving screen
       stopMusic();
+      stopNarration();
     };
   }, [book?.id]);
 
@@ -119,18 +120,13 @@ export default function BookScreen() {
   }, [showControls, currentPage]);
 
   const handleGoBack = useCallback(async () => {
-    // Stop audio FIRST, then animate and navigate
+    // Stop ALL audio immediately
     await stopMusic();
+    await stopNarration();
     setIsPlaying(false);
-
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      router.back();
-    });
-  }, []);
+    // Navigate back without animation delay
+    router.back();
+  }, [stopNarration]);
 
   const handleToggleMusic = useCallback(async () => {
     if (isPlaying) {

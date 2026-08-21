@@ -1,17 +1,17 @@
 import { useState, useCallback, useRef } from 'react';
+import { createAudioPlayer } from 'expo-audio';
+import type { AudioPlayer } from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 import { BOOKS_LOCAL_DIR } from '../services/downloadService';
 
 /**
  * Hook to play voicework narration per page.
- * voicework_es/ contains: voice0-name.mp3, voice1.mp3, voice2.mp3, etc.
- * voice0-name.mp3 = name pronunciation (not used per page)
- * voiceN.mp3 = narration for page N
+ * voicework_es/ contains: voice1.mp3, voice2.mp3, etc.
  */
 export function useVoicework(folderName: string | undefined) {
   const [isNarrating, setIsNarrating] = useState(false);
   const [currentNarrationPage, setCurrentNarrationPage] = useState(-1);
-  const playerRef = useRef<any>(null);
+  const playerRef = useRef<AudioPlayer | null>(null);
 
   const hasVoicework = useCallback(async (): Promise<boolean> => {
     if (!folderName) return false;
@@ -31,26 +31,18 @@ export function useVoicework(folderName: string | undefined) {
     if (!folderName) return;
 
     try {
-      // Stop current narration
+      // Stop current narration first
       await stopNarration();
 
       const voiceFile = `${BOOKS_LOCAL_DIR}${folderName}/voicework_es/voice${pageNumber}.mp3`;
       const fileInfo = await FileSystem.getInfoAsync(voiceFile);
 
-      if (!fileInfo.exists) {
-        // No narration for this page
-        return;
-      }
+      if (!fileInfo.exists) return; // No narration for this page
 
-      // Create and play audio
-      const { createAudioPlayer } = require('expo-audio');
       playerRef.current = createAudioPlayer({ uri: voiceFile });
       playerRef.current.play();
       setIsNarrating(true);
       setCurrentNarrationPage(pageNumber);
-
-      // Listen for playback end
-      // expo-audio players emit events when done
     } catch (error) {
       console.error('Error playing narration:', error);
       setIsNarrating(false);
