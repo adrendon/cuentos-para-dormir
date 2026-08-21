@@ -1,0 +1,10 @@
+{
+  "isProfessional" : true,
+  "languageCode" : "es",
+  "bookId" : "com.diveomedia.ls.afunwalk",
+  "narrator" : "Ivanna Ochoa Varuzza",
+  "child" : {
+    "gender" : "boy",
+    "name" : "Gabriel"
+  }
+}

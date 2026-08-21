@@ -1,0 +1,10 @@
+{
+  "child" : {
+    "gender" : "boy",
+    "name" : "Itzé"
+  },
+  "isProfessional" : true,
+  "narrator" : "Ivanna Ochoa Varuzza",
+  "languageCode" : "es",
+  "bookId" : "com.diveomedia.ls.birdsChoir"
+}

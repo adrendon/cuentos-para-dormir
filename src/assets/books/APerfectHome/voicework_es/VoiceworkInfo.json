@@ -1,0 +1,10 @@
+{
+  "child" : {
+    "name" : "Miguel",
+    "gender" : "boy"
+  },
+  "narrator" : "Ivanna Ochoa Varuzza",
+  "languageCode" : "es",
+  "bookId" : "com.diveomedia.ls.aperfecthome",
+  "isProfessional" : true
+}

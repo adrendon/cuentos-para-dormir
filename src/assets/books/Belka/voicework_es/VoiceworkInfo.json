@@ -1,0 +1,10 @@
+{
+  "child" : {
+    "gender" : "girl",
+    "name" : "Alicia"
+  },
+  "narrator" : "Ivanna Ochoa Varuzza",
+  "languageCode" : "es",
+  "isProfessional" : true,
+  "bookId" : "com.diveomedia.ls.belka"
+}

@@ -1,0 +1,10 @@
+{
+  "languageCode" : "es",
+  "isProfessional" : true,
+  "child" : {
+    "name" : "Clara",
+    "gender" : "girl"
+  },
+  "narrator" : "Ivanna Ochoa Varuzza",
+  "bookId" : "com.diveomedia.ls.allisnotlost"
+}

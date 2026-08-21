@@ -1,0 +1,10 @@
+{
+  "isProfessional" : true,
+  "bookId" : "com.diveomedia.ls.aLittleAntsBigJob",
+  "narrator" : "Ivanna Ochoa Varuzza",
+  "child" : {
+    "gender" : "girl",
+    "name" : "Quetzaly"
+  },
+  "languageCode" : "es"
+}
