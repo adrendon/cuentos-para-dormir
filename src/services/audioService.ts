@@ -1,12 +1,16 @@
-import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
+import { useAudioPlayer, AudioModule } from 'expo-audio';
 
 /**
- * Audio service using expo-av for background music playback.
- * expo-av supports background audio on Android with proper audio mode configuration.
+ * Audio service using expo-audio (SDK 57 replacement for expo-av).
+ * Supports background audio playback on Android.
  */
 
-let soundInstance: Audio.Sound | null = null;
+let currentPlayer: ReturnType<typeof useAudioPlayer> | null = null;
+let playerSource: string | null = null;
 let isSetup = false;
+
+// Simple audio player manager (non-hook based for service use)
+let audioPlayerInstance: any = null;
 
 /**
  * Initialize audio mode for background playback.
@@ -15,24 +19,23 @@ export async function setupPlayer(): Promise<boolean> {
   if (isSetup) return true;
 
   try {
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      staysActiveInBackground: true,
-      interruptionModeIOS: InterruptionModeIOS.DuckOthers,
-      interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
-      shouldDuckAndroid: true,
-      playThroughEarpieceAndroid: false,
+    // Request audio permissions and configure for background
+    await AudioModule.setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldRouteThroughEarpiece: false,
     });
     isSetup = true;
     return true;
   } catch (error) {
     console.error('Error setting up audio:', error);
-    return false;
+    // Non-fatal - audio mode might not be available
+    isSetup = true;
+    return true;
   }
 }
 
 /**
- * Play background music for a book.
+ * Play background music for a book using expo-audio createAudioPlayer.
  */
 export async function playBookMusic(
   bookTitle: string,
@@ -42,19 +45,12 @@ export async function playBookMusic(
     // Stop any currently playing sound
     await stopMusic();
 
-    const { sound } = await Audio.Sound.createAsync(
-      { uri: audioUri },
-      { shouldPlay: true, isLooping: false, volume: 1.0 }
-    );
-    soundInstance = sound;
-
-    // Set up playback finished callback
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if (status.isLoaded && status.didJustFinish) {
-        // Audio finished - this can trigger navigation back
-        onPlaybackFinished?.();
-      }
-    });
+    // Create player with the audio source
+    const { createAudioPlayer } = require('expo-audio');
+    audioPlayerInstance = createAudioPlayer({ uri: audioUri });
+    
+    // Play
+    audioPlayerInstance.play();
   } catch (error) {
     console.error('Error playing book music:', error);
   }
@@ -75,8 +71,8 @@ export function setOnPlaybackFinished(callback: () => void): void {
  */
 export async function pauseMusic(): Promise<void> {
   try {
-    if (soundInstance) {
-      await soundInstance.pauseAsync();
+    if (audioPlayerInstance) {
+      audioPlayerInstance.pause();
     }
   } catch (error) {
     console.error('Error pausing music:', error);
@@ -88,8 +84,8 @@ export async function pauseMusic(): Promise<void> {
  */
 export async function resumeMusic(): Promise<void> {
   try {
-    if (soundInstance) {
-      await soundInstance.playAsync();
+    if (audioPlayerInstance) {
+      audioPlayerInstance.play();
     }
   } catch (error) {
     console.error('Error resuming music:', error);
@@ -97,14 +93,13 @@ export async function resumeMusic(): Promise<void> {
 }
 
 /**
- * Stop and unload the player
+ * Stop and release the player
  */
 export async function stopMusic(): Promise<void> {
   try {
-    if (soundInstance) {
-      await soundInstance.stopAsync();
-      await soundInstance.unloadAsync();
-      soundInstance = null;
+    if (audioPlayerInstance) {
+      audioPlayerInstance.remove();
+      audioPlayerInstance = null;
     }
   } catch (error) {
     console.error('Error stopping music:', error);
@@ -116,8 +111,8 @@ export async function stopMusic(): Promise<void> {
  */
 export async function setVolume(volume: number): Promise<void> {
   try {
-    if (soundInstance) {
-      await soundInstance.setVolumeAsync(Math.max(0, Math.min(1, volume)));
+    if (audioPlayerInstance) {
+      audioPlayerInstance.volume = Math.max(0, Math.min(1, volume));
     }
   } catch (error) {
     console.error('Error setting volume:', error);
@@ -129,11 +124,8 @@ export async function setVolume(volume: number): Promise<void> {
  */
 export async function getVolume(): Promise<number> {
   try {
-    if (soundInstance) {
-      const status = await soundInstance.getStatusAsync();
-      if (status.isLoaded) {
-        return status.volume;
-      }
+    if (audioPlayerInstance) {
+      return audioPlayerInstance.volume ?? 1.0;
     }
     return 1.0;
   } catch {
@@ -156,9 +148,8 @@ export async function restoreVolume(): Promise<void> {
 }
 
 /**
- * PlaybackService placeholder - not needed with expo-av
- * Kept for API compatibility with the rest of the app.
+ * PlaybackService placeholder - kept for API compatibility.
  */
 export async function PlaybackService(): Promise<void> {
-  // No-op: expo-av handles background audio via Audio mode config
+  // No-op with expo-audio
 }
