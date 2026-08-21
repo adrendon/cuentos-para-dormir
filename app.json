@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#003A1A"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -20,11 +15,7 @@
         "backgroundColor": "#003A1A"
       },
       "package": "com.cuentos.dormir",
-      "versionCode": 1,
-      "permissions": [
-        "FOREGROUND_SERVICE",
-        "WAKE_LOCK"
-      ]
+      "versionCode": 1
     },
     "plugins": [
       "expo-router",
