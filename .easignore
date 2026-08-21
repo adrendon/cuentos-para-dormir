@@ -1,7 +1,3 @@
-# Exclude book ZIPs (268MB) - only needed for GitHub download, not for build
-books-zip/
-books-zip/**
-
-# Exclude build output
-dist/
-dist/**
+.git
+books-zip
+dist

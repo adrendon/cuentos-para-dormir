@@ -6,16 +6,16 @@ import {
   StyleSheet,
   Animated,
   BackHandler,
+  StatusBar,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import * as ScreenOrientation from 'expo-screen-orientation';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Colors } from '../theme/colors';
 import { useBooks } from '../hooks/useBooks';
 import { useBookPages, getBookAudioUri } from '../hooks/useBookPages';
+import { useBookTexts } from '../hooks/useBookTexts';
 import { useProfile } from '../hooks/useProfile';
 import { PageViewer } from '../components/PageViewer';
-import { BookMenu } from '../components/BookMenu';
 import {
   playBookMusic,
   pauseMusic,
@@ -23,7 +23,6 @@ import {
   stopMusic,
   setVolume,
   getVolume,
-  setOnPlaybackFinished,
 } from '../services/audioService';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -36,35 +35,23 @@ export default function BookScreen() {
 
   const {
     pages,
-    isLoading: pagesLoading,
     currentPage,
     setCurrentPage,
     goToPage,
     isLastPage,
-    totalPages,
   } = useBookPages(book, profile.gender);
 
-  const [menuVisible, setMenuVisible] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [volume, setVolumeState] = useState(1.0);
+  const { pageTexts, title, author } = useBookTexts(
+    book?.folderName,
+    profile.gender,
+    profile.name
+  );
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showText, setShowText] = useState(true);
   const [showEndScreen, setShowEndScreen] = useState(false);
+  const [showControls, setShowControls] = useState(true);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  // Force landscape orientation
-  useEffect(() => {
-    const lockOrientation = async () => {
-      await ScreenOrientation.lockAsync(
-        ScreenOrientation.OrientationLock.LANDSCAPE
-      );
-    };
-    lockOrientation();
-
-    return () => {
-      ScreenOrientation.lockAsync(
-        ScreenOrientation.OrientationLock.PORTRAIT_UP
-      );
-    };
-  }, []);
 
   // Keep screen awake
   useEffect(() => {
@@ -92,23 +79,12 @@ export default function BookScreen() {
     }
 
     return () => {
+      // ALWAYS stop music when leaving screen
       stopMusic();
     };
   }, [book?.id]);
 
-  // Load current volume
-  useEffect(() => {
-    getVolume().then(setVolumeState);
-  }, []);
-
-  // Handle track player events - navigate back when audio ends
-  useEffect(() => {
-    setOnPlaybackFinished(() => {
-      handleGoBack();
-    });
-  }, []);
-
-  // Handle hardware back button
+  // Handle hardware back button — stop audio first, then navigate
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       handleGoBack();
@@ -129,18 +105,29 @@ export default function BookScreen() {
     }
   }, [isLastPage, pages.length]);
 
-  const handleGoBack = useCallback(() => {
+  // Auto-hide controls after 4 seconds
+  useEffect(() => {
+    if (showControls) {
+      const timer = setTimeout(() => setShowControls(false), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [showControls, currentPage]);
+
+  const handleGoBack = useCallback(async () => {
+    // Stop audio FIRST, then animate and navigate
+    await stopMusic();
+    setIsPlaying(false);
+
     Animated.timing(fadeAnim, {
       toValue: 0,
-      duration: 400,
+      duration: 300,
       useNativeDriver: true,
-    }).start(async () => {
-      await stopMusic();
+    }).start(() => {
       router.back();
     });
   }, []);
 
-  const handleTogglePlay = useCallback(async () => {
+  const handleToggleMusic = useCallback(async () => {
     if (isPlaying) {
       await pauseMusic();
       setIsPlaying(false);
@@ -150,17 +137,13 @@ export default function BookScreen() {
     }
   }, [isPlaying]);
 
-  const handleVolumeChange = useCallback(async (newVolume: number) => {
-    setVolumeState(newVolume);
-    await setVolume(newVolume);
-  }, []);
-
   const handlePageChange = useCallback((pageIndex: number) => {
     setCurrentPage(pageIndex);
+    setShowControls(true);
   }, []);
 
-  const handlePageSelect = useCallback((pageIndex: number) => {
-    goToPage(pageIndex);
+  const handleTapScreen = useCallback(() => {
+    setShowControls(prev => !prev);
   }, []);
 
   if (!book) {
@@ -176,21 +159,31 @@ export default function BookScreen() {
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      {/* Page viewer */}
+      <StatusBar hidden />
+
+      {/* Page viewer - fullscreen portrait */}
       {!showEndScreen ? (
-        <PageViewer
-          pages={pages}
-          currentPage={currentPage}
-          onPageChange={handlePageChange}
-          coverColor={book.coverColor}
-        />
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={handleTapScreen}
+          style={styles.fullscreen}
+        >
+          <PageViewer
+            pages={pages}
+            currentPage={currentPage}
+            onPageChange={handlePageChange}
+            coverColor={book.coverColor}
+            pageTexts={pageTexts}
+            showText={showText}
+          />
+        </TouchableOpacity>
       ) : (
         /* End screen */
         <View style={[styles.endScreen, { backgroundColor: book.coverColor }]}>
           <Text style={styles.endEmoji}>🌙</Text>
-          <Text style={styles.endTitle}>{book.title}</Text>
+          <Text style={styles.endTitle}>{title || book.title}</Text>
           <Text style={styles.endCredits}>
-            {book.author && `Escrito por: ${book.author}`}
+            {(author || book.author) && `Escrito por: ${author || book.author}`}
           </Text>
           <Text style={styles.endCredits}>
             {book.illustrator && `Ilustrado por: ${book.illustrator}`}
@@ -214,31 +207,45 @@ export default function BookScreen() {
         </View>
       )}
 
-      {/* Menu toggle button (hamburger) */}
-      {!showEndScreen && (
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => setMenuVisible(true)}
-          accessibilityLabel="Abrir menú"
-        >
-          <Text style={styles.menuIcon}>☰</Text>
-        </TouchableOpacity>
-      )}
+      {/* Top controls - show/hide on tap */}
+      {!showEndScreen && showControls && (
+        <View style={styles.topControls}>
+          {/* Back button */}
+          <TouchableOpacity
+            style={styles.controlButton}
+            onPress={handleGoBack}
+            accessibilityLabel="Volver"
+          >
+            <Text style={styles.controlIcon}>←</Text>
+          </TouchableOpacity>
 
-      {/* Overlay menu */}
-      <BookMenu
-        visible={menuVisible}
-        isPlaying={isPlaying}
-        volume={volume}
-        pages={pages}
-        currentPage={currentPage}
-        bookTitle={book.title}
-        onClose={() => setMenuVisible(false)}
-        onGoBack={handleGoBack}
-        onTogglePlay={handleTogglePlay}
-        onVolumeChange={handleVolumeChange}
-        onPageSelect={handlePageSelect}
-      />
+          {/* Title */}
+          <Text style={styles.controlTitle} numberOfLines={1}>
+            {title || book.title}
+          </Text>
+
+          {/* Right controls */}
+          <View style={styles.rightControls}>
+            {/* Toggle text */}
+            <TouchableOpacity
+              style={styles.controlButton}
+              onPress={() => setShowText(prev => !prev)}
+              accessibilityLabel={showText ? 'Ocultar texto' : 'Mostrar texto'}
+            >
+              <Text style={styles.controlIcon}>{showText ? 'Aa' : 'Aa'}</Text>
+            </TouchableOpacity>
+
+            {/* Mute/unmute music */}
+            <TouchableOpacity
+              style={styles.controlButton}
+              onPress={handleToggleMusic}
+              accessibilityLabel={isPlaying ? 'Silenciar música' : 'Activar música'}
+            >
+              <Text style={styles.controlIcon}>{isPlaying ? '🔊' : '🔇'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </Animated.View>
   );
 }
@@ -248,21 +255,45 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
-  menuButton: {
+  fullscreen: {
+    flex: 1,
+  },
+  topControls: {
     position: 'absolute',
-    top: 12,
-    left: 12,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 44,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    zIndex: 100,
+  },
+  controlButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 50,
   },
-  menuIcon: {
+  controlIcon: {
     color: Colors.textWhite,
-    fontSize: 24,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  controlTitle: {
+    flex: 1,
+    color: Colors.titleGold,
+    fontSize: 15,
+    fontWeight: '700',
+    marginHorizontal: 12,
+  },
+  rightControls: {
+    flexDirection: 'row',
+    gap: 8,
   },
   endScreen: {
     flex: 1,

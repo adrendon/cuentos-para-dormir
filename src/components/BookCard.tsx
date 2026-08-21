@@ -10,6 +10,7 @@ import {
 import { Book } from '../types/book';
 import { Colors } from '../theme/colors';
 import { DownloadButton } from './DownloadButton';
+import { getBookCover } from '../assets/books/coverRegistry';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -42,17 +43,23 @@ export function BookCard({ book, coverUri, onPress, onDownloadComplete }: BookCa
     >
       {/* Cover Image */}
       <View style={styles.imageContainer}>
-        {coverUri ? (
-          <Image
-            source={{ uri: coverUri }}
-            style={styles.coverImage}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={[styles.placeholder, { backgroundColor: book.coverColor }]}>
-            <Text style={styles.placeholderEmoji}>📖</Text>
-          </View>
-        )}
+        {(() => {
+          const coverSource = getBookCover(book.folderName);
+          if (coverSource) {
+            return (
+              <Image
+                source={coverSource}
+                style={styles.coverImage}
+                resizeMode="cover"
+              />
+            );
+          }
+          return (
+            <View style={[styles.placeholder, { backgroundColor: book.coverColor }]}>
+              <Text style={styles.placeholderEmoji}>📖</Text>
+            </View>
+          );
+        })()}
 
         {/* Overlay for not-downloaded books */}
         {!isAvailable && (

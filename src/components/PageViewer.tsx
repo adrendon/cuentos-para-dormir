@@ -6,6 +6,7 @@ import {
   Dimensions,
   ActivityIndicator,
   Text,
+  ScrollView,
 } from 'react-native';
 import PagerView from 'react-native-pager-view';
 import { BookPage } from '../types/book';
@@ -18,6 +19,8 @@ interface PageViewerProps {
   currentPage: number;
   onPageChange: (pageIndex: number) => void;
   coverColor: string;
+  pageTexts?: Map<number, string>;
+  showText: boolean;
 }
 
 export function PageViewer({
@@ -25,6 +28,8 @@ export function PageViewer({
   currentPage,
   onPageChange,
   coverColor,
+  pageTexts,
+  showText,
 }: PageViewerProps) {
   const pagerRef = useRef<PagerView>(null);
 
@@ -35,11 +40,6 @@ export function PageViewer({
     },
     [onPageChange]
   );
-
-  // Navigate to a specific page programmatically
-  const goToPage = useCallback((index: number) => {
-    pagerRef.current?.setPage(index);
-  }, []);
 
   if (pages.length === 0) {
     return (
@@ -59,27 +59,42 @@ export function PageViewer({
       orientation="horizontal"
       overdrag={false}
     >
-      {pages.map((page, index) => (
-        <View
-          key={`page-${page.pageNumber}`}
-          style={[styles.pageContainer, { backgroundColor: coverColor }]}
-        >
-          <Image
-            source={{ uri: page.uri }}
-            style={styles.pageImage}
-            resizeMode="contain"
-            onError={() => {
-              // Silently handle missing images
-            }}
-          />
-          {/* Page number indicator */}
-          <View style={styles.pageIndicator}>
-            <Text style={styles.pageNumber}>
-              {index + 1} / {pages.length}
-            </Text>
+      {pages.map((page, index) => {
+        const textForPage = pageTexts?.get(page.pageNumber);
+
+        return (
+          <View
+            key={`page-${page.pageNumber}`}
+            style={[styles.pageContainer, { backgroundColor: coverColor }]}
+          >
+            {/* Fullscreen image */}
+            <Image
+              source={{ uri: page.uri }}
+              style={styles.pageImage}
+              resizeMode="cover"
+            />
+
+            {/* Text overlay at bottom */}
+            {showText && textForPage && (
+              <View style={styles.textOverlay}>
+                <ScrollView
+                  style={styles.textScroll}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <Text style={styles.pageText}>{textForPage}</Text>
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Page number */}
+            <View style={styles.pageIndicator}>
+              <Text style={styles.pageNumber}>
+                {index + 1} / {pages.length}
+              </Text>
+            </View>
           </View>
-        </View>
-      ))}
+        );
+      })}
     </PagerView>
   );
 }
@@ -90,12 +105,13 @@ const styles = StyleSheet.create({
   },
   pageContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   pageImage: {
-    width: '100%',
-    height: '100%',
+    width: width,
+    height: height,
+    position: 'absolute',
+    top: 0,
+    left: 0,
   },
   emptyContainer: {
     flex: 1,
@@ -108,18 +124,39 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontWeight: '500',
   },
+  textOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 32,
+    maxHeight: height * 0.35,
+  },
+  textScroll: {
+    maxHeight: height * 0.3,
+  },
+  pageText: {
+    color: Colors.textWhite,
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
   pageIndicator: {
     position: 'absolute',
-    bottom: 16,
-    right: 16,
+    top: 12,
+    right: 12,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   pageNumber: {
     color: Colors.textWhite,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
 });
