@@ -6,6 +6,9 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "build:local": "export ANDROID_HOME=~/Library/Android/sdk && npx expo prebuild --platform android --no-install && cd android && ./gradlew assembleRelease && cd .. && cp android/app/build/outputs/apk/release/app-release.apk ./cuentos-para-dormir.apk",
+    "build:eas": "EAS_SKIP_AUTO_FINGERPRINT=1 eas build --platform android --profile preview --non-interactive --no-wait",
+    "deploy:apk": "sh ./scripts/deploy-apk.sh",
     "build:android": "eas build --platform android --profile production",
     "build:apk": "eas build --platform android --profile preview"
   },

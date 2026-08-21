@@ -39,3 +39,9 @@ eas-credentials.json
 # Firebase
 google-services.json
 GoogleService-Info.plist
+
+# Generated APK
+*.apk
+
+# Android native build
+android/
