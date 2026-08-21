@@ -4,38 +4,35 @@ set -e
 # Config
 SERVIDOR="129.153.66.26"
 USUARIO="opc"
-PEM="$HOME/Downloads/Codigo/alexisrendon.pem"
+PEM="$HOME/Downloads/alexisrendon.pem"
 RUTA_REMOTA="/usr/share/nginx/html/wordpress/upload/repository/"
 APK_NAME="cuentos-para-dormir.apk"
-APK_SOURCE="./android/app/build/outputs/apk/release/app-release.apk"
 APK_LOCAL="./$APK_NAME"
+APK_SOURCE="./android/app/build/outputs/apk/release/app-release.apk"
 
-echo "🔨 Compilando APK..."
 export ANDROID_HOME=~/Library/Android/sdk
 
-# Prebuild si no existe android/
+echo "🔨 Paso 1: Prebuild..."
 if [ ! -d "./android" ]; then
   npx expo prebuild --platform android --no-install
 fi
 
-# Build release APK
+echo "🏗️  Paso 2: Compilando APK..."
 cd android
 ./gradlew assembleRelease
 cd ..
 
-# Verificar que se generó
 if [ ! -f "$APK_SOURCE" ]; then
-  echo "❌ No se generó la APK en $APK_SOURCE"
+  echo "❌ No se generó la APK"
   exit 1
 fi
 
-# Copiar con nombre final
+# Renombrar
 cp "$APK_SOURCE" "$APK_LOCAL"
 echo "✅ APK generada: $APK_LOCAL ($(du -h "$APK_LOCAL" | cut -f1))"
 
-# Subir al servidor
-echo "📦 Subiendo a $USUARIO@$SERVIDOR:$RUTA_REMOTA"
-scp -o ConnectTimeout=30 -i "$PEM" "$APK_LOCAL" "$USUARIO@$SERVIDOR:$RUTA_REMOTA$APK_NAME"
+echo "📦 Paso 3: Subiendo a $USUARIO@$SERVIDOR..."
+scp -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i "$PEM" "$APK_LOCAL" "$USUARIO@$SERVIDOR:$RUTA_REMOTA$APK_NAME"
 
 if [ $? -eq 0 ]; then
   echo "✅ APK subida exitosamente"
