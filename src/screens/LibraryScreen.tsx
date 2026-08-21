@@ -33,13 +33,7 @@ export default function LibraryScreen() {
   }, []);
 
   const handleBookPress = useCallback((book: Book) => {
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 400,
-      useNativeDriver: true,
-    }).start(() => {
-      router.push(`/book/${book.id}`);
-    });
+    router.push(`/book/${book.id}`);
   }, []);
 
   const handleSettingsPress = () => {
