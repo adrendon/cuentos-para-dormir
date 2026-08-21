@@ -1,3 +1,10 @@
+# EAS ignores node_modules and .git by default,
+# but defining .easignore overrides defaults.
+# So we must explicitly list everything to exclude.
+
 .git
+node_modules
 books-zip
 dist
+android
+*.apk
