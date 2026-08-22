@@ -32,7 +32,11 @@ export function GenderSelector({ selected, onSelect, label }: GenderSelectorProp
           accessibilityLabel="Niño"
         >
           <Image
-            source={require('../assets/onboarding/ic_boy.png')}
+            source={
+              selected === 'boy'
+                ? require('../assets/onboarding/ic_boy_on.png')
+                : require('../assets/onboarding/ic_boy.png')
+            }
             style={styles.icon}
             resizeMode="contain"
           />
@@ -53,7 +57,11 @@ export function GenderSelector({ selected, onSelect, label }: GenderSelectorProp
           accessibilityLabel="Niña"
         >
           <Image
-            source={require('../assets/onboarding/ic_girl.png')}
+            source={
+              selected === 'girl'
+                ? require('../assets/onboarding/ic_girl_on.png')
+                : require('../assets/onboarding/ic_girl.png')
+            }
             style={styles.icon}
             resizeMode="contain"
           />
@@ -73,38 +81,38 @@ const styles = StyleSheet.create({
   label: {
     color: Colors.textWhite,
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'BalooBhaijaan',
     marginBottom: 16,
     textAlign: 'center',
   },
   cardsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 20,
+    gap: 24,
   },
   card: {
-    width: 130,
-    height: 150,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    width: 140,
+    height: 160,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   cardSelected: {
     borderColor: Colors.accentTurquoise,
-    backgroundColor: 'rgba(20, 207, 201, 0.18)',
+    backgroundColor: 'rgba(20, 207, 201, 0.15)',
   },
   icon: {
-    width: 64,
-    height: 64,
-    marginBottom: 8,
+    width: 72,
+    height: 72,
+    marginBottom: 10,
   },
   cardText: {
     color: Colors.textGrayLight,
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Montserrat-SemiBold',
   },
   cardTextSelected: {
     color: Colors.textWhite,
