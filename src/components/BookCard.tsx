@@ -223,8 +223,8 @@ const styles = StyleSheet.create({
   },
   title: {
     color: Colors.textWhite,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontFamily: 'Montserrat-SemiBold',
     textAlign: 'center',
   },
   downloadContainer: {

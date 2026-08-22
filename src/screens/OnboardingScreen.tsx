@@ -527,8 +527,8 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     color: Colors.textWhite,
-    fontSize: 26,
-    fontWeight: '800',
+    fontSize: 28,
+    fontFamily: 'BalooBhaijaan',
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -537,9 +537,11 @@ const styles = StyleSheet.create({
   },
   stepSubtitle: {
     color: Colors.subtitleGray,
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: 'Montserrat-SemiBold',
     textAlign: 'center',
     marginBottom: 24,
+    lineHeight: 22,
   },
   languageCapsule: {
     paddingHorizontal: 28,
@@ -679,7 +681,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: Colors.textWhite,
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Montserrat-ExtraBold',
   },
   secondaryButtonWrapper: {
     flex: 1,

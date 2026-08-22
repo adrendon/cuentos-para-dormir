@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   greeting: {
     color: Colors.titleGold,
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: 'BalooBhaijaan',
   },
   subtitle: {
     color: Colors.subtitleGray,

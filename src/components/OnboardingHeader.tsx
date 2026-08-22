@@ -10,7 +10,7 @@ interface OnboardingHeaderProps {
   onToggleMusic: () => void;
 }
 
-/** Top bar shared by all onboarding steps: back arrow, segmented progress, music toggle. */
+/** Top bar: back arrow, pencil progress bar with "N/9" label, music toggle. */
 export function OnboardingHeader({
   step,
   totalSteps,
@@ -18,6 +18,8 @@ export function OnboardingHeader({
   musicEnabled,
   onToggleMusic,
 }: OnboardingHeaderProps) {
+  const progress = step / totalSteps;
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -26,23 +28,21 @@ export function OnboardingHeader({
         accessibilityRole="button"
         accessibilityLabel="Regresar"
       >
-        <Text style={styles.backIcon}>←</Text>
+        <Text style={styles.backIcon}>‹</Text>
       </TouchableOpacity>
 
-      <View style={styles.progressTrack}>
-        {Array.from({ length: totalSteps }).map((_, i) => (
-          <View
-            key={i}
-            style={[
-              styles.progressSegment,
-              i < step && styles.progressSegmentActive,
-            ]}
-          />
-        ))}
+      {/* Progress bar with pencil + step label */}
+      <View style={styles.progressWrapper}>
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${progress * 100}%` }]}>
+            <Text style={styles.pencilIcon}>✏️</Text>
+          </View>
+        </View>
+        <Text style={styles.stepLabel}>{step}/{totalSteps}</Text>
       </View>
 
       <TouchableOpacity
-        style={styles.iconButton}
+        style={styles.musicButton}
         onPress={onToggleMusic}
         accessibilityRole="button"
         accessibilityLabel={musicEnabled ? 'Silenciar música' : 'Activar música'}
@@ -65,39 +65,69 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    gap: 14,
   },
   iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   backIcon: {
     color: Colors.textWhite,
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '300',
+    marginTop: -2,
+  },
+  progressWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  progressTrack: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    overflow: 'hidden',
+    justifyContent: 'center',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+    backgroundColor: Colors.accentYellow,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingRight: 2,
+    minWidth: 24,
+  },
+  pencilIcon: {
+    fontSize: 12,
+  },
+  stepLabel: {
+    color: Colors.textWhite,
+    fontSize: 14,
+    fontWeight: '700',
+    minWidth: 28,
+  },
+  musicButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(62, 112, 220, 0.3)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(62, 112, 220, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   musicIcon: {
     width: 20,
     height: 20,
-  },
-  progressTrack: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: 4,
-  },
-  progressSegment: {
-    flex: 1,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  progressSegmentActive: {
-    backgroundColor: Colors.accentYellow,
   },
 });

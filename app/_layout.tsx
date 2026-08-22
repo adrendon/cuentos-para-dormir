@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as NavigationBar from 'expo-navigation-bar';
+import * as Font from 'expo-font';
 import { setupPlayer } from '../src/services/audioService';
 import { setupEmbeddedBooks } from '../src/services/embeddedBooksService';
 
@@ -11,12 +12,22 @@ import { setupEmbeddedBooks } from '../src/services/embeddedBooksService';
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+
   useEffect(() => {
     initializeApp();
   }, []);
 
   const initializeApp = async () => {
     try {
+      // Load custom fonts
+      await Font.loadAsync({
+        'BalooBhaijaan': require('../assets/fonts/baloo_bhaijaan_medium.ttf'),
+        'Montserrat-SemiBold': require('../assets/fonts/montserrat_semi_bold.ttf'),
+        'Montserrat-ExtraBold': require('../assets/fonts/montserrat_extra_bold.ttf'),
+      });
+      setFontsLoaded(true);
+
       // Only the status bar should be hidden; keep the Android nav/back bar visible.
       if (Platform.OS === 'android') {
         await NavigationBar.setVisibilityAsync('visible');

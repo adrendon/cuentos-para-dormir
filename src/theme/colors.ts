@@ -62,3 +62,12 @@ export const Gradients = {
   greenButton: [Colors.buttonGreenStart, Colors.buttonGreenEnd] as const,
   background: [Colors.backgroundGradientStart, Colors.backgroundGradientEnd] as const,
 } as const;
+
+export const Fonts = {
+  /** Rounded bold font for titles (Baloo Bhaijaan) */
+  title: 'BalooBhaijaan',
+  /** Semi-bold body text */
+  body: 'Montserrat-SemiBold',
+  /** Extra bold headings */
+  heading: 'Montserrat-ExtraBold',
+} as const;
