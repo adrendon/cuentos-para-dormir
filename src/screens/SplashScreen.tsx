@@ -1,53 +1,63 @@
 import React, { useEffect, useRef } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { Colors } from '../theme/colors';
 import { useProfile } from '../hooks/useProfile';
+
+const logoVideo = require('../assets/logo_video.mp4');
 
 export default function SplashScreen() {
   const router = useRouter();
   const { profile, isLoading } = useProfile();
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const hasNavigated = useRef(false);
+
+  const player = useVideoPlayer(logoVideo, (p) => {
+    p.loop = false;
+    p.play();
+  });
+
+  const goNext = () => {
+    if (hasNavigated.current || isLoading) return;
+    hasNavigated.current = true;
+
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 400,
+      useNativeDriver: true,
+    }).start(() => {
+      if (profile.hasCompletedOnboarding) {
+        router.replace('/library');
+      } else {
+        router.replace('/onboarding');
+      }
+    });
+  };
 
   useEffect(() => {
-    if (isLoading) return;
+    const subscription = player.addListener('playToEnd', goNext);
+    // Safety net in case the video fails to fire playToEnd.
+    const fallbackTimer = setTimeout(goNext, 4500);
 
-    // Show splash for 2.5 seconds, then fade out
-    const timer = setTimeout(() => {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }).start(() => {
-        if (profile.hasCompletedOnboarding) {
-          router.replace('/library');
-        } else {
-          router.replace('/onboarding');
-        }
-      });
-    }, 2500);
-
-    return () => clearTimeout(timer);
+    return () => {
+      subscription.remove();
+      clearTimeout(fallbackTimer);
+    };
   }, [isLoading, profile.hasCompletedOnboarding]);
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      {/* Moon / Logo */}
-      <View style={styles.logoContainer}>
-        <Text style={styles.moonEmoji}>🌙</Text>
-        <Text style={styles.title}>Cuentos{'\n'}para Dormir</Text>
-      </View>
-
-      {/* Subtitle */}
-      <Text style={styles.subtitle}>Historias mágicas antes de dormir</Text>
-
-      {/* Stars decoration */}
-      <Text style={styles.stars}>✨ ⭐ ✨</Text>
+      <VideoView
+        style={styles.video}
+        player={player}
+        contentFit="contain"
+        nativeControls={false}
+      />
     </Animated.View>
   );
 }
@@ -58,31 +68,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.splashBackground,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
   },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  moonEmoji: {
-    fontSize: 80,
-    marginBottom: 16,
-  },
-  title: {
-    color: Colors.titleGold,
-    fontSize: 36,
-    fontWeight: '800',
-    textAlign: 'center',
-    lineHeight: 44,
-  },
-  subtitle: {
-    color: Colors.subtitleGray,
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 12,
-  },
-  stars: {
-    fontSize: 24,
-    marginTop: 40,
+  video: {
+    width: '100%',
+    height: '100%',
   },
 });
+

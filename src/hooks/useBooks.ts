@@ -1,9 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
-import { Book, BookAdditionalInfo, BookTexts, FilterType } from '../types/book';
+import {
+  Book,
+  BookAdditionalInfo,
+  BookTexts,
+  LibraryFilters,
+  DEFAULT_LIBRARY_FILTERS,
+  SHORT_STORY_MAX_PAGES,
+} from '../types/book';
 import { bookCatalog } from '../assets/books/bookAssets';
-import { isBookDownloaded, BOOKS_LOCAL_DIR } from '../services/downloadService';
+import { isBookDownloaded, deleteDownloadedBook, BOOKS_LOCAL_DIR } from '../services/downloadService';
 
 const READ_BOOKS_KEY = '@cuentos_read_books';
 const FAVORITE_BOOKS_KEY = '@cuentos_favorite_books';
@@ -48,7 +55,8 @@ function parseTextsCSV(content: string): BookTexts {
 export function useBooks() {
   const [books, setBooks] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<FilterType>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<LibraryFilters>(DEFAULT_LIBRARY_FILTERS);
   const [readBooks, setReadBooks] = useState<Set<string>>(new Set());
   const [favoriteBooks, setFavoriteBooks] = useState<Set<string>>(new Set());
 
@@ -196,27 +204,53 @@ export function useBooks() {
     return books.find(b => b.id === bookId);
   }
 
-  function getFilteredBooks(allBooks: Book[], currentFilter: FilterType): Book[] {
-    switch (currentFilter) {
-      case 'favorites':
-        return allBooks.filter(b => b.isFavorite);
-      case 'unread':
-        return allBooks.filter(b => !b.isRead);
-      case 'all':
-      default:
-        return allBooks;
-    }
+  const deleteBook = useCallback(async (bookId: string) => {
+    const book = books.find(b => b.id === bookId);
+    if (!book || book.isEmbedded) return; // Bundled books cannot be deleted
+
+    await deleteDownloadedBook(book.folderName);
+    setBooks(prev =>
+      prev.map(b => (b.id === bookId ? { ...b, isDownloaded: false } : b))
+    );
+  }, [books]);
+
+  function getFilteredBooks(allBooks: Book[], query: string, activeFilters: LibraryFilters): Book[] {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    return allBooks.filter((b) => {
+      if (normalizedQuery && !b.title.toLowerCase().includes(normalizedQuery)) {
+        return false;
+      }
+      if (activeFilters.unread && b.isRead) return false;
+      if (activeFilters.favorites && !b.isFavorite) return false;
+      if (activeFilters.withVoice && !b.hasVoicework) return false;
+      if (activeFilters.withoutVoice && b.hasVoicework) return false;
+      if (activeFilters.short && b.numberOfPages > SHORT_STORY_MAX_PAGES) return false;
+      if (activeFilters.long && b.numberOfPages <= SHORT_STORY_MAX_PAGES) return false;
+      return true;
+    });
   }
+
+  const clearFilters = useCallback(() => {
+    setFilters(DEFAULT_LIBRARY_FILTERS);
+  }, []);
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   return {
     books,
     isLoading,
-    filter,
-    setFilter,
-    filteredBooks: getFilteredBooks(books, filter),
+    searchQuery,
+    setSearchQuery,
+    filters,
+    setFilters,
+    clearFilters,
+    activeFilterCount,
+    filteredBooks: getFilteredBooks(books, searchQuery, filters),
     markAsRead,
     toggleFavorite,
     getBookById,
+    deleteBook,
     refreshBooks,
     markBookAsDownloaded,
   };

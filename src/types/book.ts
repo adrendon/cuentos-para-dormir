@@ -38,15 +38,48 @@ export interface BookPage {
 
 export type Gender = 'boy' | 'girl';
 
+export type OnboardingGoal =
+  | 'fallAsleepFaster'
+  | 'familyBonding'
+  | 'goodValues'
+  | 'stayEngaged'
+  | 'learnNewWords';
+
+export type StoryPreference = 'read' | 'listen' | 'record';
+
 export interface UserProfile {
   name: string;
   gender: Gender;
   avatar: string;
   musicEnabled: boolean;
   hasCompletedOnboarding: boolean;
+  language: string;
+  goals: OnboardingGoal[];
+  preferences: StoryPreference[];
+  notificationsEnabled: boolean;
 }
 
 export type FilterType = 'all' | 'favorites' | 'unread';
+
+export interface LibraryFilters {
+  unread: boolean;
+  favorites: boolean;
+  withVoice: boolean;
+  withoutVoice: boolean;
+  short: boolean;
+  long: boolean;
+}
+
+export const DEFAULT_LIBRARY_FILTERS: LibraryFilters = {
+  unread: false,
+  favorites: false,
+  withVoice: false,
+  withoutVoice: false,
+  short: false,
+  long: false,
+};
+
+export const SHORT_STORY_MAX_PAGES = 30;
 
 export interface VoiceworkInfo {
   language: string;

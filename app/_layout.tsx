@@ -1,7 +1,9 @@
 import React, { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import * as NavigationBar from 'expo-navigation-bar';
 import { setupPlayer } from '../src/services/audioService';
 import { setupEmbeddedBooks } from '../src/services/embeddedBooksService';
 
@@ -15,6 +17,11 @@ export default function RootLayout() {
 
   const initializeApp = async () => {
     try {
+      // Only the status bar should be hidden; keep the Android nav/back bar visible.
+      if (Platform.OS === 'android') {
+        await NavigationBar.setVisibilityAsync('visible');
+      }
+
       // Setup audio player
       await setupPlayer();
 
@@ -30,13 +37,13 @@ export default function RootLayout() {
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar hidden />
       <Stack
         screenOptions={{
           headerShown: false,
           animation: 'fade',
           animationDuration: 550,
-          contentStyle: { backgroundColor: '#003A1A' },
+          contentStyle: { backgroundColor: '#171254' },
         }}
       >
         <Stack.Screen

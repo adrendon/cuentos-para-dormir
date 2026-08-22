@@ -3,11 +3,12 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Image,
   StyleSheet,
   Animated,
   BackHandler,
   StatusBar,
-  Image,
+  Share,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
@@ -18,6 +19,9 @@ import { useBookTexts } from '../hooks/useBookTexts';
 import { useVoicework } from '../hooks/useVoicework';
 import { useProfile } from '../hooks/useProfile';
 import { PageViewer } from '../components/PageViewer';
+import { BookOpeningIntro } from '../components/BookOpeningIntro';
+import { PageIndexOverlay } from '../components/PageIndexOverlay';
+import { LockOverlay } from '../components/LockOverlay';
 import {
   playBookMusic,
   pauseMusic,
@@ -30,12 +34,13 @@ import {
 } from '../services/audioService';
 import { LinearGradient } from 'expo-linear-gradient';
 
-type BookMode = 'select' | 'reading';
+type BookStage = 'intro' | 'reading';
+type ReadingMode = 'read' | 'listen';
 
 export default function BookScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getBookById, markAsRead } = useBooks();
+  const { getBookById, markAsRead, toggleFavorite } = useBooks();
   const { profile } = useProfile();
   const book = getBookById(id ?? '');
 
@@ -43,6 +48,7 @@ export default function BookScreen() {
     pages,
     currentPage,
     setCurrentPage,
+    goToPage,
     isLastPage,
   } = useBookPages(book, profile.gender);
 
@@ -54,179 +60,198 @@ export default function BookScreen() {
 
   const { isNarrating, toggleNarration, stopNarration } = useVoicework(book?.folderName);
 
-  const [mode, setMode] = useState<BookMode>('select');
   const [isPlaying, setIsPlaying] = useState(false);
-  const [autoNarrate, setAutoNarrate] = useState(false);
   const [showText, setShowText] = useState(true);
   const [showEndScreen, setShowEndScreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [stage, setStage] = useState<BookStage>('intro');
+  const [mode, setMode] = useState<ReadingMode | null>(null);
+  const [showIndex, setShowIndex] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // Keep screen awake
   useEffect(() => {
     activateKeepAwakeAsync();
-    return () => { deactivateKeepAwake(); };
-  }, []);
-
-  // Cleanup audio on unmount
-  useEffect(() => {
     return () => {
-      stopMusic();
-      stopNarration();
+      deactivateKeepAwake();
     };
   }, []);
 
-  // Handle hardware back
+  // Fade in
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 550,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  // Start music when book is loaded
+  useEffect(() => {
+    if (book && profile.musicEnabled) {
+      const audioUri = getBookAudioUri(book);
+      playBookMusic(book.title, audioUri);
+      setIsPlaying(true);
+    }
+
+    return () => {
+      // ALWAYS stop all audio when leaving screen
+      stopMusic();
+      stopNarration();
+    };
+  }, [book?.id]);
+
+  // Handle hardware back button ÔÇö ignored while locked, otherwise stop audio and navigate
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (isLocked) return true;
       handleGoBack();
       return true;
     });
     return () => backHandler.remove();
-  }, [mode]);
+  }, [isLocked]);
 
-  // End screen on last page
+  // Show end screen on last page
   useEffect(() => {
-    if (isLastPage && pages.length > 0 && mode === 'reading') {
+    if (isLastPage && pages.length > 0) {
       setShowEndScreen(true);
-      if (book) markAsRead(book.id);
+      if (book) {
+        markAsRead(book.id);
+      }
     } else {
       setShowEndScreen(false);
     }
-  }, [isLastPage, pages.length, mode]);
+  }, [isLastPage, pages.length]);
 
-  // Auto-hide controls
+  // Auto-hide controls after 4 seconds
   useEffect(() => {
-    if (showControls && mode === 'reading') {
-      const timer = setTimeout(() => setShowControls(false), 5000);
+    if (showControls) {
+      const timer = setTimeout(() => setShowControls(false), 4000);
       return () => clearTimeout(timer);
     }
-  }, [showControls, currentPage, mode]);
+  }, [showControls, currentPage]);
 
   const handleGoBack = useCallback(async () => {
-    if (mode === 'reading') {
-      // Go back to mode selector
-      await stopMusic();
-      await stopNarration();
-      setIsPlaying(false);
-      setMode('select');
-    } else {
-      // Go back to library
-      await stopMusic();
-      await stopNarration();
-      router.back();
-    }
-  }, [mode, stopNarration]);
-
-  const startReading = useCallback((withMusic: boolean, withVoiceover: boolean) => {
-    setMode('reading');
-    setShowText(true);
-    setAutoNarrate(withVoiceover);
-    if (withMusic && book) {
-      const audioUri = getBookAudioUri(book);
-      playBookMusic(book.title, audioUri);
-      setIsPlaying(true);
-      // If voiceover, duck the music
-      if (withVoiceover) {
-        duckVolume();
-      }
-    }
-    // Auto-play narration for first page if listen mode
-    if (withVoiceover && pages.length > 0) {
-      toggleNarration(pages[0].pageNumber);
-    }
-  }, [book, pages, toggleNarration]);
+    // Stop ALL audio immediately
+    await stopMusic();
+    await stopNarration();
+    setIsPlaying(false);
+    // Navigate back without animation delay
+    router.back();
+  }, [stopNarration]);
 
   const handleToggleMusic = useCallback(async () => {
     if (isPlaying) {
       await pauseMusic();
       setIsPlaying(false);
     } else {
-      if (book) {
-        const audioUri = getBookAudioUri(book);
-        await playBookMusic(book.title, audioUri);
-      }
+      await resumeMusic();
       setIsPlaying(true);
     }
-  }, [isPlaying, book]);
+  }, [isPlaying]);
 
   const handleToggleNarration = useCallback(async () => {
     if (!pages[currentPage]) return;
     const pageNum = pages[currentPage].pageNumber;
+
     if (isNarrating) {
       await stopNarration();
-      await restoreVolume();
+      await restoreVolume(); // Restore background music volume
     } else {
-      await duckVolume();
+      await duckVolume(); // Lower background music
       await toggleNarration(pageNum);
     }
   }, [currentPage, pages, isNarrating, toggleNarration, stopNarration]);
 
+  // Stop narration when page changes
   const handlePageChange = useCallback(async (pageIndex: number) => {
     setCurrentPage(pageIndex);
     setShowControls(true);
-    // Stop current narration
     if (isNarrating) {
       await stopNarration();
-    }
-    // Auto-narrate if in listen mode
-    if (autoNarrate && pages[pageIndex]) {
-      await toggleNarration(pages[pageIndex].pageNumber);
-    } else {
       await restoreVolume();
     }
-  }, [isNarrating, stopNarration, autoNarrate, pages, toggleNarration]);
+  }, [isNarrating, stopNarration]);
+
+  const handleTapScreen = useCallback(() => {
+    setShowControls(prev => !prev);
+  }, []);
+
+  const handleSelectMode = useCallback((selectedMode: ReadingMode) => {
+    setMode(selectedMode);
+    setStage('reading');
+    setIsLocked(true); // Auto-lock touches once the story opens (kid-safe)
+  }, []);
+
+  const handleReadAgain = useCallback(() => {
+    setCurrentPage(0);
+    setShowEndScreen(false);
+    setIsLocked(true);
+  }, [setCurrentPage]);
+
+  const handleShare = useCallback(async () => {
+    try {
+      await Share.share({
+        message: `┬íTe recomiendo el cuento "${title || book?.title}"! ­ƒîÖ`,
+      });
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  }, [title, book?.title]);
+
+  const handleToggleFavoriteFromEndScreen = useCallback(() => {
+    if (book) toggleFavorite(book.id);
+  }, [book, toggleFavorite]);
+
+  const handleSelectIndexPage = useCallback((pageIndex: number) => {
+    setShowIndex(false);
+    handlePageChange(pageIndex);
+  }, [handlePageChange]);
+
+  // "Escuchar" mode auto-plays the narration for the current page.
+  useEffect(() => {
+    if (stage !== 'reading' || mode !== 'listen') return;
+    if (!pages[currentPage]) return;
+
+    const pageNum = pages[currentPage].pageNumber;
+    (async () => {
+      await duckVolume();
+      await toggleNarration(pageNum);
+    })();
+  }, [stage, mode, currentPage]);
 
   if (!book) {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>Cuento no encontrado</Text>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.errorLink}>Volver</Text>
+          <Text style={styles.errorLink}>Volver a la biblioteca</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  // MODE SELECT — choose read or listen before starting
-  if (mode === 'select') {
-    return (
-      <View style={[styles.modeContainer, { backgroundColor: book.coverColor }]}>
-        <StatusBar hidden />
-
-        {/* Back button */}
-        <TouchableOpacity style={styles.modeBackBtn} onPress={() => router.back()}>
-          <Image source={require('../assets/ui/ic_home.png')} style={styles.modeBackIcon} />
-        </TouchableOpacity>
-
-        <Text style={styles.modeTitle}>{title || book.title}</Text>
-        <Text style={styles.modeAuthor}>{author || book.author}</Text>
-
-        <View style={styles.modeButtons}>
-          {/* Read mode - with background music, no voiceover */}
-          <TouchableOpacity style={styles.modeBtn} onPress={() => startReading(true, false)}>
-            <Image source={require('../assets/ui/ic_book_read.png')} style={styles.modeBtnIcon} />
-            <Text style={styles.modeBtnText}>Leer</Text>
-          </TouchableOpacity>
-
-          {/* Listen mode - with voiceover narration */}
-          <TouchableOpacity style={styles.modeBtn} onPress={() => startReading(true, true)}>
-            <Image source={require('../assets/ui/ic_book_listen.png')} style={styles.modeBtnIcon} />
-            <Text style={styles.modeBtnText}>Escuchar</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
-  // READING MODE
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <StatusBar hidden />
 
+      {stage === 'intro' ? (
+        <BookOpeningIntro
+          coverColor={book.coverColor}
+          title={title || book.title}
+          musicEnabled={isPlaying}
+          onToggleMusic={handleToggleMusic}
+          onClose={handleGoBack}
+          onSelectMode={handleSelectMode}
+        />
+      ) : (
+        <>
+      {/* Page viewer - fullscreen portrait */}
       {!showEndScreen ? (
         <TouchableOpacity
           activeOpacity={1}
-          onPress={() => setShowControls(prev => !prev)}
+          onPress={handleTapScreen}
           style={styles.fullscreen}
         >
           <PageViewer
@@ -239,126 +264,155 @@ export default function BookScreen() {
           />
         </TouchableOpacity>
       ) : (
+        /* End screen */
         <View style={[styles.endScreen, { backgroundColor: book.coverColor }]}>
-          <Text style={styles.endEmoji}>🌙</Text>
+          <Text style={styles.endEmoji}>­ƒîÖ</Text>
           <Text style={styles.endTitle}>{title || book.title}</Text>
           <Text style={styles.endCredits}>
             {(author || book.author) && `Escrito por: ${author || book.author}`}
           </Text>
+          <Text style={styles.endCredits}>
+            {book.illustrator && `Ilustrado por: ${book.illustrator}`}
+          </Text>
           <Text style={styles.endMessage}>~ Fin ~</Text>
-          <TouchableOpacity style={styles.endButton} onPress={handleGoBack}>
+
+          <View style={styles.endActionsRow}>
+            <TouchableOpacity
+              style={styles.endActionButton}
+              onPress={handleReadAgain}
+              accessibilityLabel="Leer otra vez"
+            >
+              <Text style={styles.endActionIcon}>­ƒöü</Text>
+              <Text style={styles.endActionText}>Leer otra vez</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.endActionButton}
+              onPress={handleToggleFavoriteFromEndScreen}
+              accessibilityLabel={book.isFavorite ? 'Sacar de favoritos' : 'Agregar a favoritos'}
+            >
+              <Text style={styles.endActionIcon}>{book.isFavorite ? 'Ôÿà' : 'Ôÿå'}</Text>
+              <Text style={styles.endActionText}>
+                {book.isFavorite ? 'En favoritos' : 'Agregar a favoritos'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.endActionButton}
+              onPress={handleShare}
+              accessibilityLabel="Compartir"
+            >
+              <Text style={styles.endActionIcon}>­ƒôñ</Text>
+              <Text style={styles.endActionText}>Compartir</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={styles.endButton}
+            onPress={handleGoBack}
+            accessibilityLabel="Volver a la biblioteca"
+          >
             <LinearGradient
               colors={[Colors.buttonGreenStart, Colors.buttonGreenEnd]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.endButtonGradient}
             >
-              <Text style={styles.endButtonText}>Volver</Text>
+              <Text style={styles.endButtonText}>Volver a la biblioteca</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Top controls */}
+      {/* Top controls - show/hide on tap */}
       {!showEndScreen && showControls && (
         <View style={styles.topControls}>
-          <TouchableOpacity style={styles.ctrlBtn} onPress={handleGoBack}>
-            <Image source={require('../assets/ui/ic_home.png')} style={styles.ctrlIcon} />
+          {/* Back button */}
+          <TouchableOpacity
+            style={styles.controlButton}
+            onPress={handleGoBack}
+            accessibilityLabel="Volver"
+          >
+            <Text style={styles.controlIcon}>ÔåÉ</Text>
           </TouchableOpacity>
 
-          <Text style={styles.ctrlTitle} numberOfLines={1}>{title || book.title}</Text>
+          {/* Title */}
+          <Text style={styles.controlTitle} numberOfLines={1}>
+            {title || book.title}
+          </Text>
 
-          <View style={styles.ctrlRight}>
-            {/* Narration */}
+          {/* Right controls */}
+          <View style={styles.rightControls}>
+            {/* Page index / thumbnails */}
             <TouchableOpacity
-              style={[styles.ctrlBtn, isNarrating && styles.ctrlBtnActive]}
-              onPress={handleToggleNarration}
+              style={styles.controlButton}
+              onPress={() => setShowIndex(true)}
+              accessibilityLabel="├ìndice de p├íginas"
             >
-              <Text style={styles.ctrlEmoji}>🎧</Text>
-            </TouchableOpacity>
-
-            {/* Text toggle */}
-            <TouchableOpacity style={styles.ctrlBtn} onPress={() => setShowText(p => !p)}>
-              <Text style={[styles.ctrlEmoji, { fontSize: 14 }]}>{showText ? 'Aa' : 'Aa'}</Text>
-            </TouchableOpacity>
-
-            {/* Music mute */}
-            <TouchableOpacity style={styles.ctrlBtn} onPress={handleToggleMusic}>
               <Image
-                source={isPlaying
-                  ? require('../assets/ui/ic_music_on.png')
-                  : require('../assets/ui/ic_music_off.png')
-                }
-                style={styles.ctrlIcon}
+                source={require('../assets/ui/ic_content_burger.png')}
+                style={styles.controlIconImage}
+                resizeMode="contain"
               />
+            </TouchableOpacity>
+
+            {/* Narrate this page */}
+            <TouchableOpacity
+              style={[styles.controlButton, isNarrating && styles.controlButtonActive]}
+              onPress={handleToggleNarration}
+              accessibilityLabel={isNarrating ? 'Detener narraci├│n' : 'Escuchar narraci├│n'}
+            >
+              <Text style={styles.controlIcon}>{isNarrating ? 'ÔÅ╣' : '­ƒÄº'}</Text>
+            </TouchableOpacity>
+
+            {/* Toggle text */}
+            <TouchableOpacity
+              style={styles.controlButton}
+              onPress={() => setShowText(prev => !prev)}
+              accessibilityLabel={showText ? 'Ocultar texto' : 'Mostrar texto'}
+            >
+              <Text style={styles.controlIcon}>{showText ? 'Aa' : 'Aa'}</Text>
+            </TouchableOpacity>
+
+            {/* Mute/unmute music */}
+            <TouchableOpacity
+              style={styles.controlButton}
+              onPress={handleToggleMusic}
+              accessibilityLabel={isPlaying ? 'Silenciar m├║sica' : 'Activar m├║sica'}
+            >
+              <Text style={styles.controlIcon}>{isPlaying ? '­ƒöè' : '­ƒöç'}</Text>
+            </TouchableOpacity>
+
+            {/* Lock for kids */}
+            <TouchableOpacity
+              style={styles.controlButton}
+              onPress={() => setIsLocked(true)}
+              accessibilityLabel="Bloquear pantalla"
+            >
+              <Text style={styles.controlIcon}>­ƒöÆ</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
-    </View>
+
+      <PageIndexOverlay
+        visible={showIndex}
+        pages={pages}
+        currentPage={currentPage}
+        onSelectPage={handleSelectIndexPage}
+        onClose={() => setShowIndex(false)}
+      />
+
+      {isLocked && !showEndScreen && (
+        <LockOverlay onUnlock={() => setIsLocked(false)} />
+      )}
+        </>
+      )}
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Mode selector
-  modeContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 30,
-  },
-  modeBackBtn: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modeBackIcon: {
-    width: 24,
-    height: 24,
-    tintColor: '#FFF',
-  },
-  modeTitle: {
-    color: '#FFF',
-    fontSize: 24,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: 6,
-  },
-  modeAuthor: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 14,
-    marginBottom: 40,
-  },
-  modeButtons: {
-    flexDirection: 'row',
-    gap: 20,
-  },
-  modeBtn: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 16,
-    padding: 20,
-    width: 140,
-  },
-  modeBtnIcon: {
-    width: 48,
-    height: 48,
-    tintColor: '#FFF',
-    marginBottom: 10,
-  },
-  modeBtnText: {
-    color: '#FFF',
-    fontSize: 13,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  // Reading
   container: {
     flex: 1,
     backgroundColor: '#000',
@@ -373,58 +427,120 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 8,
-    paddingHorizontal: 8,
-    paddingBottom: 8,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingTop: 44,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     zIndex: 100,
   },
-  ctrlBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+  controlButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  ctrlBtnActive: {
+  controlButtonActive: {
     backgroundColor: Colors.chipOrange,
   },
-  ctrlIcon: {
+  controlIcon: {
+    color: Colors.textWhite,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  controlIconImage: {
     width: 20,
     height: 20,
-    tintColor: '#FFF',
+    tintColor: Colors.textWhite,
   },
-  ctrlEmoji: {
-    fontSize: 16,
-  },
-  ctrlTitle: {
+  controlTitle: {
     flex: 1,
     color: Colors.titleGold,
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
-    marginHorizontal: 8,
+    marginHorizontal: 12,
   },
-  ctrlRight: {
+  rightControls: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 8,
   },
-  // End
   endScreen: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
   },
-  endEmoji: { fontSize: 52, marginBottom: 16 },
-  endTitle: { color: '#FFF', fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 8 },
-  endCredits: { color: 'rgba(255,255,255,0.7)', fontSize: 13, marginBottom: 4 },
-  endMessage: { color: Colors.titleGold, fontSize: 20, fontWeight: '700', marginTop: 16, marginBottom: 24 },
-  endButton: { borderRadius: 24, overflow: 'hidden' },
-  endButtonGradient: { paddingHorizontal: 28, paddingVertical: 12, borderRadius: 24 },
-  endButtonText: { color: '#FFF', fontSize: 15, fontWeight: '700' },
-  // Error
-  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.backgroundDark },
-  errorText: { color: '#FFF', fontSize: 16, marginBottom: 12 },
-  errorLink: { color: Colors.chipBlue, fontSize: 14, textDecorationLine: 'underline' },
+  endEmoji: {
+    fontSize: 64,
+    marginBottom: 20,
+  },
+  endTitle: {
+    color: Colors.textWhite,
+    fontSize: 28,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  endCredits: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  endMessage: {
+    color: Colors.titleGold,
+    fontSize: 22,
+    fontWeight: '700',
+    marginTop: 20,
+    marginBottom: 32,
+  },
+  endActionsRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 32,
+  },
+  endActionButton: {
+    alignItems: 'center',
+    width: 90,
+  },
+  endActionIcon: {
+    fontSize: 26,
+    marginBottom: 6,
+  },
+  endActionText: {
+    color: Colors.textWhite,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  endButton: {
+    borderRadius: 28,
+    overflow: 'hidden',
+  },
+  endButtonGradient: {
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 28,
+  },
+  endButtonText: {
+    color: Colors.textWhite,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.backgroundDark,
+  },
+  errorText: {
+    color: Colors.textWhite,
+    fontSize: 18,
+    marginBottom: 16,
+  },
+  errorLink: {
+    color: Colors.chipBlue,
+    fontSize: 16,
+    textDecorationLine: 'underline',
+  },
 });

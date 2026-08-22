@@ -12,21 +12,25 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#003A1A"
+        "backgroundColor": "#171254"
       },
       "package": "com.cuentos.dormir",
       "versionCode": 1
+    },
+    "androidStatusBar": {
+      "hidden": true
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#003A1A",
+          "backgroundColor": "#171254",
           "image": "./assets/splash.png",
           "imageWidth": 200
         }
-      ]
+      ],
+      "expo-video"
     ],
     "scheme": "cuentos",
     "extra": {

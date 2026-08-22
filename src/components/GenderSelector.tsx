@@ -4,6 +4,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  Image,
 } from 'react-native';
 import { Gender } from '../types/book';
 import { Colors } from '../theme/colors';
@@ -11,12 +12,13 @@ import { Colors } from '../theme/colors';
 interface GenderSelectorProps {
   selected: Gender;
   onSelect: (gender: Gender) => void;
+  label?: string;
 }
 
-export function GenderSelector({ selected, onSelect }: GenderSelectorProps) {
+export function GenderSelector({ selected, onSelect, label }: GenderSelectorProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>¿Quién va a leer?</Text>
+      {label ? <Text style={styles.label}>{label}</Text> : null}
       <View style={styles.cardsRow}>
         {/* Boy card */}
         <TouchableOpacity
@@ -29,7 +31,11 @@ export function GenderSelector({ selected, onSelect }: GenderSelectorProps) {
           accessibilityState={{ selected: selected === 'boy' }}
           accessibilityLabel="Niño"
         >
-          <Text style={styles.emoji}>👦</Text>
+          <Image
+            source={require('../assets/onboarding/ic_boy.png')}
+            style={styles.icon}
+            resizeMode="contain"
+          />
           <Text style={[styles.cardText, selected === 'boy' && styles.cardTextSelected]}>
             Niño
           </Text>
@@ -46,7 +52,11 @@ export function GenderSelector({ selected, onSelect }: GenderSelectorProps) {
           accessibilityState={{ selected: selected === 'girl' }}
           accessibilityLabel="Niña"
         >
-          <Text style={styles.emoji}>👧</Text>
+          <Image
+            source={require('../assets/onboarding/ic_girl.png')}
+            style={styles.icon}
+            resizeMode="contain"
+          />
           <Text style={[styles.cardText, selected === 'girl' && styles.cardTextSelected]}>
             Niña
           </Text>
@@ -80,14 +90,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: 'transparent',
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
   cardSelected: {
-    borderColor: Colors.buttonBlueStart,
-    backgroundColor: 'rgba(54, 91, 237, 0.15)',
+    borderColor: Colors.accentTurquoise,
+    backgroundColor: 'rgba(20, 207, 201, 0.18)',
   },
-  emoji: {
-    fontSize: 52,
+  icon: {
+    width: 64,
+    height: 64,
     marginBottom: 8,
   },
   cardText: {

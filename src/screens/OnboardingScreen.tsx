@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,72 +9,260 @@ import {
   Animated,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Colors, Gradients } from '../theme/colors';
-import { Gender } from '../types/book';
+import { Gender, OnboardingGoal, StoryPreference } from '../types/book';
 import { useProfile } from '../hooks/useProfile';
 import { GenderSelector } from '../components/GenderSelector';
-import { AnimalSelector } from '../components/AnimalSelector';
+import { OnboardingHeader } from '../components/OnboardingHeader';
 
-type OnboardingStep = 'name' | 'gender' | 'avatar';
+type OnboardingStep =
+  | 'language'
+  | 'noAi'
+  | 'protagonist'
+  | 'name'
+  | 'gender'
+  | 'preview'
+  | 'goals'
+  | 'preferences'
+  | 'notifications'
+  | 'loading';
+
+const STEP_ORDER: OnboardingStep[] = [
+  'language',
+  'noAi',
+  'protagonist',
+  'name',
+  'gender',
+  'preview',
+  'goals',
+  'preferences',
+  'notifications',
+];
+const TOTAL_STEPS = STEP_ORDER.length;
+
+const GOALS: { key: OnboardingGoal; label: (name: string) => string }[] = [
+  { key: 'fallAsleepFaster', label: (n) => `Ayudar a que ${n} se duerma más rápido` },
+  { key: 'familyBonding', label: () => 'Generar experiencias familiares' },
+  { key: 'goodValues', label: () => 'Inculcar valores' },
+  { key: 'stayEngaged', label: (n) => `Que ${n} aprenda otros idiomas` },
+  { key: 'learnNewWords', label: (n) => `Que ${n} amplíe su vocabulario` },
+];
+
+const PREFERENCES: {
+  key: StoryPreference;
+  label: string;
+  image: any;
+  imageSelected: any;
+}[] = [
+  {
+    key: 'read',
+    label: 'Leer cuentos',
+    image: require('../assets/onboarding/pref_read.webp'),
+    imageSelected: require('../assets/onboarding/pref_read_selected.webp'),
+  },
+  {
+    key: 'listen',
+    label: 'Escuchar cuentos',
+    image: require('../assets/onboarding/pref_listen.webp'),
+    imageSelected: require('../assets/onboarding/pref_listen_selected.webp'),
+  },
+  {
+    key: 'record',
+    label: 'Narrar cuentos',
+    image: require('../assets/onboarding/pref_record.webp'),
+    imageSelected: require('../assets/onboarding/pref_record_selected.webp'),
+  },
+];
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { profile, updateName, updateGender, updateAvatar, completeOnboarding } = useProfile();
-  const [step, setStep] = useState<OnboardingStep>('name');
+  const {
+    profile,
+    updateName,
+    updateGender,
+    updateAvatar,
+    updateGoals,
+    updatePreferences,
+    updateNotificationsEnabled,
+    toggleMusic,
+    completeOnboarding,
+  } = useProfile();
+
+  const [stepIndex, setStepIndex] = useState(0);
   const [name, setName] = useState(profile.name);
   const [gender, setGender] = useState<Gender>(profile.gender);
-  const [avatar, setAvatar] = useState(profile.avatar);
+  const [goals, setGoals] = useState<OnboardingGoal[]>([]);
+  const [preferences, setPreferences] = useState<StoryPreference[]>([]);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const progressBarWidth = useRef(new Animated.Value(0)).current;
 
-  // Fade in on mount
-  React.useEffect(() => {
+  const step = STEP_ORDER[stepIndex] ?? 'loading';
+
+  useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 550,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [step]);
 
-  const handleNext = async () => {
+  // Drive the "preparing stories" loading screen, then enter the library.
+  useEffect(() => {
+    if (step !== 'loading') return;
+
+    Animated.timing(progressBarWidth, {
+      toValue: 1,
+      duration: 1800,
+      useNativeDriver: false,
+    }).start();
+
+    const listenerId = progressBarWidth.addListener(({ value }) => {
+      setLoadingProgress(Math.round(value * 100));
+    });
+
+    const finish = setTimeout(async () => {
+      await updateGoals(goals);
+      await updatePreferences(preferences);
+      await completeOnboarding();
+      router.replace('/library');
+    }, 1900);
+
+    return () => {
+      progressBarWidth.removeListener(listenerId);
+      clearTimeout(finish);
+    };
+  }, [step]);
+
+  const goToStep = useCallback(
+    (nextIndex: number) => {
+      fadeAnim.setValue(0);
+      setStepIndex(nextIndex);
+    },
+    [fadeAnim]
+  );
+
+  const handleBack = useCallback(() => {
+    if (stepIndex === 0) {
+      router.back();
+      return;
+    }
+    goToStep(stepIndex - 1);
+  }, [stepIndex, goToStep, router]);
+
+  const handleNext = useCallback(async () => {
     if (step === 'name') {
       if (name.trim().length === 0) return;
       await updateName(name.trim());
-      setStep('gender');
     } else if (step === 'gender') {
       await updateGender(gender);
-      setStep('avatar');
-    } else if (step === 'avatar') {
-      await updateAvatar(avatar);
-      await completeOnboarding();
-
-      // Fade out then navigate
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }).start(() => {
-        router.replace('/library');
-      });
+      await updateAvatar(gender === 'boy' ? 'bear' : 'fox');
     }
+
+    if (stepIndex + 1 < STEP_ORDER.length) {
+      goToStep(stepIndex + 1);
+    } else {
+      // Last onboarding step done -> show preparing-stories loading screen.
+      setStepIndex(STEP_ORDER.length);
+    }
+  }, [step, name, gender, stepIndex, goToStep, updateName, updateGender, updateAvatar]);
+
+  const handleSkip = useCallback(() => {
+    if (stepIndex + 1 < STEP_ORDER.length) {
+      goToStep(stepIndex + 1);
+    } else {
+      setStepIndex(STEP_ORDER.length);
+    }
+  }, [stepIndex, goToStep]);
+
+  const handleEnableNotifications = useCallback(async () => {
+    await updateNotificationsEnabled(true);
+    setStepIndex(STEP_ORDER.length);
+  }, [updateNotificationsEnabled]);
+
+  const handleSkipNotifications = useCallback(async () => {
+    await updateNotificationsEnabled(false);
+    setStepIndex(STEP_ORDER.length);
+  }, [updateNotificationsEnabled]);
+
+  const toggleGoal = (goal: OnboardingGoal) => {
+    setGoals((prev) =>
+      prev.includes(goal) ? prev.filter((g) => g !== goal) : [...prev, goal]
+    );
   };
+
+  const togglePreference = (pref: StoryPreference) => {
+    setPreferences((prev) =>
+      prev.includes(pref) ? prev.filter((p) => p !== pref) : [...prev, pref]
+    );
+  };
+
+  const displayName = name.trim() || 'tu hijo';
 
   const renderStep = () => {
     switch (step) {
+      case 'language':
+        return (
+          <View style={styles.stepContainer}>
+            <Image
+              source={require('../assets/onboarding/ic_globe.webp')}
+              style={styles.mediumIllustration}
+              resizeMode="contain"
+            />
+            <Text style={styles.stepTitle}>Elige un idioma</Text>
+            <Text style={styles.stepSubtitle}>
+              Puedes cambiarlo en la configuración cuando quieras.
+            </Text>
+            <View style={styles.languageCapsule}>
+              <Text style={styles.languageCapsuleText}>Español</Text>
+            </View>
+          </View>
+        );
+
+      case 'noAi':
+        return (
+          <View style={styles.stepContainer}>
+            <Image
+              source={require('../assets/onboarding/no_ai.webp')}
+              style={styles.largeIllustration}
+              resizeMode="contain"
+            />
+            <Text style={styles.stepTitle}>Sin inteligencia artificial</Text>
+            <Text style={styles.stepSubtitle}>
+              Los cuentos, las ilustraciones y la música son creados por artistas.
+            </Text>
+          </View>
+        );
+
+      case 'protagonist':
+        return (
+          <View style={styles.stepContainer}>
+            <Image
+              source={require('../assets/onboarding/protagonist.webp')}
+              style={styles.largeIllustration}
+              resizeMode="contain"
+            />
+            <Text style={styles.stepTitle}>Tus hijos son los protagonistas</Text>
+            <Text style={styles.stepSubtitle}>
+              Lee cuentos sobre tu hijo o sobre tu hija.
+            </Text>
+          </View>
+        );
+
       case 'name':
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>¡Hola! 👋</Text>
-            <Text style={styles.stepSubtitle}>
-              ¿Cómo te llamas?
-            </Text>
+            <Text style={styles.stepTitle}>Nombre del niño</Text>
+            <Text style={styles.stepSubtitle}>Su nombre será parte del cuento.</Text>
             <TextInput
               style={styles.input}
               value={name}
               onChangeText={setName}
-              placeholder="Escribe tu nombre..."
+              placeholder="Nombre"
               placeholderTextColor={Colors.subtitleGray}
               autoFocus
               maxLength={20}
@@ -87,34 +275,149 @@ export default function OnboardingScreen() {
       case 'gender':
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>
-              ¡Hola {name}! 🎉
+            <Text style={styles.stepTitle}>Género</Text>
+            <Text style={styles.stepSubtitle}>
+              El protagonista del cuento tendrá el mismo género que tu hijo
             </Text>
             <GenderSelector selected={gender} onSelect={setGender} />
           </View>
         );
 
-      case 'avatar':
+      case 'preview':
         return (
-          <View style={[styles.stepContainer, { flex: 1 }]}>
+          <View style={styles.stepContainer}>
+            <Image
+              source={require('../assets/onboarding/preview_cat.webp')}
+              style={styles.largeIllustration}
+              resizeMode="contain"
+            />
             <Text style={styles.stepTitle}>
-              ¡Genial! 🌟
+              ¡A <Text style={styles.highlightYellow}>{displayName}</Text> le va a encantar!
             </Text>
-            <AnimalSelector selected={avatar} onSelect={setAvatar} />
+            <Text style={styles.stepSubtitle}>
+              Va a ser una experiencia inolvidable para tus hijos.
+            </Text>
+          </View>
+        );
+
+      case 'goals':
+        return (
+          <View style={styles.stepContainer}>
+            <Text style={styles.stepTitle}>¿Qué es lo que buscas?</Text>
+            <Text style={styles.stepSubtitle}>Puedes elegir varias respuestas.</Text>
+            <View style={styles.optionsList}>
+              {GOALS.map((goal) => {
+                const isSelected = goals.includes(goal.key);
+                return (
+                  <TouchableOpacity
+                    key={goal.key}
+                    style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+                    onPress={() => toggleGoal(goal.key)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: isSelected }}
+                  >
+                    <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
+                      {isSelected && <View style={styles.checkDot} />}
+                    </View>
+                    <Text style={styles.optionText}>{goal.label(displayName)}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        );
+
+      case 'preferences':
+        return (
+          <View style={styles.stepContainer}>
+            <Text style={styles.stepTitle}>¿Qué prefieres?</Text>
+            <Text style={styles.stepSubtitle}>Puedes elegir varias respuestas.</Text>
+            <View style={styles.preferenceCardsRow}>
+              {PREFERENCES.map((pref) => {
+                const isSelected = preferences.includes(pref.key);
+                return (
+                  <TouchableOpacity
+                    key={pref.key}
+                    style={[styles.preferenceCard, isSelected && styles.preferenceCardSelected]}
+                    onPress={() => togglePreference(pref.key)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: isSelected }}
+                  >
+                    <Image
+                      source={isSelected ? pref.imageSelected : pref.image}
+                      style={styles.preferenceImage}
+                      resizeMode="contain"
+                    />
+                    <Text style={styles.preferenceLabel}>{pref.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        );
+
+      case 'notifications':
+        return (
+          <View style={styles.stepContainer}>
+            <Image
+              source={require('../assets/onboarding/notification.webp')}
+              style={styles.largeIllustration}
+              resizeMode="contain"
+            />
+            <Text style={styles.stepTitle}>Permitir notificaciones</Text>
+            <Text style={styles.stepSubtitle}>
+              Te vamos a avisar si hay un cuento nuevo. Sin spam; lo prometemos.
+            </Text>
+          </View>
+        );
+
+      case 'loading':
+        return (
+          <View style={styles.stepContainer}>
+            <Image
+              source={require('../assets/onboarding/loading_mascot.webp')}
+              style={styles.largeIllustration}
+              resizeMode="contain"
+            />
+            <Text style={styles.stepTitle}>Estamos preparando nuevos cuentos para ti</Text>
+            <Text style={styles.stepSubtitle}>
+              Estamos personalizando las imágenes y los textos…
+            </Text>
+            <View style={styles.loadingTrack}>
+              <Animated.View
+                style={[
+                  styles.loadingFill,
+                  {
+                    width: progressBarWidth.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0%', '100%'],
+                    }),
+                  },
+                ]}
+              />
+            </View>
+            <Text style={styles.loadingPercent}>{loadingProgress}%</Text>
           </View>
         );
     }
   };
 
-  const getButtonLabel = () => {
-    if (step === 'avatar') return '¡Comenzar!';
-    return 'Continuar';
-  };
-
-  const isButtonDisabled = step === 'name' && name.trim().length === 0;
+  const showSkip = step === 'goals' || step === 'preferences';
+  const isNameStep = step === 'name';
+  const isButtonDisabled = isNameStep && name.trim().length === 0;
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+      {step !== 'loading' && (
+        <OnboardingHeader
+          step={stepIndex + 1}
+          totalSteps={TOTAL_STEPS}
+          onBack={handleBack}
+          musicEnabled={profile.musicEnabled}
+          onToggleMusic={toggleMusic}
+        />
+      )}
+
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -124,43 +427,67 @@ export default function OnboardingScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Progress dots */}
-          <View style={styles.progressContainer}>
-            {(['name', 'gender', 'avatar'] as OnboardingStep[]).map((s, i) => (
-              <View
-                key={s}
-                style={[
-                  styles.progressDot,
-                  (step === s || ['name', 'gender', 'avatar'].indexOf(step) > i) &&
-                    styles.progressDotActive,
-                ]}
-              />
-            ))}
-          </View>
-
-          {/* Step content */}
           {renderStep()}
         </ScrollView>
 
-        {/* Continue button */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            onPress={handleNext}
-            disabled={isButtonDisabled}
-            style={styles.buttonWrapper}
-            accessibilityRole="button"
-            accessibilityLabel={getButtonLabel()}
-          >
-            <LinearGradient
-              colors={isButtonDisabled ? ['#555', '#444'] : [...Gradients.primaryButton]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.button}
+        {step === 'notifications' ? (
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              onPress={handleSkipNotifications}
+              style={styles.secondaryButtonWrapper}
+              accessibilityRole="button"
+              accessibilityLabel="Quizás más tarde"
             >
-              <Text style={styles.buttonText}>{getButtonLabel()}</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+              <View style={styles.secondaryButton}>
+                <Text style={styles.secondaryButtonText}>Quizás más tarde</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleEnableNotifications}
+              style={styles.buttonWrapper}
+              accessibilityRole="button"
+              accessibilityLabel="Continuar"
+            >
+              <LinearGradient
+                colors={[...Gradients.primaryButton]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.button}
+              >
+                <Text style={styles.buttonText}>Continuar</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        ) : step !== 'loading' ? (
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              onPress={handleNext}
+              disabled={isButtonDisabled}
+              style={styles.buttonWrapper}
+              accessibilityRole="button"
+              accessibilityLabel="Continuar"
+            >
+              <LinearGradient
+                colors={isButtonDisabled ? ['#555', '#444'] : [...Gradients.primaryButton]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.button}
+              >
+                <Text style={styles.buttonText}>Continuar</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            {showSkip && (
+              <TouchableOpacity
+                onPress={handleSkip}
+                style={styles.skipButton}
+                accessibilityRole="button"
+                accessibilityLabel="Omitir"
+              >
+                <Text style={styles.skipButtonText}>Omitir</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : null}
       </KeyboardAvoidingView>
     </Animated.View>
   );
@@ -177,38 +504,50 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 60,
-  },
-  progressContainer: {
-    flexDirection: 'row',
+    paddingTop: 24,
     justifyContent: 'center',
-    gap: 8,
-    marginBottom: 40,
-  },
-  progressDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  progressDotActive: {
-    backgroundColor: Colors.titleGold,
   },
   stepContainer: {
     alignItems: 'center',
   },
+  largeIllustration: {
+    width: 220,
+    height: 220,
+    marginBottom: 16,
+  },
+  mediumIllustration: {
+    width: 100,
+    height: 100,
+    marginBottom: 16,
+  },
   stepTitle: {
-    color: Colors.titleGold,
-    fontSize: 28,
+    color: Colors.textWhite,
+    fontSize: 26,
     fontWeight: '800',
     textAlign: 'center',
     marginBottom: 8,
   },
+  highlightYellow: {
+    color: Colors.accentYellow,
+  },
   stepSubtitle: {
     color: Colors.subtitleGray,
-    fontSize: 18,
+    fontSize: 16,
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
+  },
+  languageCapsule: {
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 24,
+    backgroundColor: Colors.capsuleSelected,
+    borderWidth: 2,
+    borderColor: Colors.chipPurple,
+  },
+  languageCapsuleText: {
+    color: Colors.textWhite,
+    fontSize: 17,
+    fontWeight: '700',
   },
   input: {
     width: '100%',
@@ -223,12 +562,106 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
+  optionsList: {
+    width: '100%',
+    gap: 12,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: Colors.backgroundGradientEnd,
+  },
+  optionRowSelected: {
+    backgroundColor: 'rgba(62, 112, 220, 0.35)',
+    borderWidth: 1,
+    borderColor: Colors.accentCyan,
+  },
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkCircleSelected: {
+    borderColor: Colors.accentCyan,
+  },
+  checkDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: Colors.accentCyan,
+  },
+  optionText: {
+    color: Colors.textWhite,
+    fontSize: 15,
+    fontWeight: '600',
+    flex: 1,
+  },
+  preferenceCardsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  preferenceCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 8,
+    borderRadius: 18,
+    backgroundColor: Colors.backgroundGradientEnd,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  preferenceCardSelected: {
+    borderColor: Colors.accentCyan,
+    backgroundColor: 'rgba(62, 112, 220, 0.35)',
+  },
+  preferenceImage: {
+    width: 64,
+    height: 64,
+    marginBottom: 10,
+  },
+  preferenceLabel: {
+    color: Colors.textWhite,
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  loadingTrack: {
+    width: '100%',
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.backgroundGradientEnd,
+    overflow: 'hidden',
+    marginTop: 8,
+  },
+  loadingFill: {
+    height: '100%',
+    borderRadius: 5,
+    backgroundColor: Colors.accentYellow,
+  },
+  loadingPercent: {
+    color: Colors.subtitleGray,
+    fontSize: 13,
+    marginTop: 8,
+  },
   buttonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 24,
     paddingBottom: 40,
     paddingTop: 16,
+    gap: 12,
   },
   buttonWrapper: {
+    flex: 1,
     borderRadius: 28,
     overflow: 'hidden',
   },
@@ -242,5 +675,33 @@ const styles = StyleSheet.create({
     color: Colors.textWhite,
     fontSize: 18,
     fontWeight: '700',
+  },
+  secondaryButtonWrapper: {
+    flex: 1,
+    borderRadius: 28,
+    overflow: 'hidden',
+  },
+  secondaryButton: {
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.buttonOrangeEnd,
+  },
+  secondaryButtonText: {
+    color: Colors.textWhite,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  skipButton: {
+    position: 'absolute',
+    bottom: -28,
+    alignSelf: 'center',
+  },
+  skipButtonText: {
+    color: Colors.subtitleGray,
+    fontSize: 14,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

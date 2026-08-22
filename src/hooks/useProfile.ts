@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UserProfile, Gender, AvatarType } from '../types/book';
+import { UserProfile, Gender, AvatarType, OnboardingGoal, StoryPreference } from '../types/book';
 
 const PROFILE_KEY = '@cuentos_profile';
 
@@ -10,6 +10,10 @@ const DEFAULT_PROFILE: UserProfile = {
   avatar: 'bear',
   musicEnabled: true,
   hasCompletedOnboarding: false,
+  language: 'es',
+  goals: [],
+  preferences: [],
+  notificationsEnabled: false,
 };
 
 /**
@@ -76,6 +80,38 @@ export function useProfile() {
     await saveProfile(updated);
   }, [profile, saveProfile]);
 
+  const updateLanguage = useCallback(
+    async (language: string) => {
+      const updated = { ...profile, language };
+      await saveProfile(updated);
+    },
+    [profile, saveProfile]
+  );
+
+  const updateGoals = useCallback(
+    async (goals: OnboardingGoal[]) => {
+      const updated = { ...profile, goals };
+      await saveProfile(updated);
+    },
+    [profile, saveProfile]
+  );
+
+  const updatePreferences = useCallback(
+    async (preferences: StoryPreference[]) => {
+      const updated = { ...profile, preferences };
+      await saveProfile(updated);
+    },
+    [profile, saveProfile]
+  );
+
+  const updateNotificationsEnabled = useCallback(
+    async (notificationsEnabled: boolean) => {
+      const updated = { ...profile, notificationsEnabled };
+      await saveProfile(updated);
+    },
+    [profile, saveProfile]
+  );
+
   const completeOnboarding = useCallback(async () => {
     const updated = { ...profile, hasCompletedOnboarding: true };
     await saveProfile(updated);
@@ -97,6 +133,10 @@ export function useProfile() {
     updateGender,
     updateAvatar,
     toggleMusic,
+    updateLanguage,
+    updateGoals,
+    updatePreferences,
+    updateNotificationsEnabled,
     completeOnboarding,
     saveProfile,
     resetProfile,

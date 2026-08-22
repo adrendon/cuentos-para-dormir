@@ -1,23 +1,23 @@
 export const Colors = {
-  // Backgrounds
-  backgroundDark: '#003A1A',
-  backgroundGradientStart: '#003A1A',
-  backgroundGradientEnd: '#00261A',
+  // Backgrounds (violet/purple starry night, matches original app)
+  backgroundDark: '#171254',
+  backgroundGradientStart: '#201660',
+  backgroundGradientEnd: '#272073',
 
   // Text
-  titleGold: '#FFD700',
+  titleGold: '#F5C12E',
   textBlack: '#000000',
   textWhite: '#FFFFFF',
-  textGrayLight: '#B0B0B0',
-  subtitleGray: '#A0A0A0',
+  textGrayLight: '#B8B4DE',
+  subtitleGray: '#B8B4DE',
 
-  // Buttons - Primary (blue gradient)
-  buttonBlueStart: '#365BED',
-  buttonBlueEnd: '#2C4EED',
+  // Buttons - Primary (yellow -> orange gradient, main CTA)
+  buttonBlueStart: '#F5C12E',
+  buttonBlueEnd: '#F7942E',
 
-  // Buttons - Secondary (orange gradient)
-  buttonOrangeStart: '#E36B00',
-  buttonOrangeEnd: '#F09E3C',
+  // Buttons - Secondary (blue, secondary actions)
+  buttonOrangeStart: '#3E70DC',
+  buttonOrangeEnd: '#2C4EED',
 
   // Buttons - Green gradient
   buttonGreenStart: '#1B9668',
@@ -29,17 +29,24 @@ export const Colors = {
   chipBlue: '#29B3DF',
   chipOrange: '#F89900',
 
+  // Accents
+  accentCyan: '#25C8EE',
+  accentTurquoise: '#14CFC9',
+  accentYellow: '#F5C12E',
+  accentOrange: '#F7942E',
+
   // Placeholders
   placeholderGreen: '#B17EA4',
   placeholderPurple: '#A67EA5',
   placeholderBrown: '#AC7EA5',
 
   // Splash
-  splashBackground: '#003A1A',
+  splashBackground: '#171254',
 
   // Overlay
   overlayBlack: 'rgba(0, 0, 0, 0.6)',
   overlayLight: 'rgba(255, 255, 255, 0.1)',
+  capsuleSelected: 'rgba(139, 67, 242, 0.35)',
 
   // Status
   success: '#06A867',

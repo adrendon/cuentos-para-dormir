@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 import { Book } from '../types/book';
 import { Colors } from '../theme/colors';
 import { DownloadButton } from './DownloadButton';
+import { BookCardMenu } from './BookCardMenu';
 import { getBookCover } from '../assets/books/coverRegistry';
 
 const { width } = Dimensions.get('window');
@@ -22,11 +23,22 @@ interface BookCardProps {
   coverUri?: string;
   onPress: (book: Book) => void;
   onDownloadComplete: (bookId: string) => void;
+  onToggleFavorite: (bookId: string) => void;
+  onDelete: (bookId: string) => void;
   index?: number;
 }
 
-export function BookCard({ book, coverUri, onPress, onDownloadComplete, index = 0 }: BookCardProps) {
+export function BookCard({
+  book,
+  coverUri,
+  onPress,
+  onDownloadComplete,
+  onToggleFavorite,
+  onDelete,
+  index = 0,
+}: BookCardProps) {
   const isAvailable = book.isDownloaded || book.isEmbedded;
+  const [showMenu, setShowMenu] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
@@ -121,7 +133,25 @@ export function BookCard({ book, coverUri, onPress, onDownloadComplete, index = 
           <Text style={styles.favoriteText}>★</Text>
         </View>
       )}
+
+      {/* Three-dot menu */}
+      <TouchableOpacity
+        style={styles.menuButton}
+        onPress={() => setShowMenu(true)}
+        accessibilityRole="button"
+        accessibilityLabel="Más opciones"
+      >
+        <Text style={styles.menuButtonText}>⋮</Text>
+      </TouchableOpacity>
     </TouchableOpacity>
+
+      <BookCardMenu
+        visible={showMenu}
+        book={book}
+        onToggleFavorite={() => onToggleFavorite(book.id)}
+        onDelete={() => onDelete(book.id)}
+        onClose={() => setShowMenu(false)}
+      />
     </Animated.View>
   );
 }
@@ -212,5 +242,22 @@ const styles = StyleSheet.create({
   favoriteText: {
     color: Colors.textWhite,
     fontSize: 14,
+  },
+  menuButton: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuButtonText: {
+    color: Colors.textWhite,
+    fontSize: 16,
+    fontWeight: 'bold',
+    lineHeight: 16,
   },
 });

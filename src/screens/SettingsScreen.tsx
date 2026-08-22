@@ -101,7 +101,11 @@ export default function SettingsScreen() {
 
           {/* Gender section */}
           <View style={styles.section}>
-            <GenderSelector selected={gender} onSelect={handleGenderChange} />
+            <GenderSelector
+              selected={gender}
+              onSelect={handleGenderChange}
+              label="¿Quién va a leer?"
+            />
           </View>
 
           {/* Avatar section */}
