@@ -4,6 +4,8 @@ import { Colors } from '../theme/colors';
 
 interface LockOverlayProps {
   onUnlock: () => void;
+  showPrompt: boolean;
+  onRequestPrompt: () => void;
 }
 
 const HOLD_DURATION_MS = 1500;
@@ -12,7 +14,7 @@ const HOLD_DURATION_MS = 1500;
  * Full-screen touch blocker for kids. Swallows all taps except the
  * hold-to-unlock button, which requires a sustained press to release.
  */
-export function LockOverlay({ onUnlock }: LockOverlayProps) {
+export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverlayProps) {
   const [isHolding, setIsHolding] = useState(false);
   const progress = useRef(new Animated.Value(0)).current;
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -41,40 +43,45 @@ export function LockOverlay({ onUnlock }: LockOverlayProps) {
   }, [progress, onUnlock]);
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
+    <View style={[styles.container, showPrompt && styles.promptBackdrop]} pointerEvents="box-none">
       {/* Transparent full-screen tap absorber — blocks the reader underneath without eating the unlock button's touches */}
-      <Pressable style={StyleSheet.absoluteFill} onPress={() => {}} />
+      <Pressable style={StyleSheet.absoluteFill} onPress={onRequestPrompt} />
 
-      <View style={styles.hint} pointerEvents="none">
-        <Text style={styles.hintText}>🔒 Bloqueado para niños</Text>
-      </View>
+      {showPrompt && (
+        <>
+          <View style={styles.hint} pointerEvents="none">
+            <View style={styles.closedLockIcon} />
+            <Text style={styles.hintText}>Bloqueado para niños</Text>
+          </View>
 
-      <View style={styles.unlockWrapper}>
-        <TouchableOpacity
-          style={styles.unlockButton}
-          onPressIn={handlePressIn}
-          onPressOut={clearHold}
-          activeOpacity={0.8}
-          accessibilityRole="button"
-          accessibilityLabel="Mantén presionado para desbloquear"
-        >
-          <Animated.View
-            style={[
-              styles.unlockFill,
-              {
-                width: progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['0%', '100%'],
-                }),
-              },
-            ]}
-          />
-          <Text style={styles.unlockIcon}>🔓</Text>
-        </TouchableOpacity>
-        <Text style={styles.unlockLabel}>
-          {isHolding ? 'Mantén presionado…' : 'Mantén presionado para desbloquear'}
-        </Text>
-      </View>
+          <View style={styles.unlockWrapper}>
+            <TouchableOpacity
+              style={styles.unlockButton}
+              onPressIn={handlePressIn}
+              onPressOut={clearHold}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Mantén presionado para desbloquear"
+            >
+              <Animated.View
+                style={[
+                  styles.unlockFill,
+                  {
+                    width: progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0%', '100%'],
+                    }),
+                  },
+                ]}
+              />
+              <View style={styles.openLockIcon} />
+            </TouchableOpacity>
+            <Text style={styles.unlockLabel}>
+              {isHolding ? 'Mantén presionado…' : 'Mantén presionado para desbloquear'}
+            </Text>
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -82,10 +89,12 @@ export function LockOverlay({ onUnlock }: LockOverlayProps) {
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
     justifyContent: 'flex-end',
     alignItems: 'center',
     zIndex: 200,
+  },
+  promptBackdrop: {
+    backgroundColor: 'rgba(0, 0, 0, 0.08)',
   },
   hint: {
     position: 'absolute',
@@ -95,6 +104,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
   },
   hintText: {
     color: Colors.textWhite,
@@ -121,8 +133,20 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: Colors.accentYellow,
   },
-  unlockIcon: {
-    fontSize: 26,
+  closedLockIcon: {
+    width: 16,
+    height: 15,
+    borderWidth: 3,
+    borderColor: Colors.accentYellow,
+    borderRadius: 3,
+  },
+  openLockIcon: {
+    width: 24,
+    height: 22,
+    borderWidth: 4,
+    borderColor: Colors.textWhite,
+    borderRadius: 5,
+    borderTopColor: 'transparent',
   },
   unlockLabel: {
     color: Colors.textWhite,
