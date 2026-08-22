@@ -18,6 +18,9 @@ export async function setupPlayer(): Promise<boolean> {
   try {
     await setAudioModeAsync({
       playsInSilentMode: true,
+      interruptionMode: 'duckOthers',
+      allowsRecording: false,
+      shouldPlayInBackground: false,
       shouldRouteThroughEarpiece: false,
     });
     isSetup = true;

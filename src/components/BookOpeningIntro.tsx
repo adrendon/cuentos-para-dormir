@@ -1,297 +1,238 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  ImageSourcePropType,
+  useWindowDimensions,
+} from 'react-native';
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withDelay,
-  withSequence,
   Easing,
   interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
 } from 'react-native-reanimated';
 import { Colors } from '../theme/colors';
-
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('screen');
-const BOOK_W = SCREEN_W * 0.35;
-const BOOK_H = SCREEN_H * 0.55;
 
 interface BookOpeningIntroProps {
   coverColor: string;
   title: string;
-  coverImage?: any;
+  firstPageSource?: ImageSourcePropType;
   musicEnabled: boolean;
   onToggleMusic: () => void;
   onClose: () => void;
   onSelectMode: (mode: 'read' | 'listen') => void;
 }
 
-/**
- * 3D book-opening animation: the cover page rotates open (rotateY)
- * revealing the first page, then the mode selection menu fades in.
- */
+const STARS = [
+  [6, 14], [13, 75], [19, 34], [27, 9], [34, 87], [42, 23],
+  [49, 69], [57, 12], [64, 89], [72, 31], [79, 72], [87, 16],
+  [93, 56], [10, 48], [31, 57], [53, 42], [68, 60], [84, 43],
+];
+
+/** Book-opening transition followed by a clear reading-mode selector. */
 export function BookOpeningIntro({
   coverColor,
   title,
-  coverImage,
+  firstPageSource,
   musicEnabled,
   onToggleMusic,
   onClose,
   onSelectMode,
 }: BookOpeningIntroProps) {
-  // Animation values
-  const coverRotation = useSharedValue(0); // 0 = closed, 1 = open (90deg)
-  const pageOpacity = useSharedValue(0);
+  const { width, height } = useWindowDimensions();
+  const pageWidth = Math.min(width * 0.25, 330);
+  const pageHeight = Math.min(height * 0.57, pageWidth * 0.72);
+  const coverRotation = useSharedValue(0);
+  const bookScale = useSharedValue(0.72);
   const menuOpacity = useSharedValue(0);
-  const bookScale = useSharedValue(0.6);
+  const menuTranslate = useSharedValue(24);
 
   useEffect(() => {
-    // Sequence: scale up book → flip cover open → show menu
-    bookScale.value = withTiming(1, { duration: 500, easing: Easing.out(Easing.back(1.2)) });
-    pageOpacity.value = withDelay(300, withTiming(1, { duration: 300 }));
-    coverRotation.value = withDelay(600, withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) }));
-    menuOpacity.value = withDelay(1400, withTiming(1, { duration: 400 }));
-  }, []);
+    bookScale.value = withTiming(1, {
+      duration: 450,
+      easing: Easing.out(Easing.cubic),
+    });
+    coverRotation.value = withDelay(
+      350,
+      withTiming(1, { duration: 900, easing: Easing.inOut(Easing.cubic) })
+    );
+    menuOpacity.value = withDelay(1050, withTiming(1, { duration: 350 }));
+    menuTranslate.value = withDelay(
+      1050,
+      withTiming(0, { duration: 350, easing: Easing.out(Easing.cubic) })
+    );
+  }, [bookScale, coverRotation, menuOpacity, menuTranslate]);
 
-  // Book container scale
-  const bookContainerStyle = useAnimatedStyle(() => ({
+  const bookStyle = useAnimatedStyle(() => ({
     transform: [{ scale: bookScale.value }],
   }));
-
-  // Cover page flips open (rotateY from 0 to -150deg around left edge)
-  const coverStyle = useAnimatedStyle(() => {
-    const rotate = interpolate(coverRotation.value, [0, 1], [0, -150]);
-    return {
-      transform: [
-        { perspective: 1200 },
-        { rotateY: `${rotate}deg` },
-      ],
-      opacity: interpolate(coverRotation.value, [0, 0.6, 1], [1, 0.8, 0.3]),
-    };
-  });
-
-  // First page behind the cover
-  const pageStyle = useAnimatedStyle(() => ({
-    opacity: pageOpacity.value,
+  const coverStyle = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 1400 },
+      { rotateY: `${interpolate(coverRotation.value, [0, 1], [0, -178])}deg` },
+    ],
   }));
-
-  // Menu fades in after animation
   const menuStyle = useAnimatedStyle(() => ({
     opacity: menuOpacity.value,
+    transform: [{ translateX: menuTranslate.value }],
   }));
 
   return (
-    <View style={[styles.container, { backgroundColor: Colors.backgroundDark }]}>
-      {/* Starry background */}
-      <View style={styles.stars}>
-        {Array.from({ length: 30 }).map((_, i) => (
-          <View
-            key={i}
-            style={[
-              styles.star,
-              {
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                width: Math.random() * 3 + 1,
-                height: Math.random() * 3 + 1,
-              },
-            ]}
-          />
+    <View style={styles.container}>
+      <View style={styles.stars} pointerEvents="none">
+        {STARS.map(([left, top], index) => (
+          <View key={index} style={[styles.star, { left: `${left}%`, top: `${top}%` }]} />
         ))}
       </View>
 
-      {/* Top bar */}
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.iconButton} onPress={onClose}>
-          <Image
-            source={require('../assets/ui/ic_home.png')}
-            style={styles.iconImage}
-            resizeMode="contain"
-          />
+        <TouchableOpacity style={styles.roundButton} onPress={onClose} accessibilityLabel="Biblioteca">
+          <Image source={require('../assets/ui/ic_home.png')} style={styles.topIcon} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton} onPress={onToggleMusic}>
+        <TouchableOpacity
+          style={styles.roundButton}
+          onPress={onToggleMusic}
+          accessibilityLabel={musicEnabled ? 'Silenciar música' : 'Activar música'}
+        >
           <Image
             source={
               musicEnabled
                 ? require('../assets/onboarding/ic_music_on.png')
                 : require('../assets/onboarding/ic_music_off.png')
             }
-            style={styles.musicIconImage}
-            resizeMode="contain"
+            style={styles.musicIcon}
           />
         </TouchableOpacity>
       </View>
 
-      {/* 3D Book */}
-      <Animated.View style={[styles.bookContainer, bookContainerStyle]}>
-        {/* Right page (first page of story, behind cover) */}
-        <Animated.View style={[styles.rightPage, pageStyle, { backgroundColor: '#FFF' }]}>
-          {coverImage && (
-            <Image source={coverImage} style={styles.pageImage} resizeMode="cover" />
-          )}
-          {!coverImage && (
-            <View style={[styles.pageImage, { backgroundColor: coverColor, justifyContent: 'center', alignItems: 'center' }]}>
-              <Text style={{ fontSize: 40 }}>📖</Text>
-            </View>
-          )}
-        </Animated.View>
-
-        {/* Cover (front page that flips) */}
-        <Animated.View style={[styles.coverPage, { backgroundColor: coverColor }, coverStyle]}>
-          <View style={styles.coverContent}>
-            <Text style={styles.coverTitle} numberOfLines={2}>{title}</Text>
+      <View style={styles.content}>
+        <Animated.View
+          style={[
+            styles.book,
+            { width: pageWidth * 2, height: pageHeight },
+            bookStyle,
+          ]}
+        >
+          <View
+            style={[
+              styles.leftPage,
+              { width: pageWidth, height: pageHeight, backgroundColor: coverColor },
+            ]}
+          />
+          <View
+            style={[
+              styles.storyPage,
+              { left: pageWidth, width: pageWidth, height: pageHeight },
+            ]}
+          >
+            {firstPageSource ? (
+              <Image source={firstPageSource} style={styles.pageImage} resizeMode="cover" />
+            ) : (
+              <View style={[styles.pageFallback, { backgroundColor: coverColor }]} />
+            )}
           </View>
+          <Animated.View
+            style={[
+              styles.cover,
+              {
+                left: pageWidth,
+                width: pageWidth,
+                height: pageHeight,
+                backgroundColor: coverColor,
+              },
+              coverStyle,
+            ]}
+          >
+            <Text style={styles.coverTitle} numberOfLines={3}>{title}</Text>
+          </Animated.View>
+          <View style={[styles.spine, { left: pageWidth - 2 }]} />
         </Animated.View>
-      </Animated.View>
 
-      {/* Mode selection menu */}
-      <Animated.View style={[styles.menu, menuStyle]}>
-        <TouchableOpacity style={styles.modeButton} onPress={() => onSelectMode('read')}>
-          <Image
-            source={require('../assets/ui/ic_book_read.png')}
-            style={styles.modeIcon}
-            resizeMode="contain"
-          />
-          <Text style={styles.modeLabel}>Leer</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.modeButton} onPress={() => onSelectMode('listen')}>
-          <Image
-            source={require('../assets/ui/ic_book_listen.png')}
-            style={styles.modeIcon}
-            resizeMode="contain"
-          />
-          <Text style={styles.modeLabel}>Escuchar</Text>
-        </TouchableOpacity>
-      </Animated.View>
+        <Animated.View style={[styles.menu, menuStyle]}>
+          <Text style={styles.menuTitle}>¿Cómo quieres disfrutarlo?</Text>
+          <TouchableOpacity style={styles.modeButton} onPress={() => onSelectMode('read')}>
+            <Image source={require('../assets/ui/ic_book_read.png')} style={styles.modeIcon} />
+            <View>
+              <Text style={styles.modeLabel}>Leer</Text>
+              <Text style={styles.modeHint}>Tú controlas las páginas</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.modeButton} onPress={() => onSelectMode('listen')}>
+            <Image source={require('../assets/ui/ic_book_listen.png')} style={styles.modeIcon} />
+            <View>
+              <Text style={styles.modeLabel}>Escuchar</Text>
+              <Text style={styles.modeHint}>Narración y avance automático</Text>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stars: {
-    ...StyleSheet.absoluteFill,
-  },
+  container: { flex: 1, backgroundColor: Colors.backgroundDark },
+  stars: { ...StyleSheet.absoluteFill },
   star: {
-    position: 'absolute',
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    position: 'absolute', width: 4, height: 4, borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.45)',
   },
   topBar: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    right: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    zIndex: 10,
+    position: 'absolute', top: 18, left: 20, right: 20, zIndex: 20,
+    flexDirection: 'row', justifyContent: 'space-between',
   },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  roundButton: {
+    width: 48, height: 48, borderRadius: 24, backgroundColor: '#F6F4E8',
+    justifyContent: 'center', alignItems: 'center', elevation: 4,
   },
-  iconImage: {
-    width: 22,
-    height: 22,
-    tintColor: '#FFF',
+  topIcon: { width: 27, height: 27, resizeMode: 'contain' },
+  musicIcon: { width: 24, height: 24, resizeMode: 'contain' },
+  content: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 44,
+    paddingHorizontal: 80, paddingTop: 30,
   },
-  musicIconImage: {
-    width: 20,
-    height: 20,
+  book: { position: 'relative' },
+  leftPage: {
+    position: 'absolute', left: 0, top: 0, borderRadius: 10,
+    borderWidth: 3, borderColor: Colors.accentTurquoise,
   },
-  bookContainer: {
-    width: BOOK_W * 2,
-    height: BOOK_H,
-    flexDirection: 'row',
-    marginBottom: 30,
+  storyPage: {
+    position: 'absolute', top: 0, overflow: 'hidden', borderRadius: 10,
+    backgroundColor: '#FFF', borderWidth: 3, borderColor: Colors.accentTurquoise,
   },
-  coverPage: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    width: BOOK_W,
-    height: BOOK_H,
-    borderRadius: 8,
-    borderWidth: 3,
-    borderColor: Colors.accentTurquoise,
-    transformOrigin: 'left center',
-    zIndex: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  coverContent: {
-    padding: 16,
-    alignItems: 'center',
+  pageImage: { width: '100%', height: '100%' },
+  pageFallback: { flex: 1 },
+  cover: {
+    position: 'absolute', top: 0, borderRadius: 10, padding: 20,
+    justifyContent: 'center', alignItems: 'center', borderWidth: 3,
+    borderColor: Colors.accentTurquoise, backfaceVisibility: 'hidden',
+    transformOrigin: 'left center', elevation: 8,
   },
   coverTitle: {
-    color: '#FFF',
-    fontSize: 16,
-    fontFamily: 'BalooBhaijaan',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    color: '#FFF', fontSize: 22, fontFamily: 'BalooBhaijaan', textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.45)', textShadowOffset: { width: 1, height: 2 },
+    textShadowRadius: 4,
   },
-  rightPage: {
-    position: 'absolute',
-    left: BOOK_W * 0.05,
-    top: 0,
-    width: BOOK_W,
-    height: BOOK_H,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: Colors.accentTurquoise,
-    overflow: 'hidden',
-    zIndex: 1,
+  spine: {
+    position: 'absolute', top: 3, bottom: 3, width: 4,
+    backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 2,
   },
-  pageImage: {
-    width: '100%',
-    height: '100%',
-  },
-  menu: {
-    flexDirection: 'column',
-    gap: 14,
-    alignItems: 'center',
-    position: 'absolute',
-    bottom: SCREEN_H * 0.15,
+  menu: { width: 340, gap: 14 },
+  menuTitle: {
+    color: '#FFF', fontSize: 21, fontFamily: 'Montserrat-ExtraBold',
+    textAlign: 'center', marginBottom: 4,
   },
   modeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#3E9FE0',
-    paddingVertical: 14,
-    paddingHorizontal: 36,
-    borderRadius: 30,
-    gap: 12,
-    width: 220,
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
+    minHeight: 74, borderRadius: 37, paddingHorizontal: 24, flexDirection: 'row',
+    alignItems: 'center', gap: 17, backgroundColor: '#238FDD', borderWidth: 2,
+    borderColor: '#25C8EE', elevation: 5,
   },
-  modeIcon: {
-    width: 28,
-    height: 28,
-    tintColor: '#FFF',
-  },
-  modeLabel: {
-    color: '#FFF',
-    fontSize: 18,
-    fontFamily: 'Montserrat-ExtraBold',
-  },
+  modeIcon: { width: 34, height: 34, tintColor: '#FFF', resizeMode: 'contain' },
+  modeLabel: { color: '#FFF', fontSize: 20, fontFamily: 'Montserrat-ExtraBold' },
+  modeHint: { color: 'rgba(255,255,255,0.78)', fontSize: 11, marginTop: 2 },
 });
