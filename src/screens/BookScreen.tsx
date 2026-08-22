@@ -63,6 +63,7 @@ export default function BookScreen() {
   const [mode, setMode] = useState<ReadingMode | null>(null);
   const [showIndex, setShowIndex] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
+  const [showUnlockPrompt, setShowUnlockPrompt] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // In "Escuchar" mode, auto-advance to the next page once narration finishes.
@@ -183,12 +184,16 @@ export default function BookScreen() {
   const handleSelectMode = useCallback((selectedMode: ReadingMode) => {
     setMode(selectedMode);
     setStage('reading');
-    setIsLocked(true); // Auto-lock touches once the story opens (kid-safe)
+    setShowControls(false);
+    setShowUnlockPrompt(false);
+    setIsLocked(true);
   }, []);
 
   const handleReadAgain = useCallback(() => {
     setCurrentPage(0);
     setShowEndScreen(false);
+    setShowControls(false);
+    setShowUnlockPrompt(false);
     setIsLocked(true);
   }, [setCurrentPage]);
 
@@ -272,6 +277,7 @@ export default function BookScreen() {
             coverColor={book.coverColor}
             pageTexts={pageTexts}
             showText={showText}
+            showNavigation={!isLocked}
           />
         </TouchableOpacity>
       ) : (
@@ -333,7 +339,7 @@ export default function BookScreen() {
       )}
 
       {/* Compact floating controls with readable labels. */}
-      {!showEndScreen && showControls && (
+      {!showEndScreen && showControls && !isLocked && (
         <View style={styles.topControls}>
           <View style={styles.titleGroup}>
             <TouchableOpacity
@@ -398,7 +404,11 @@ export default function BookScreen() {
 
             <TouchableOpacity
               style={styles.labeledControl}
-              onPress={() => setIsLocked(true)}
+              onPress={() => {
+                setShowControls(false);
+                setShowUnlockPrompt(false);
+                setIsLocked(true);
+              }}
               accessibilityLabel="Bloquear pantalla"
             >
               <View style={styles.lockShape} />
@@ -417,7 +427,15 @@ export default function BookScreen() {
       />
 
       {isLocked && !showEndScreen && (
-        <LockOverlay onUnlock={() => setIsLocked(false)} />
+        <LockOverlay
+          showPrompt={showUnlockPrompt}
+          onRequestPrompt={() => setShowUnlockPrompt(true)}
+          onUnlock={() => {
+            setIsLocked(false);
+            setShowUnlockPrompt(false);
+            setShowControls(true);
+          }}
+        />
       )}
         </>
       )}

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -47,10 +47,9 @@ export function BookOpeningIntro({
   const { width, height } = useWindowDimensions();
   const pageWidth = Math.min(width * 0.25, 330);
   const pageHeight = Math.min(height * 0.57, pageWidth * 0.72);
+  const [menuReady, setMenuReady] = useState(false);
   const coverRotation = useSharedValue(0);
   const bookScale = useSharedValue(0.72);
-  const menuOpacity = useSharedValue(0);
-  const menuTranslate = useSharedValue(24);
 
   useEffect(() => {
     bookScale.value = withTiming(1, {
@@ -61,12 +60,9 @@ export function BookOpeningIntro({
       350,
       withTiming(1, { duration: 900, easing: Easing.inOut(Easing.cubic) })
     );
-    menuOpacity.value = withDelay(1050, withTiming(1, { duration: 350 }));
-    menuTranslate.value = withDelay(
-      1050,
-      withTiming(0, { duration: 350, easing: Easing.out(Easing.cubic) })
-    );
-  }, [bookScale, coverRotation, menuOpacity, menuTranslate]);
+    const menuTimer = setTimeout(() => setMenuReady(true), 1350);
+    return () => clearTimeout(menuTimer);
+  }, [bookScale, coverRotation]);
 
   const bookStyle = useAnimatedStyle(() => ({
     transform: [{ scale: bookScale.value }],
@@ -77,10 +73,42 @@ export function BookOpeningIntro({
       { rotateY: `${interpolate(coverRotation.value, [0, 1], [0, -178])}deg` },
     ],
   }));
-  const menuStyle = useAnimatedStyle(() => ({
-    opacity: menuOpacity.value,
-    transform: [{ translateX: menuTranslate.value }],
-  }));
+
+  if (menuReady) {
+    return (
+      <View style={styles.container}>
+        {firstPageSource && (
+          <Image source={firstPageSource} style={styles.modeBackground} resizeMode="cover" />
+        )}
+        <View style={styles.modeShade} />
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.roundButton} onPress={onClose} accessibilityLabel="Biblioteca">
+            <Image source={require('../assets/ui/ic_home.png')} style={styles.topIcon} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.roundButton} onPress={onToggleMusic} accessibilityLabel="Música">
+            <Image
+              source={
+                musicEnabled
+                  ? require('../assets/onboarding/ic_music_on.png')
+                  : require('../assets/onboarding/ic_music_off.png')
+              }
+              style={styles.musicIcon}
+            />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.centeredMenu}>
+          <TouchableOpacity style={styles.modeButton} onPress={() => onSelectMode('read')}>
+            <Image source={require('../assets/ui/ic_book_read.png')} style={styles.modeIcon} />
+            <Text style={styles.modeLabel}>Leer</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.modeButton} onPress={() => onSelectMode('listen')}>
+            <Image source={require('../assets/ui/ic_book_listen.png')} style={styles.modeIcon} />
+            <Text style={styles.modeLabel}>Escuchar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -153,23 +181,6 @@ export function BookOpeningIntro({
           <View style={[styles.spine, { left: pageWidth - 2 }]} />
         </Animated.View>
 
-        <Animated.View style={[styles.menu, menuStyle]}>
-          <Text style={styles.menuTitle}>¿Cómo quieres disfrutarlo?</Text>
-          <TouchableOpacity style={styles.modeButton} onPress={() => onSelectMode('read')}>
-            <Image source={require('../assets/ui/ic_book_read.png')} style={styles.modeIcon} />
-            <View>
-              <Text style={styles.modeLabel}>Leer</Text>
-              <Text style={styles.modeHint}>Tú controlas las páginas</Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.modeButton} onPress={() => onSelectMode('listen')}>
-            <Image source={require('../assets/ui/ic_book_listen.png')} style={styles.modeIcon} />
-            <View>
-              <Text style={styles.modeLabel}>Escuchar</Text>
-              <Text style={styles.modeHint}>Narración y avance automático</Text>
-            </View>
-          </TouchableOpacity>
-        </Animated.View>
       </View>
     </View>
   );
@@ -193,8 +204,7 @@ const styles = StyleSheet.create({
   topIcon: { width: 27, height: 27, resizeMode: 'contain' },
   musicIcon: { width: 24, height: 24, resizeMode: 'contain' },
   content: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 44,
-    paddingHorizontal: 80, paddingTop: 30,
+    flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 30,
   },
   book: { position: 'relative' },
   leftPage: {
@@ -222,17 +232,26 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 3, bottom: 3, width: 4,
     backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 2,
   },
-  menu: { width: 340, gap: 14 },
-  menuTitle: {
-    color: '#FFF', fontSize: 21, fontFamily: 'Montserrat-ExtraBold',
-    textAlign: 'center', marginBottom: 4,
+  modeBackground: {
+    ...StyleSheet.absoluteFill,
+    width: '100%',
+    height: '100%',
+  },
+  modeShade: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(8, 4, 30, 0.66)',
+  },
+  centeredMenu: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 22,
   },
   modeButton: {
-    minHeight: 74, borderRadius: 37, paddingHorizontal: 24, flexDirection: 'row',
-    alignItems: 'center', gap: 17, backgroundColor: '#238FDD', borderWidth: 2,
-    borderColor: '#25C8EE', elevation: 5,
+    width: 390, minHeight: 88, borderRadius: 44, paddingHorizontal: 48,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 22,
+    backgroundColor: '#238FDD', borderWidth: 2, borderColor: '#25C8EE', elevation: 5,
   },
-  modeIcon: { width: 34, height: 34, tintColor: '#FFF', resizeMode: 'contain' },
-  modeLabel: { color: '#FFF', fontSize: 20, fontFamily: 'Montserrat-ExtraBold' },
-  modeHint: { color: 'rgba(255,255,255,0.78)', fontSize: 11, marginTop: 2 },
+  modeIcon: { width: 42, height: 42, tintColor: '#FFF', resizeMode: 'contain' },
+  modeLabel: { color: '#FFF', fontSize: 26, fontFamily: 'Montserrat-ExtraBold' },
 });
