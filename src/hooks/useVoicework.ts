@@ -12,6 +12,8 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
   const [isNarrating, setIsNarrating] = useState(false);
   const [currentNarrationPage, setCurrentNarrationPage] = useState(-1);
   const playerRef = useRef<AudioPlayer | null>(null);
+  const statusSubscriptionRef = useRef<{ remove: () => void } | null>(null);
+  const playbackGenerationRef = useRef(0);
   const onNarrationEndRef = useRef(onNarrationEnd);
   onNarrationEndRef.current = onNarrationEnd;
 
@@ -35,21 +37,30 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
     try {
       // Stop current narration first
       await stopNarration();
+      const playbackGeneration = ++playbackGenerationRef.current;
 
       const voiceFile = `${BOOKS_LOCAL_DIR}${folderName}/voicework_es/voice${pageNumber}.mp3`;
       const fileInfo = await FileSystem.getInfoAsync(voiceFile);
 
       if (!fileInfo.exists) return; // No narration for this page
 
-      playerRef.current = createAudioPlayer({ uri: voiceFile });
-      playerRef.current.addListener('playbackStatusUpdate', (status) => {
-        if (status.didJustFinish) {
+      const narrationPlayer = createAudioPlayer({ uri: voiceFile });
+      playerRef.current = narrationPlayer;
+      statusSubscriptionRef.current = narrationPlayer.addListener('playbackStatusUpdate', (status) => {
+        if (
+          status.didJustFinish &&
+          playbackGeneration === playbackGenerationRef.current
+        ) {
+          statusSubscriptionRef.current?.remove();
+          statusSubscriptionRef.current = null;
+          narrationPlayer.remove();
+          if (playerRef.current === narrationPlayer) playerRef.current = null;
           setIsNarrating(false);
           setCurrentNarrationPage(-1);
           onNarrationEndRef.current?.();
         }
       });
-      playerRef.current.play();
+      narrationPlayer.play();
       setIsNarrating(true);
       setCurrentNarrationPage(pageNumber);
     } catch (error) {
@@ -62,7 +73,10 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
    * Stop current narration.
    */
   const stopNarration = useCallback(async () => {
+    playbackGenerationRef.current++;
     try {
+      statusSubscriptionRef.current?.remove();
+      statusSubscriptionRef.current = null;
       if (playerRef.current) {
         playerRef.current.remove();
         playerRef.current = null;

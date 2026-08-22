@@ -28,8 +28,6 @@ import {
   pauseMusic,
   resumeMusic,
   stopMusic,
-  setVolume,
-  getVolume,
   duckVolume,
   restoreVolume,
 } from '../services/audioService';
@@ -49,8 +47,6 @@ export default function BookScreen() {
     pages,
     currentPage,
     setCurrentPage,
-    goToPage,
-    isLastPage,
   } = useBookPages(book, profile.gender);
 
   const { pageTexts, title, author } = useBookTexts(
@@ -67,17 +63,20 @@ export default function BookScreen() {
   const [mode, setMode] = useState<ReadingMode | null>(null);
   const [showIndex, setShowIndex] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
+  const [showUnlockPrompt, setShowUnlockPrompt] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // In "Escuchar" mode, auto-advance to the next page once narration finishes.
   const handleNarrationEnd = useCallback(() => {
     if (mode === 'listen' && currentPage < pages.length - 1) {
       setCurrentPage(currentPage + 1);
-      setShowControls(true);
+    } else if (mode === 'listen' && currentPage === pages.length - 1) {
+      setShowEndScreen(true);
+      if (book) markAsRead(book.id);
     }
-  }, [mode, currentPage, pages.length, setCurrentPage]);
+  }, [mode, currentPage, pages.length, setCurrentPage, book, markAsRead]);
 
-  const { isNarrating, toggleNarration, stopNarration } = useVoicework(book?.folderName, handleNarrationEnd);
+  const { isNarrating, playNarration, toggleNarration, stopNarration } = useVoicework(book?.folderName, handleNarrationEnd);
 
   // Keep screen awake
   useEffect(() => {
@@ -115,7 +114,7 @@ export default function BookScreen() {
     };
   }, [book?.id]);
 
-  // Handle hardware back button ÔÇö ignored while locked, otherwise stop audio and navigate
+  // Ignore the hardware back button while the child lock is active.
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       if (isLocked) return true;
@@ -125,17 +124,10 @@ export default function BookScreen() {
     return () => backHandler.remove();
   }, [isLocked]);
 
-  // Show end screen on last page
-  useEffect(() => {
-    if (isLastPage && pages.length > 0) {
-      setShowEndScreen(true);
-      if (book) {
-        markAsRead(book.id);
-      }
-    } else {
-      setShowEndScreen(false);
-    }
-  }, [isLastPage, pages.length]);
+  const handleFinish = useCallback(() => {
+    setShowEndScreen(true);
+    if (book) markAsRead(book.id);
+  }, [book, markAsRead]);
 
   // Auto-hide controls after 4 seconds
   useEffect(() => {
@@ -177,15 +169,13 @@ export default function BookScreen() {
     }
   }, [currentPage, pages, isNarrating, toggleNarration, stopNarration]);
 
-  // Stop narration when page changes
+  // Narration from the old page must never continue over the new image.
   const handlePageChange = useCallback(async (pageIndex: number) => {
+    if (pageIndex === currentPage) return;
+    await stopNarration();
+    await restoreVolume();
     setCurrentPage(pageIndex);
-    setShowControls(true);
-    if (isNarrating) {
-      await stopNarration();
-      await restoreVolume();
-    }
-  }, [isNarrating, stopNarration]);
+  }, [currentPage, stopNarration]);
 
   const handleTapScreen = useCallback(() => {
     setShowControls(prev => !prev);
@@ -194,19 +184,23 @@ export default function BookScreen() {
   const handleSelectMode = useCallback((selectedMode: ReadingMode) => {
     setMode(selectedMode);
     setStage('reading');
-    setIsLocked(true); // Auto-lock touches once the story opens (kid-safe)
+    setShowControls(false);
+    setShowUnlockPrompt(false);
+    setIsLocked(true);
   }, []);
 
   const handleReadAgain = useCallback(() => {
     setCurrentPage(0);
     setShowEndScreen(false);
+    setShowControls(false);
+    setShowUnlockPrompt(false);
     setIsLocked(true);
   }, [setCurrentPage]);
 
   const handleShare = useCallback(async () => {
     try {
       await Share.share({
-        message: `┬íTe recomiendo el cuento "${title || book?.title}"! ­ƒîÖ`,
+        message: `¡Te recomiendo el cuento "${title || book?.title}"!`,
       });
     } catch (error) {
       console.error('Error sharing:', error);
@@ -228,11 +222,18 @@ export default function BookScreen() {
     if (!pages[currentPage]) return;
 
     const pageNum = pages[currentPage].pageNumber;
-    (async () => {
+    let cancelled = false;
+    void (async () => {
       await duckVolume();
-      await toggleNarration(pageNum);
+      if (cancelled) return;
+      await playNarration(pageNum);
     })();
-  }, [stage, mode, currentPage]);
+    return () => {
+      cancelled = true;
+      void stopNarration();
+      void restoreVolume();
+    };
+  }, [stage, mode, currentPage, pages, playNarration, stopNarration]);
 
   if (!book) {
     return (
@@ -253,6 +254,7 @@ export default function BookScreen() {
         <BookOpeningIntro
           coverColor={book.coverColor}
           title={title || book.title}
+          firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined}
           musicEnabled={isPlaying}
           onToggleMusic={handleToggleMusic}
           onClose={handleGoBack}
@@ -271,15 +273,17 @@ export default function BookScreen() {
             pages={pages}
             currentPage={currentPage}
             onPageChange={handlePageChange}
+            onFinish={handleFinish}
             coverColor={book.coverColor}
             pageTexts={pageTexts}
             showText={showText}
+            showNavigation={!isLocked}
           />
         </TouchableOpacity>
       ) : (
         /* End screen */
         <View style={[styles.endScreen, { backgroundColor: book.coverColor }]}>
-          <Text style={styles.endEmoji}>­ƒîÖ</Text>
+          <Text style={styles.endEmoji}>FIN</Text>
           <Text style={styles.endTitle}>{title || book.title}</Text>
           <Text style={styles.endCredits}>
             {(author || book.author) && `Escrito por: ${author || book.author}`}
@@ -295,7 +299,6 @@ export default function BookScreen() {
               onPress={handleReadAgain}
               accessibilityLabel="Leer otra vez"
             >
-              <Text style={styles.endActionIcon}>­ƒöü</Text>
               <Text style={styles.endActionText}>Leer otra vez</Text>
             </TouchableOpacity>
 
@@ -304,7 +307,6 @@ export default function BookScreen() {
               onPress={handleToggleFavoriteFromEndScreen}
               accessibilityLabel={book.isFavorite ? 'Sacar de favoritos' : 'Agregar a favoritos'}
             >
-              <Text style={styles.endActionIcon}>{book.isFavorite ? 'Ôÿà' : 'Ôÿå'}</Text>
               <Text style={styles.endActionText}>
                 {book.isFavorite ? 'En favoritos' : 'Agregar a favoritos'}
               </Text>
@@ -315,7 +317,6 @@ export default function BookScreen() {
               onPress={handleShare}
               accessibilityLabel="Compartir"
             >
-              <Text style={styles.endActionIcon}>­ƒôñ</Text>
               <Text style={styles.endActionText}>Compartir</Text>
             </TouchableOpacity>
           </View>
@@ -337,72 +338,81 @@ export default function BookScreen() {
         </View>
       )}
 
-      {/* Top controls - show/hide on tap */}
-      {!showEndScreen && showControls && (
+      {/* Compact floating controls with readable labels. */}
+      {!showEndScreen && showControls && !isLocked && (
         <View style={styles.topControls}>
-          {/* Back button */}
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={handleGoBack}
-            accessibilityLabel="Volver"
-          >
-            <Text style={styles.controlIcon}>ÔåÉ</Text>
-          </TouchableOpacity>
-
-          {/* Title */}
-          <Text style={styles.controlTitle} numberOfLines={1}>
-            {title || book.title}
-          </Text>
-
-          {/* Right controls */}
-          <View style={styles.rightControls}>
-            {/* Page index / thumbnails */}
+          <View style={styles.titleGroup}>
             <TouchableOpacity
-              style={styles.controlButton}
+              style={styles.homeButton}
+              onPress={handleGoBack}
+              accessibilityLabel="Biblioteca"
+            >
+              <Image source={require('../assets/ui/ic_home.png')} style={styles.homeIcon} />
+            </TouchableOpacity>
+            <Text style={styles.controlTitle} numberOfLines={1}>{title || book.title}</Text>
+          </View>
+
+          <View style={styles.rightControls}>
+            <TouchableOpacity
+              style={styles.labeledControl}
               onPress={() => setShowIndex(true)}
-              accessibilityLabel="├ìndice de p├íginas"
+              accessibilityLabel="Índice de páginas"
             >
               <Image
                 source={require('../assets/ui/ic_content_burger.png')}
                 style={styles.controlIconImage}
-                resizeMode="contain"
               />
+              <Text style={styles.controlLabel}>Páginas</Text>
             </TouchableOpacity>
 
-            {/* Narrate this page */}
             <TouchableOpacity
-              style={[styles.controlButton, isNarrating && styles.controlButtonActive]}
+              style={[styles.labeledControl, isNarrating && styles.controlButtonActive]}
               onPress={handleToggleNarration}
-              accessibilityLabel={isNarrating ? 'Detener narraci├│n' : 'Escuchar narraci├│n'}
+              accessibilityLabel={isNarrating ? 'Detener narración' : 'Escuchar narración'}
             >
-              <Text style={styles.controlIcon}>{isNarrating ? 'ÔÅ╣' : '­ƒÄº'}</Text>
+              <Image
+                source={require('../assets/ui/ic_book_listen.png')}
+                style={styles.controlIconImage}
+              />
+              <Text style={styles.controlLabel}>{isNarrating ? 'Detener' : 'Narrar'}</Text>
             </TouchableOpacity>
 
-            {/* Toggle text */}
             <TouchableOpacity
-              style={styles.controlButton}
+              style={styles.labeledControl}
               onPress={() => setShowText(prev => !prev)}
               accessibilityLabel={showText ? 'Ocultar texto' : 'Mostrar texto'}
             >
-              <Text style={styles.controlIcon}>{showText ? 'Aa' : 'Aa'}</Text>
+              <Text style={styles.aaIcon}>Aa</Text>
+              <Text style={styles.controlLabel}>{showText ? 'Ocultar' : 'Texto'}</Text>
             </TouchableOpacity>
 
-            {/* Mute/unmute music */}
             <TouchableOpacity
-              style={styles.controlButton}
+              style={styles.labeledControl}
               onPress={handleToggleMusic}
-              accessibilityLabel={isPlaying ? 'Silenciar m├║sica' : 'Activar m├║sica'}
+              accessibilityLabel={isPlaying ? 'Silenciar música' : 'Activar música'}
             >
-              <Text style={styles.controlIcon}>{isPlaying ? '­ƒöè' : '­ƒöç'}</Text>
+              <Image
+                source={
+                  isPlaying
+                    ? require('../assets/onboarding/ic_music_on.png')
+                    : require('../assets/onboarding/ic_music_off.png')
+                }
+                style={styles.controlIconImage}
+              />
+              <Text style={styles.controlLabel}>Música</Text>
             </TouchableOpacity>
 
-            {/* Lock for kids */}
             <TouchableOpacity
-              style={styles.controlButton}
-              onPress={() => setIsLocked(true)}
+              style={styles.labeledControl}
+              onPress={() => {
+                setShowControls(false);
+                setShowUnlockPrompt(false);
+                setIsLocked(true);
+              }}
               accessibilityLabel="Bloquear pantalla"
             >
-              <Text style={styles.controlIcon}>­ƒöÆ</Text>
+              <View style={styles.lockShape} />
+              <Text style={styles.controlLabel}>Bloquear</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -417,7 +427,15 @@ export default function BookScreen() {
       />
 
       {isLocked && !showEndScreen && (
-        <LockOverlay onUnlock={() => setIsLocked(false)} />
+        <LockOverlay
+          showPrompt={showUnlockPrompt}
+          onRequestPrompt={() => setShowUnlockPrompt(true)}
+          onUnlock={() => {
+            setIsLocked(false);
+            setShowUnlockPrompt(false);
+            setShowControls(true);
+          }}
+        />
       )}
         </>
       )}
@@ -435,48 +453,80 @@ const styles = StyleSheet.create({
   },
   topControls: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
+    top: 14,
+    left: 16,
+    right: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 44,
-    paddingHorizontal: 12,
-    paddingBottom: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'space-between',
     zIndex: 100,
   },
-  controlButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  titleGroup: {
+    maxWidth: '34%',
+    height: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 24,
+    backgroundColor: 'rgba(10, 8, 38, 0.78)',
+    paddingRight: 18,
+  },
+  homeButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F6F4E8',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  homeIcon: { width: 27, height: 27, resizeMode: 'contain' },
+  labeledControl: {
+    minWidth: 68,
+    height: 52,
+    paddingHorizontal: 9,
+    borderRadius: 16,
+    backgroundColor: 'rgba(10, 8, 38, 0.78)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 2,
   },
   controlButtonActive: {
     backgroundColor: Colors.chipOrange,
   },
-  controlIcon: {
-    color: Colors.textWhite,
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
   controlIconImage: {
-    width: 20,
-    height: 20,
+    width: 21,
+    height: 21,
     tintColor: Colors.textWhite,
+    resizeMode: 'contain',
+  },
+  aaIcon: {
+    height: 21,
+    color: Colors.textWhite,
+    fontSize: 16,
+    fontFamily: 'Montserrat-ExtraBold',
+  },
+  lockShape: {
+    width: 17,
+    height: 15,
+    marginTop: 3,
+    borderRadius: 3,
+    borderWidth: 3,
+    borderColor: Colors.textWhite,
+  },
+  controlLabel: {
+    color: Colors.textWhite,
+    fontSize: 9,
+    fontFamily: 'Montserrat-SemiBold',
   },
   controlTitle: {
     flex: 1,
     color: Colors.titleGold,
     fontSize: 15,
-    fontWeight: '700',
-    marginHorizontal: 12,
+    fontFamily: 'Montserrat-ExtraBold',
+    marginLeft: 12,
   },
   rightControls: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   endScreen: {
     flex: 1,
@@ -485,7 +535,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   endEmoji: {
-    fontSize: 64,
+    color: Colors.titleGold,
+    fontSize: 32,
+    fontFamily: 'Montserrat-ExtraBold',
     marginBottom: 20,
   },
   endTitle: {
@@ -515,10 +567,6 @@ const styles = StyleSheet.create({
   endActionButton: {
     alignItems: 'center',
     width: 90,
-  },
-  endActionIcon: {
-    fontSize: 26,
-    marginBottom: 6,
   },
   endActionText: {
     color: Colors.textWhite,

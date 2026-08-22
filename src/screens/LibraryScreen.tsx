@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Animated,
   StatusBar,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -18,8 +19,10 @@ import { useBooks } from '../hooks/useBooks';
 import { BookCard } from '../components/BookCard';
 import { FilterModal } from '../components/FilterModal';
 import { Book } from '../types/book';
+import { setupEmbeddedBooks } from '../services/embeddedBooksService';
 
 export default function LibraryScreen() {
+  const { width: windowWidth } = useWindowDimensions();
   const router = useRouter();
   const { profile } = useProfile();
   const {
@@ -38,10 +41,24 @@ export default function LibraryScreen() {
   } = useBooks();
   const [isFilterModalVisible, setFilterModalVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const horizontalPadding = 20;
+  const columnGap = 16;
+  const cardWidth = Math.floor(
+    (windowWidth - horizontalPadding * 2 - columnGap * 2) / 3
+  );
 
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
   }, []);
+
+  useEffect(() => {
+    // Never download and extract the bundled starter book during onboarding.
+    // Wait until this screen has rendered, then refresh its metadata when done.
+    const timer = setTimeout(() => {
+      void setupEmbeddedBooks().then(refreshBooks);
+    }, 750);
+    return () => clearTimeout(timer);
+  }, [refreshBooks]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -82,6 +99,7 @@ export default function LibraryScreen() {
         onToggleFavorite={toggleFavorite}
         onDelete={deleteBook}
         index={index}
+        cardWidth={cardWidth}
       />
     );
   };
@@ -170,6 +188,7 @@ export default function LibraryScreen() {
             renderItem={renderBookItem}
             keyExtractor={(item) => item.id}
             numColumns={3}
+            key={`library-grid-${Math.round(windowWidth)}`}
             contentContainerStyle={styles.gridContent}
             columnWrapperStyle={styles.gridRow}
             showsVerticalScrollIndicator={false}
@@ -277,11 +296,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   gridContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingBottom: 24,
+    gap: 16,
   },
   gridRow: {
-    justifyContent: 'space-between',
+    gap: 16,
   },
   loadingContainer: {
     flex: 1,
