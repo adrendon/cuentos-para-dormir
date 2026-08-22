@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Image,
@@ -37,6 +37,17 @@ export function PageViewer({
 }: PageViewerProps) {
   const pagerRef = useRef<PagerView>(null);
   const thumbListRef = useRef<FlatList>(null);
+
+  // PagerView only uses initialPage during mount. Keep its native page in sync
+  // when narration or the page index changes currentPage programmatically.
+  useEffect(() => {
+    pagerRef.current?.setPageWithoutAnimation(currentPage);
+    thumbListRef.current?.scrollToIndex({
+      index: currentPage,
+      animated: true,
+      viewPosition: 0.5,
+    });
+  }, [currentPage]);
 
   const handlePageSelected = useCallback(
     (event: any) => {

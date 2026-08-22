@@ -1,5 +1,5 @@
 import * as FileSystem from 'expo-file-system/legacy';
-import { unzipSync } from 'fflate';
+import { unzip } from 'fflate';
 
 /**
  * Download service for fetching book ZIP files from GitHub,
@@ -138,8 +138,14 @@ export async function downloadBook(
     // Decode base64 to Uint8Array
     const zipBytes = base64ToUint8Array(zipBase64);
 
-    // Unzip with fflate
-    const unzipped = unzipSync(zipBytes);
+    // Use fflate's asynchronous API so large books do not monopolize the JS
+    // thread and trigger Android's "application is not responding" dialog.
+    const unzipped = await new Promise<Record<string, Uint8Array>>((resolve, reject) => {
+      unzip(zipBytes, (error, files) => {
+        if (error) reject(error);
+        else resolve(files);
+      });
+    });
 
     // Ensure dest directory
     const destInfo = await FileSystem.getInfoAsync(bookDestDir);
