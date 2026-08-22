@@ -28,47 +28,49 @@ export function useBookPages(book: Book | undefined, gender: Gender) {
 
     try {
       const bookBasePath = `${BOOKS_LOCAL_DIR}${bookData.folderName}`;
-      const pagesPath = `${bookBasePath}/Pages/${genderFolder}`;
+      const genderPath = `${bookBasePath}/Pages/${genderFolder}`;
+      const otherGender = genderFolder === 'boy' ? 'girl' : 'boy';
+      const otherGenderPath = `${bookBasePath}/Pages/${otherGender}`;
+      const commonPath = `${bookBasePath}/Pages/common`;
+      const [genderInfo, otherGenderInfo, commonInfo] = await Promise.all([
+        FileSystem.getInfoAsync(genderPath),
+        FileSystem.getInfoAsync(otherGenderPath),
+        FileSystem.getInfoAsync(commonPath),
+      ]);
 
-      // Check if gender-specific pages exist
-      const dirInfo = await FileSystem.getInfoAsync(pagesPath);
+      const primaryPath = genderInfo.exists
+        ? genderPath
+        : otherGenderInfo.exists
+          ? otherGenderPath
+          : undefined;
+      const sourcePaths = [primaryPath, commonInfo.exists ? commonPath : undefined].filter(
+        (path): path is string => Boolean(path)
+      );
 
-      let targetPath = pagesPath;
-      if (!dirInfo.exists) {
-        // Try common pages folder
-        const commonPath = `${bookBasePath}/Pages/common`;
-        const commonInfo = await FileSystem.getInfoAsync(commonPath);
-        if (commonInfo.exists) {
-          targetPath = commonPath;
-        } else {
-          // Try the other gender
-          const otherGender = genderFolder === 'boy' ? 'girl' : 'boy';
-          const otherPath = `${bookBasePath}/Pages/${otherGender}`;
-          const otherInfo = await FileSystem.getInfoAsync(otherPath);
-          if (otherInfo.exists) {
-            targetPath = otherPath;
-          } else {
-            setError('No se encontraron páginas');
-            setIsLoading(false);
-            return;
-          }
-        }
+      if (sourcePaths.length === 0) {
+        setError('No se encontraron páginas');
+        return;
       }
 
-      // Read directory and sort
-      const files = await FileSystem.readDirectoryAsync(targetPath);
-      const imageFiles = files
-        .filter(f => f.endsWith('.webp') || f.endsWith('.png') || f.endsWith('.jpg'))
-        .sort((a, b) => {
-          const numA = extractPageNumber(a);
-          const numB = extractPageNumber(b);
-          return numA - numB;
-        });
-
-      const loadedPages: BookPage[] = imageFiles.map(file => ({
-        pageNumber: extractPageNumber(file),
-        uri: `${targetPath}/${file}`,
-      }));
+      // Gender-specific and common pages complement each other. Merge them by
+      // page number instead of treating the common directory as a global fallback.
+      const directoryContents = await Promise.all(
+        sourcePaths.map(async path => ({
+          path,
+          files: await FileSystem.readDirectoryAsync(path),
+        }))
+      );
+      const pagesByNumber = new Map<number, BookPage>();
+      for (const { path, files } of directoryContents) {
+        for (const file of files) {
+          if (!/\.(webp|png|jpe?g)$/i.test(file)) continue;
+          const pageNumber = extractPageNumber(file);
+          pagesByNumber.set(pageNumber, { pageNumber, uri: `${path}/${file}` });
+        }
+      }
+      const loadedPages = [...pagesByNumber.values()].sort(
+        (a, b) => a.pageNumber - b.pageNumber
+      );
 
       setPages(loadedPages);
     } catch (err) {

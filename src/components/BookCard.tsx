@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  Dimensions,
   Animated,
 } from 'react-native';
 import { Book } from '../types/book';
@@ -13,10 +12,6 @@ import { Colors } from '../theme/colors';
 import { DownloadButton } from './DownloadButton';
 import { BookCardMenu } from './BookCardMenu';
 import { getBookCover } from '../assets/books/coverRegistry';
-
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 3;
-const CARD_HEIGHT = CARD_WIDTH * 1.5;
 
 interface BookCardProps {
   book: Book;
@@ -26,6 +21,7 @@ interface BookCardProps {
   onToggleFavorite: (bookId: string) => void;
   onDelete: (bookId: string) => void;
   index?: number;
+  cardWidth: number;
 }
 
 export function BookCard({
@@ -36,6 +32,7 @@ export function BookCard({
   onToggleFavorite,
   onDelete,
   index = 0,
+  cardWidth,
 }: BookCardProps) {
   const isAvailable = book.isDownloaded || book.isEmbedded;
   const [showMenu, setShowMenu] = useState(false);
@@ -67,9 +64,18 @@ export function BookCard({
   };
 
   return (
-    <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
+    <Animated.View
+      style={{
+        width: cardWidth,
+        opacity: fadeAnim,
+        transform: [{ scale: scaleAnim }],
+      }}
+    >
       <TouchableOpacity
-        style={[styles.container, { backgroundColor: book.coverColor }]}
+        style={[
+          styles.container,
+          { width: cardWidth, height: cardWidth * 1.08, backgroundColor: book.coverColor },
+        ]}
         onPress={handlePress}
         activeOpacity={isAvailable ? 0.85 : 1}
         accessibilityRole="button"
@@ -161,8 +167,6 @@ export function BookCard({
 
 const styles = StyleSheet.create({
   container: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
     borderRadius: 12,
     marginBottom: 14,
     overflow: 'hidden',
