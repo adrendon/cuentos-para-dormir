@@ -8,7 +8,7 @@
     "ios": "expo run:ios",
     "build:local": "export ANDROID_HOME=~/Library/Android/sdk && npx expo prebuild --platform android --no-install && cd android && ./gradlew assembleRelease && cd .. && cp android/app/build/outputs/apk/release/cuentos-para-dormir-release.apk ./cuentos-para-dormir.apk",
     "build:local:win": "powershell -Command \"$env:ANDROID_HOME = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { \\\"$env:LOCALAPPDATA\\Android\\Sdk\\\" }; $env:JAVA_OPTS = '-Djavax.net.ssl.trustStoreType=Windows-ROOT'; $env:GRADLE_OPTS = '-Djavax.net.ssl.trustStoreType=Windows-ROOT -Dorg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m'; npx expo prebuild --platform android --no-install; cd android; ./gradlew.bat assembleRelease --no-daemon; cd ..; Copy-Item android/app/build/outputs/apk/release/app-release.apk ./cuentos-para-dormir.apk -Force\"",
-    "build:eas": "EAS_SKIP_AUTO_FINGERPRINT=1 eas build --platform android --profile preview --non-interactive --no-wait",
+    "build:eas": "cross-env EAS_SKIP_AUTO_FINGERPRINT=1 eas build --platform android --profile preview --non-interactive --no-wait",
     "deploy:apk": "sh ./scripts/deploy-apk.sh",
     "build:android": "eas build --platform android --profile production",
     "build:apk": "eas build --platform android --profile preview"
@@ -44,6 +44,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.0",
     "@types/react": "~19.2.4",
+    "cross-env": "^10.1.0",
     "typescript": "~6.0.3"
   },
   "private": true,
