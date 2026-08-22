@@ -152,6 +152,7 @@ export function useBooks() {
           isFavorite: favSet.has(folderName),
           isDownloaded: isAvailable,
           isEmbedded: embedded,
+          sizeMB: entry.sizeMB,
         });
       }
 

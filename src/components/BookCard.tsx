@@ -98,7 +98,10 @@ export function BookCard({
         {/* Overlay for not-downloaded books */}
         {!isAvailable && (
           <View style={styles.notDownloadedOverlay}>
-            <Text style={styles.cloudIcon}>☁️</Text>
+            <View style={styles.downloadCircle}>
+              <Text style={styles.downloadArrow}>↓</Text>
+            </View>
+            <Text style={styles.sizeText}>{book.sizeMB} MB</Text>
           </View>
         )}
       </View>
@@ -189,12 +192,29 @@ const styles = StyleSheet.create({
   },
   notDownloadedOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cloudIcon: {
-    fontSize: 32,
+  downloadCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2.5,
+    borderColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  downloadArrow: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  sizeText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
   },
   titleContainer: {
     paddingHorizontal: 10,

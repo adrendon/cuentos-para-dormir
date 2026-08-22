@@ -29,6 +29,7 @@ export interface Book {
   isFavorite: boolean;
   isDownloaded: boolean;
   isEmbedded: boolean;
+  sizeMB: number;
 }
 
 export interface BookPage {

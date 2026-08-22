@@ -6,6 +6,7 @@ export interface BookAssetEntry {
   embedded: boolean;
   title: string;
   author: string;
+  sizeMB: number;
 }
 
 export const bookCatalog: BookAssetEntry[] = catalog.books;

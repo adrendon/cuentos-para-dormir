@@ -5,63 +5,72 @@
       "coverColor": "#09911a",
       "embedded": true,
       "title": "Un Día al Revés",
-      "author": "Little Stories"
+      "author": "Little Stories",
+      "sizeMB": 23
     },
     {
       "folderName": "AFunWalk",
       "coverColor": "#00838f",
       "embedded": false,
       "title": "Un Paseo Divertido",
-      "author": "Little Stories"
+      "author": "Little Stories",
+      "sizeMB": 37
     },
     {
       "folderName": "AGoodIdea",
       "coverColor": "#283593",
       "embedded": false,
       "title": "Una Buena Idea",
-      "author": "Little Stories"
+      "author": "Little Stories",
+      "sizeMB": 35
     },
     {
       "folderName": "AGreatFriendship",
       "coverColor": "#558b2f",
       "embedded": false,
       "title": "Una Gran Amistad",
-      "author": "Little Stories"
+      "author": "Little Stories",
+      "sizeMB": 40
     },
     {
       "folderName": "ALittleAntsBigJob",
       "coverColor": "#4e342e",
       "embedded": false,
       "title": "El Gran Trabajo de una Hormiguita",
-      "author": "Little Stories"
+      "author": "Little Stories",
+      "sizeMB": 26
     },
     {
       "folderName": "AllIsNotLost",
       "coverColor": "#1565c0",
       "embedded": false,
       "title": "No Todo Está Perdido",
-      "author": "Little Stories"
+      "author": "Little Stories",
+      "sizeMB": 31
     },
     {
       "folderName": "APerfectHome",
       "coverColor": "#6a1b9a",
       "embedded": false,
       "title": "Un Hogar Perfecto",
-      "author": "Little Stories"
+      "author": "Little Stories",
+      "sizeMB": 25
     },
     {
       "folderName": "Belka",
       "coverColor": "#4e342e",
       "embedded": false,
       "title": "Belka",
-      "author": "Little Stories"
+      "author": "Little Stories",
+      "sizeMB": 35
     },
     {
       "folderName": "BirdsChoir",
       "coverColor": "#00838f",
       "embedded": false,
       "title": "El Coro de los Pájaros",
-      "author": "Little Stories"
+      "author": "Little Stories",
+      "sizeMB": 21
     }
   ]
 }

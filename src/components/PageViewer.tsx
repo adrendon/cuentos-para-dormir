@@ -136,6 +136,32 @@ export function PageViewer({
           {currentPage + 1} / {pages.length}
         </Text>
       </View>
+
+      {/* Bottom thumbnail strip */}
+      <ScrollView
+        horizontal
+        style={styles.thumbStrip}
+        contentContainerStyle={styles.thumbStripContent}
+        showsHorizontalScrollIndicator={false}
+      >
+        {pages.map((page, idx) => (
+          <TouchableOpacity
+            key={`thumb-${idx}`}
+            style={[styles.thumbCard, idx === currentPage && styles.thumbCardActive]}
+            onPress={() => {
+              pagerRef.current?.setPage(idx);
+              onPageChange(idx);
+            }}
+          >
+            <Image
+              source={{ uri: page.uri }}
+              style={styles.thumbImage}
+              resizeMode="cover"
+            />
+            <Text style={styles.thumbNumber}>{idx + 1}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
     </View>
   );
 }
@@ -171,13 +197,13 @@ const styles = StyleSheet.create({
   },
   textOverlay: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 72,
     left: 0,
     right: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 20,
+    paddingBottom: 12,
     maxHeight: SCREEN_HEIGHT * 0.3,
   },
   pageText: {
@@ -220,5 +246,42 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '600',
+  },
+  thumbStrip: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 72,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  },
+  thumbStripContent: {
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    gap: 6,
+  },
+  thumbCard: {
+    width: 80,
+    height: 56,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent',
+    backgroundColor: '#333',
+  },
+  thumbCardActive: {
+    borderColor: '#25C8EE',
+  },
+  thumbImage: {
+    width: '100%',
+    height: '100%',
+  },
+  thumbNumber: {
+    position: 'absolute',
+    top: 2,
+    left: 6,
+    color: '#25C8EE',
+    fontSize: 12,
+    fontWeight: '800',
   },
 });
