@@ -6,7 +6,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as Font from 'expo-font';
 import { setupPlayer } from '../src/services/audioService';
-import { setupEmbeddedBooks } from '../src/services/embeddedBooksService';
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -36,8 +35,6 @@ export default function RootLayout() {
       // Setup audio player
       await setupPlayer();
 
-      // Copy embedded book to local storage on first launch
-      await setupEmbeddedBooks();
     } catch (error) {
       console.error('Error initializing app:', error);
     } finally {

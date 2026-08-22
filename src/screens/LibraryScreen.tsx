@@ -19,6 +19,7 @@ import { useBooks } from '../hooks/useBooks';
 import { BookCard } from '../components/BookCard';
 import { FilterModal } from '../components/FilterModal';
 import { Book } from '../types/book';
+import { setupEmbeddedBooks } from '../services/embeddedBooksService';
 
 export default function LibraryScreen() {
   const { width: windowWidth } = useWindowDimensions();
@@ -49,6 +50,15 @@ export default function LibraryScreen() {
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
   }, []);
+
+  useEffect(() => {
+    // Never download and extract the bundled starter book during onboarding.
+    // Wait until this screen has rendered, then refresh its metadata when done.
+    const timer = setTimeout(() => {
+      void setupEmbeddedBooks().then(refreshBooks);
+    }, 750);
+    return () => clearTimeout(timer);
+  }, [refreshBooks]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
