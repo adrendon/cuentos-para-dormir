@@ -43,6 +43,17 @@ export function PageViewer({
     pagerRef.current?.setPageWithoutAnimation(currentPage);
   }, [currentPage]);
 
+  // PagerView only uses initialPage during mount. Keep its native page in sync
+  // when narration or the page index changes currentPage programmatically.
+  useEffect(() => {
+    pagerRef.current?.setPageWithoutAnimation(currentPage);
+    thumbListRef.current?.scrollToIndex({
+      index: currentPage,
+      animated: true,
+      viewPosition: 0.5,
+    });
+  }, [currentPage]);
+
   const handlePageSelected = useCallback(
     (event: any) => {
       const position = event.nativeEvent.position;
