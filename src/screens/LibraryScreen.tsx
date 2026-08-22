@@ -9,12 +9,12 @@ import {
   Animated,
   StatusBar,
   useWindowDimensions,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Colors, Gradients } from '../theme/colors';
-import { useProfile } from '../hooks/useProfile';
 import { useBooks } from '../hooks/useBooks';
 import { BookCard } from '../components/BookCard';
 import { FilterModal } from '../components/FilterModal';
@@ -24,7 +24,6 @@ import { setupEmbeddedBooks } from '../services/embeddedBooksService';
 export default function LibraryScreen() {
   const { width: windowWidth } = useWindowDimensions();
   const router = useRouter();
-  const { profile } = useProfile();
   const {
     filteredBooks,
     isLoading,
@@ -41,10 +40,12 @@ export default function LibraryScreen() {
   } = useBooks();
   const [isFilterModalVisible, setFilterModalVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const horizontalPadding = 20;
+  const sideRailWidth = 92;
+  const gridLeftPadding = sideRailWidth + 28;
+  const gridRightPadding = 20;
   const columnGap = 16;
   const cardWidth = Math.floor(
-    (windowWidth - horizontalPadding * 2 - columnGap * 2) / 3
+    (windowWidth - gridLeftPadding - gridRightPadding - columnGap * 2) / 3
   );
 
   useEffect(() => {
@@ -112,30 +113,28 @@ export default function LibraryScreen() {
         colors={[...Gradients.background]}
         style={styles.gradient}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.greeting}>
-              ¡Hola, {profile.name || 'amiguito'}! 👋
-            </Text>
-            <Text style={styles.subtitle}>
-              ¿Qué cuento quieres leer hoy?
-            </Text>
-          </View>
+        {/* Compact side rail, matching the reference landscape layout. */}
+        <View style={styles.sideRail}>
           <TouchableOpacity
             style={styles.settingsButton}
             onPress={handleSettingsPress}
             accessibilityLabel="Abrir ajustes"
             accessibilityRole="button"
           >
-            <Text style={styles.settingsIcon}>⚙️</Text>
+            <Image source={require('../assets/ui/ic_settings.png')} style={styles.settingsIcon} />
           </TouchableOpacity>
+          <View style={styles.mailButton} accessibilityLabel="Novedades">
+            <Text style={styles.mailIcon}>✉</Text>
+          </View>
         </View>
 
-        {/* Search + filter row */}
+        {/* Search + filter bar */}
         <View style={styles.searchRow}>
           <View style={styles.searchBox}>
-            <Text style={styles.searchIcon}>🔍</Text>
+            <View style={styles.searchIcon}>
+              <View style={styles.searchLens} />
+              <View style={styles.searchHandle} />
+            </View>
             <TextInput
               style={styles.searchInput}
               value={searchQuery}
@@ -144,6 +143,11 @@ export default function LibraryScreen() {
               placeholderTextColor={Colors.subtitleGray}
               returnKeyType="search"
             />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Limpiar búsqueda">
+                <Text style={styles.clearSearch}>×</Text>
+              </TouchableOpacity>
+            )}
           </View>
           <TouchableOpacity
             style={styles.filterButton}
@@ -151,6 +155,11 @@ export default function LibraryScreen() {
             accessibilityRole="button"
             accessibilityLabel="Filtro"
           >
+            <View style={styles.filterIcon}>
+              <View style={styles.filterLineLong} />
+              <View style={styles.filterLineMedium} />
+              <View style={styles.filterLineShort} />
+            </View>
             <Text style={styles.filterButtonText}>Filtro</Text>
             {activeFilterCount > 0 && (
               <View style={styles.filterBadge}>
@@ -189,7 +198,10 @@ export default function LibraryScreen() {
             keyExtractor={(item) => item.id}
             numColumns={3}
             key={`library-grid-${Math.round(windowWidth)}`}
-            contentContainerStyle={styles.gridContent}
+            contentContainerStyle={[
+              styles.gridContent,
+              { paddingLeft: gridLeftPadding, paddingRight: gridRightPadding },
+            ]}
             columnWrapperStyle={styles.gridRow}
             showsVerticalScrollIndicator={false}
           />
@@ -206,59 +218,84 @@ const styles = StyleSheet.create({
   gradient: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  sideRail: {
+    position: 'absolute',
+    left: 14,
+    top: 18,
+    width: 64,
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 52,
-    paddingBottom: 8,
-  },
-  headerLeft: {
-    flex: 1,
-  },
-  greeting: {
-    color: Colors.titleGold,
-    fontSize: 22,
-    fontFamily: 'BalooBhaijaan',
-  },
-  subtitle: {
-    color: Colors.subtitleGray,
-    fontSize: 14,
-    marginTop: 2,
+    gap: 16,
+    zIndex: 20,
   },
   settingsButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#1B9668',
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#0AA36F',
     justifyContent: 'center',
     alignItems: 'center',
   },
   settingsIcon: {
-    fontSize: 24,
+    width: 31,
+    height: 31,
+    tintColor: '#FFFFFF',
+    resizeMode: 'contain',
+  },
+  mailButton: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#267ECB',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mailIcon: {
     color: '#FFFFFF',
+    fontSize: 30,
+    lineHeight: 34,
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    gap: 10,
+    marginLeft: 92,
+    paddingTop: 18,
+    paddingRight: 20,
+    paddingBottom: 14,
+    gap: 12,
   },
   searchBox: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    height: 46,
-    borderRadius: 23,
+    height: 54,
+    borderRadius: 27,
     backgroundColor: '#F2F4DD',
     paddingHorizontal: 16,
     gap: 8,
   },
   searchIcon: {
-    fontSize: 14,
-    color: '#888',
+    width: 22,
+    height: 22,
+    position: 'relative',
+  },
+  searchLens: {
+    position: 'absolute',
+    left: 1,
+    top: 1,
+    width: 14,
+    height: 14,
+    borderWidth: 2,
+    borderColor: '#77776F',
+    borderRadius: 7,
+  },
+  searchHandle: {
+    position: 'absolute',
+    width: 9,
+    height: 2,
+    left: 13,
+    top: 15,
+    backgroundColor: '#77776F',
+    transform: [{ rotate: '45deg' }],
   },
   searchInput: {
     flex: 1,
@@ -267,12 +304,18 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat-SemiBold',
     height: '100%',
   },
+  clearSearch: {
+    color: '#3E3E38',
+    fontSize: 30,
+    lineHeight: 32,
+    paddingHorizontal: 4,
+  },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 46,
-    paddingHorizontal: 18,
-    borderRadius: 23,
+    height: 54,
+    paddingHorizontal: 24,
+    borderRadius: 27,
     backgroundColor: '#F2F4DD',
     gap: 6,
   },
@@ -281,6 +324,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Montserrat-SemiBold',
   },
+  filterIcon: {
+    width: 20,
+    height: 17,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  filterLineLong: { width: 20, height: 2, backgroundColor: '#3E3E38' },
+  filterLineMedium: { width: 14, height: 2, backgroundColor: '#3E3E38' },
+  filterLineShort: { width: 7, height: 2, backgroundColor: '#3E3E38' },
   filterBadge: {
     minWidth: 18,
     height: 18,
@@ -296,7 +348,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   gridContent: {
-    paddingHorizontal: 20,
     paddingBottom: 24,
     gap: 16,
   },
