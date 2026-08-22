@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { Colors, Gradients } from '../theme/colors';
 import { useProfile } from '../hooks/useProfile';
 import { useBooks } from '../hooks/useBooks';
@@ -37,6 +38,10 @@ export default function LibraryScreen() {
   } = useBooks();
   const [isFilterModalVisible, setFilterModalVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+  }, []);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {

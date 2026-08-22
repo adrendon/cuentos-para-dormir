@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { Colors, Gradients } from '../theme/colors';
 import { Gender, OnboardingGoal, StoryPreference } from '../types/book';
 import { useProfile } from '../hooks/useProfile';
@@ -102,6 +103,10 @@ export default function OnboardingScreen() {
   const progressBarWidth = useRef(new Animated.Value(0)).current;
 
   const step = STEP_ORDER[stepIndex] ?? 'loading';
+
+  useEffect(() => {
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+  }, []);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {

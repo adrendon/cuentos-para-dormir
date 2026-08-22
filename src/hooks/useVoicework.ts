@@ -8,10 +8,12 @@ import { BOOKS_LOCAL_DIR } from '../services/downloadService';
  * Hook to play voicework narration per page.
  * voicework_es/ contains: voice1.mp3, voice2.mp3, etc.
  */
-export function useVoicework(folderName: string | undefined) {
+export function useVoicework(folderName: string | undefined, onNarrationEnd?: () => void) {
   const [isNarrating, setIsNarrating] = useState(false);
   const [currentNarrationPage, setCurrentNarrationPage] = useState(-1);
   const playerRef = useRef<AudioPlayer | null>(null);
+  const onNarrationEndRef = useRef(onNarrationEnd);
+  onNarrationEndRef.current = onNarrationEnd;
 
   const hasVoicework = useCallback(async (): Promise<boolean> => {
     if (!folderName) return false;
@@ -40,6 +42,13 @@ export function useVoicework(folderName: string | undefined) {
       if (!fileInfo.exists) return; // No narration for this page
 
       playerRef.current = createAudioPlayer({ uri: voiceFile });
+      playerRef.current.addListener('playbackStatusUpdate', (status) => {
+        if (status.didJustFinish) {
+          setIsNarrating(false);
+          setCurrentNarrationPage(-1);
+          onNarrationEndRef.current?.();
+        }
+      });
       playerRef.current.play();
       setIsNarrating(true);
       setCurrentNarrationPage(pageNumber);

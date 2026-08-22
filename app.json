@@ -3,7 +3,7 @@
     "name": "Cuentos para Dormir",
     "slug": "cuentos-para-dormir",
     "version": "1.0.0",
-    "orientation": "landscape",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "assetBundlePatterns": [
@@ -31,9 +31,7 @@
         "expo-status-bar",
         {
           "style": "light",
-          "hidden": {
-            "android": true
-          }
+          "hidden": true
         }
       ],
       "expo-video"

@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { Colors } from '../theme/colors';
 import { useProfile } from '../hooks/useProfile';
 
@@ -21,6 +22,10 @@ export default function SplashScreen() {
     p.loop = false;
     p.play();
   });
+
+  useEffect(() => {
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+  }, []);
 
   const goNext = () => {
     if (hasNavigated.current || isLoading) return;

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { Colors } from '../theme/colors';
 import { useBooks } from '../hooks/useBooks';
 import { useBookPages, getBookAudioUri } from '../hooks/useBookPages';
@@ -58,8 +59,6 @@ export default function BookScreen() {
     profile.name
   );
 
-  const { isNarrating, toggleNarration, stopNarration } = useVoicework(book?.folderName);
-
   const [isPlaying, setIsPlaying] = useState(false);
   const [showText, setShowText] = useState(true);
   const [showEndScreen, setShowEndScreen] = useState(false);
@@ -70,12 +69,26 @@ export default function BookScreen() {
   const [isLocked, setIsLocked] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  // In "Escuchar" mode, auto-advance to the next page once narration finishes.
+  const handleNarrationEnd = useCallback(() => {
+    if (mode === 'listen' && currentPage < pages.length - 1) {
+      setCurrentPage(currentPage + 1);
+      setShowControls(true);
+    }
+  }, [mode, currentPage, pages.length, setCurrentPage]);
+
+  const { isNarrating, toggleNarration, stopNarration } = useVoicework(book?.folderName, handleNarrationEnd);
+
   // Keep screen awake
   useEffect(() => {
     activateKeepAwakeAsync();
     return () => {
       deactivateKeepAwake();
     };
+  }, []);
+
+  useEffect(() => {
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
   }, []);
 
   // Fade in

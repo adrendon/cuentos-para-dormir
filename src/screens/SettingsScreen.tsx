@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { Colors, Gradients } from '../theme/colors';
 import { useProfile } from '../hooks/useProfile';
 import { GenderSelector } from '../components/GenderSelector';
@@ -30,6 +31,10 @@ export default function SettingsScreen() {
   const [gender, setGender] = useState<Gender>(profile.gender);
   const [avatar, setAvatar] = useState(profile.avatar);
   const [hasChanges, setHasChanges] = useState(false);
+
+  useEffect(() => {
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+  }, []);
 
   const handleNameChange = (text: string) => {
     setName(text);

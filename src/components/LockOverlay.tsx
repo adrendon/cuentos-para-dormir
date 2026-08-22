@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Pressable } from 'react-native';
 import { Colors } from '../theme/colors';
 
 interface LockOverlayProps {
@@ -41,8 +41,11 @@ export function LockOverlay({ onUnlock }: LockOverlayProps) {
   }, [progress, onUnlock]);
 
   return (
-    <View style={styles.container} pointerEvents="box-only">
-      <View style={styles.hint}>
+    <View style={styles.container} pointerEvents="box-none">
+      {/* Transparent full-screen tap absorber — blocks the reader underneath without eating the unlock button's touches */}
+      <Pressable style={StyleSheet.absoluteFill} onPress={() => {}} />
+
+      <View style={styles.hint} pointerEvents="none">
         <Text style={styles.hintText}>🔒 Bloqueado para niños</Text>
       </View>
 
