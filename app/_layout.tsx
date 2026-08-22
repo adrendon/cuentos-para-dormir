@@ -28,9 +28,9 @@ export default function RootLayout() {
       });
       setFontsLoaded(true);
 
-      // Only the status bar should be hidden; keep the Android nav/back bar visible.
+      // Hide navigation bar completely (immersive mode)
       if (Platform.OS === 'android') {
-        await NavigationBar.setVisibilityAsync('visible');
+        await NavigationBar.setVisibilityAsync('hidden');
       }
 
       // Setup audio player
