@@ -22,6 +22,7 @@ interface PageViewerProps {
   pages: BookPage[];
   currentPage: number;
   onPageChange: (pageIndex: number) => void;
+  onFinish: () => void;
   coverColor: string;
   pageTexts?: Map<number, string>;
   showText: boolean;
@@ -31,6 +32,7 @@ export function PageViewer({
   pages,
   currentPage,
   onPageChange,
+  onFinish,
   coverColor,
   pageTexts,
   showText,
@@ -62,8 +64,10 @@ export function PageViewer({
   const goNext = useCallback(() => {
     if (currentPage < pages.length - 1) {
       pagerRef.current?.setPage(currentPage + 1);
+    } else {
+      onFinish();
     }
-  }, [currentPage, pages.length]);
+  }, [currentPage, pages.length, onFinish]);
 
   const goPrev = useCallback(() => {
     if (currentPage > 0) {
@@ -160,13 +164,13 @@ export function PageViewer({
 
         {/* Right arrow */}
         <TouchableOpacity
-          style={[styles.arrowBtn, currentPage === pages.length - 1 && styles.arrowBtnDisabled]}
+          style={styles.arrowBtn}
           onPress={goNext}
-          disabled={currentPage === pages.length - 1}
+          accessibilityLabel={currentPage === pages.length - 1 ? 'Terminar cuento' : 'Página siguiente'}
         >
           <Image
             source={require('../assets/ui/ic_right_arrow.png')}
-            style={[styles.arrowIcon, currentPage === pages.length - 1 && styles.arrowIconDisabled]}
+            style={styles.arrowIcon}
           />
         </TouchableOpacity>
       </View>
