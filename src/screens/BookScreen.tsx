@@ -77,7 +77,7 @@ export default function BookScreen() {
     }
   }, [mode, currentPage, pages.length, setCurrentPage]);
 
-  const { isNarrating, toggleNarration, stopNarration } = useVoicework(book?.folderName, handleNarrationEnd);
+  const { isNarrating, playNarration, toggleNarration, stopNarration } = useVoicework(book?.folderName, handleNarrationEnd);
 
   // Keep screen awake
   useEffect(() => {
@@ -230,9 +230,9 @@ export default function BookScreen() {
     const pageNum = pages[currentPage].pageNumber;
     (async () => {
       await duckVolume();
-      await toggleNarration(pageNum);
+      await playNarration(pageNum);
     })();
-  }, [stage, mode, currentPage]);
+  }, [stage, mode, currentPage, pages, playNarration]);
 
   if (!book) {
     return (
