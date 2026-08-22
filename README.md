@@ -5,18 +5,20 @@ App de cuentos infantiles con audio de fondo y narración por página para Andro
 ## Estado actual
 
 ### Implementado
-- Splash screen reproduce un video del logo (`src/assets/logo_video.mp4`) con `expo-video`, luego navega a onboarding o biblioteca
-- Onboarding completo de 9 pasos + pantalla de carga: idioma (solo español, seleccionable), "sin IA", protagonistas, nombre, género, preview personalizado, objetivos, preferencias (leer/escuchar/narrar), notificaciones, "preparando cuentos"
-- Barra de estado oculta (barra de navegación de Android permanece visible, `expo-navigation-bar`)
+- Splash screen reproduce un video del logo (`src/assets/logo_video.mp4`) con `expo-video`, luego navega a onboarding o biblioteca (orientación portrait)
+- Onboarding completo de 9 pasos + pantalla de carga: idioma (solo español, seleccionable), "sin IA", protagonistas, nombre, género, preview personalizado, objetivos, preferencias (leer/escuchar/narrar), notificaciones, "preparando cuentos" (orientación portrait)
+- **Orientación por pantalla**: Splash y Onboarding en portrait; Biblioteca, Ajustes y Lector en landscape (`expo-screen-orientation`, bloqueado dinámicamente por pantalla en vez de forzado a nivel de `app.json`)
+- Barra de estado oculta vía plugin `expo-status-bar` (`hidden: true`) — la barra de navegación de Android (atrás/inicio/recientes) permanece siempre visible (`expo-navigation-bar` fuerza `setVisibilityAsync('visible')` al iniciar)
 - Biblioteca con grid de 3 columnas, portadas reales, buscador de texto y modal de filtros (no leídos, favoritos, con/sin narración, cortos/largos)
 - Menú de tres puntos por cuento: marcar/desmarcar favorito, borrar libro descargado (bloqueado para libros integrados)
 - Apertura de cuento con animación tipo "libro abriéndose" y selección de modo Leer / Escuchar
-- Bloqueo de pantalla para niños al entrar a un cuento (mantener presionado 1.5s para desbloquear, ignora el botón físico de atrás mientras está bloqueado)
+- Bloqueo de pantalla para niños al entrar a un cuento (mantener presionado 1.5s el botón 🔓 para desbloquear, ignora el botón físico de atrás mientras está bloqueado; botón 🔒 en los controles para volver a bloquear)
 - Visor de cuento fullscreen con swipe horizontal + índice de páginas en miniatura (overlay tipo grid)
 - Texto personalizado por página (reemplaza `{NAME:P1}` con el nombre del niño)
 - Páginas diferenciadas por género (carpetas `boy/` y `girl/`)
 - Audio de fondo del cuento con botón silenciar 🔊/🔇
-- Narración por página con botón 🎧 (reproduce `voicework_es/voiceN.mp3`); en modo "Escuchar" se reproduce automáticamente al cambiar de página
+- Narración por página con botón 🎧 (reproduce `voicework_es/voiceN.mp3`)
+- **Modo "Escuchar"**: la narración se reproduce automáticamente al entrar a cada página, y **al terminar el audio avanza sola a la siguiente página** (detectado vía evento `playbackStatusUpdate` / `didJustFinish` de `expo-audio`)
 - Duck de volumen: baja música de fondo automáticamente durante narración
 - Botón mostrar/ocultar texto superpuesto (Aa)
 - Controles auto-hide (aparecen al tocar, desaparecen a los 4s)
@@ -28,10 +30,10 @@ App de cuentos infantiles con audio de fondo y narración por página para Andro
 - Pantalla de ajustes (nombre, género, avatar, música on/off)
 - Portadas bundleadas para todos los libros del catálogo
 - Primer libro (ADayInReverse) se descarga automáticamente al primer arranque
-- Orientación landscape siempre (bloqueada a nivel nativo)
 - Expo Doctor: 21/21 checks pasando
 
 ### Pendiente / TODO
+- [ ] **Diseño visual de la biblioteca** (portadas, barra superior, iconos) no está a la par del video/APK de referencia — es un rediseño visual más grande, aún no abordado
 - [ ] Selector de idioma dentro de Ajustes (el onboarding ya tiene el paso, pero solo hay español disponible)
 - [ ] Filtro "Incluye a N niños" (heroes) — requiere agregar ese dato al catálogo (`Book` type)
 - [ ] Push notifications (Firebase Cloud Messaging) — removido por incompatibilidad con build limpio
@@ -40,6 +42,13 @@ App de cuentos infantiles con audio de fondo y narración por página para Andro
 - [ ] Animaciones de entrada escalonada en la biblioteca
 - [ ] Más libros (hay 92 en el catálogo original, 9 integrados actualmente)
 - [ ] Tema claro/oscuro según hora del día
+- [ ] Confirmar en dispositivo real que el "ANR"/congelamiento reportado durante el onboarding se resolvió tras el fix de orientación por pantalla (no se pudo reproducir/diagnosticar con logs; el forzado global a landscape mientras el layout esperaba portrait era la hipótesis principal)
+
+### Bugs corregidos en la última sesión
+- `app.json`: `androidStatusBar` (deprecado en SDK 57) migrado al plugin `expo-status-bar`; primer intento usó `"hidden": {"android": true}` (formato inválido, rompía el link de recursos de Android con `expected boolean but got (raw string) [object Object]`) — corregido a `"hidden": true`
+- `LockOverlay`: usaba `pointerEvents="box-only"`, que hace que el contenedor reciba los toques pero **bloquea a sus hijos** — el botón de desbloqueo nunca respondía. Corregido con un `Pressable` de fondo (bloquea el lector) + `pointerEvents="box-none"` (deja pasar el toque al botón)
+- Gradle build local: un daemon de Gradle colgado (`OutOfMemoryError: Metaspace` de una corrida previa) dejaba bloqueada la carpeta `android/` y el caché `.gradle/caches/journal-1` en builds siguientes (`EBUSY` / `Timeout waiting to lock journal cache`) — se soluciona matando el proceso `java.exe` de Gradle antes de reintentar
+- `build:eas` no corría en PowerShell porque usaba sintaxis bash (`VAR=value comando`) — se usa `cross-env` para setear `EAS_SKIP_AUTO_FINGERPRINT` de forma multiplataforma
 
 ## Stack técnico
 
@@ -180,14 +189,22 @@ npm run build:android
 # Build APK en la nube en background, sin esperar (EAS)
 npm run build:eas
 
-# Compila el APK local y lo sube al servidor configurado en scripts/deploy-apk.sh
+# Compila el APK local y lo sube al servidor configurado en scripts/deploy-apk.sh (macOS/Linux)
 npm run deploy:apk
+
+# Sube el APK YA COMPILADO (./cuentos-para-dormir.apk) al servidor por scp, sin recompilar (Windows)
+npm run deploy:apk:win
 
 # Desarrollo local (requiere dispositivo conectado)
 npx expo start
 ```
 
-> `build:local` / `build:local:win` requieren Android SDK + JDK instalados localmente. La primera compilación tarda bastante (Gradle descarga su distribución + compila módulos nativos como `react-native-worklets`); builds siguientes son mucho más rápidos gracias al cache de Gradle.
+> `build:local` / `build:local:win` requieren Android SDK + JDK instalados localmente. La primera compilación tarda bastante (Gradle descarga su distribución + compila módulos nativos como `react-native-worklets`); builds siguientes son mucho más rápidas gracias al cache de Gradle.
+>
+> En Windows, si un build previo falla o se cuelga (p. ej. `OutOfMemoryError`), puede quedar un proceso `java.exe` de Gradle colgado bloqueando `android/` y `.gradle/caches`. Si el siguiente build falla con `EBUSY` o `Timeout waiting to lock journal cache`, mata el proceso:
+> ```powershell
+> Get-CimInstance Win32_Process -Filter "Name='java.exe'" | Where-Object { $_.CommandLine -like '*gradle*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+> ```
 
 ## Sistema de descarga de libros
 
