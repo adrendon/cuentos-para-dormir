@@ -34,10 +34,14 @@ export function BookCard({
   index = 0,
   cardWidth,
 }: BookCardProps) {
-  const isAvailable = book.isDownloaded || book.isEmbedded;
+  // "Embedded" only means the catalog ZIP ships with the app. The extracted
+  // files may not exist yet, so opening it before isDownloaded is true can send
+  // invalid page/audio URIs to native modules and crash Android.
+  const isAvailable = book.isDownloaded;
   const [showMenu, setShowMenu] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const pressScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -58,7 +62,19 @@ export function BookCard({
 
   const handlePress = () => {
     if (isAvailable) {
-      onPress(book);
+      Animated.sequence([
+        Animated.spring(pressScale, {
+          toValue: 1.045,
+          speed: 28,
+          bounciness: 7,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pressScale, {
+          toValue: 0.96,
+          duration: 120,
+          useNativeDriver: true,
+        }),
+      ]).start(() => onPress(book));
     }
     // If not available, do nothing — user must download first
   };
@@ -68,13 +84,13 @@ export function BookCard({
       style={{
         width: cardWidth,
         opacity: fadeAnim,
-        transform: [{ scale: scaleAnim }],
+        transform: [{ scale: Animated.multiply(scaleAnim, pressScale) }],
       }}
     >
       <TouchableOpacity
         style={[
           styles.container,
-          { width: cardWidth, height: cardWidth * 1.08, backgroundColor: book.coverColor },
+          { width: cardWidth, height: cardWidth, backgroundColor: book.coverColor },
         ]}
         onPress={handlePress}
         activeOpacity={isAvailable ? 0.85 : 1}
@@ -112,6 +128,8 @@ export function BookCard({
         )}
       </View>
 
+      <View style={styles.bookSpine} pointerEvents="none" />
+
       {/* Title */}
       <View style={styles.titleContainer}>
         <Text style={styles.title} numberOfLines={2}>
@@ -143,7 +161,7 @@ export function BookCard({
         </View>
       )}
 
-      {/* Three-dot menu */}
+      {/* The original library uses a white bookmark tab, not a floating dot. */}
       <TouchableOpacity
         style={styles.menuButton}
         onPress={() => setShowMenu(true)}
@@ -167,7 +185,7 @@ export function BookCard({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
+    borderRadius: 3,
     marginBottom: 14,
     overflow: 'hidden',
     elevation: 5,
@@ -175,10 +193,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.35,
     shadowRadius: 5,
-    borderLeftWidth: 6,
-    borderLeftColor: Colors.accentTurquoise,
-    borderWidth: 1.5,
-    borderColor: 'rgba(37, 200, 238, 0.3)',
+    borderWidth: 0,
   },
   imageContainer: {
     flex: 1,
@@ -187,6 +202,16 @@ const styles = StyleSheet.create({
   coverImage: {
     width: '100%',
     height: '100%',
+  },
+  bookSpine: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    right: 0,
+    width: 9,
+    backgroundColor: 'rgba(20, 207, 201, 0.78)',
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(255,255,255,0.5)',
   },
   placeholder: {
     flex: 1,
@@ -226,14 +251,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     left: 0,
-    right: 0,
+    right: 9,
     paddingHorizontal: 8,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    paddingVertical: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.62)',
   },
   title: {
     color: Colors.textWhite,
-    fontSize: 11,
+    fontSize: 13,
     fontFamily: 'Montserrat-SemiBold',
     textAlign: 'center',
   },
@@ -277,18 +302,18 @@ const styles = StyleSheet.create({
   },
   menuButton: {
     position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    top: 0,
+    right: 18,
+    width: 30,
+    height: 48,
+    borderRadius: 0,
+    backgroundColor: '#F7F5E8',
     justifyContent: 'center',
     alignItems: 'center',
   },
   menuButtonText: {
-    color: Colors.textWhite,
-    fontSize: 16,
+    color: '#3D3B43',
+    fontSize: 24,
     fontWeight: 'bold',
     lineHeight: 16,
   },
