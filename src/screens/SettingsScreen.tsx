@@ -14,27 +14,30 @@ import * as ScreenOrientation from 'expo-screen-orientation';
 import { Colors, Gradients } from '../theme/colors';
 import { useProfile } from '../hooks/useProfile';
 import { GenderSelector } from '../components/GenderSelector';
-import { AnimalSelector } from '../components/AnimalSelector';
 import { Gender } from '../types/book';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const {
     profile,
-    updateName,
-    updateGender,
-    updateAvatar,
     toggleMusic,
+    saveProfile,
   } = useProfile();
 
   const [name, setName] = useState(profile.name);
   const [gender, setGender] = useState<Gender>(profile.gender);
-  const [avatar, setAvatar] = useState(profile.avatar);
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
   }, []);
+
+  // The profile is restored asynchronously; reflect it once it arrives so the
+  // saved name is not replaced by the initial empty value.
+  useEffect(() => {
+    setName(profile.name);
+    setGender(profile.gender);
+  }, [profile.name, profile.gender]);
 
   const handleNameChange = (text: string) => {
     setName(text);
@@ -46,17 +49,12 @@ export default function SettingsScreen() {
     setHasChanges(true);
   };
 
-  const handleAvatarChange = (a: string) => {
-    setAvatar(a);
-    setHasChanges(true);
-  };
-
   const handleSave = async () => {
-    if (name.trim().length > 0) {
-      await updateName(name.trim());
-    }
-    await updateGender(gender);
-    await updateAvatar(avatar);
+    await saveProfile({
+      ...profile,
+      name: name.trim() || profile.name,
+      gender,
+    });
     setHasChanges(false);
   };
 
@@ -111,11 +109,6 @@ export default function SettingsScreen() {
               onSelect={handleGenderChange}
               label="¿Quién va a leer?"
             />
-          </View>
-
-          {/* Avatar section */}
-          <View style={styles.section}>
-            <AnimalSelector selected={avatar} onSelect={handleAvatarChange} />
           </View>
 
           {/* Music toggle */}
