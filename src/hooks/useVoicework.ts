@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { createAudioPlayer } from 'expo-audio';
 import type { AudioPlayer } from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -42,7 +42,7 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
       const voiceFile = `${BOOKS_LOCAL_DIR}${folderName}/voicework_es/voice${pageNumber}.mp3`;
       const fileInfo = await FileSystem.getInfoAsync(voiceFile);
 
-      if (!fileInfo.exists) return; // No narration for this page
+      if (!fileInfo.exists || playbackGeneration !== playbackGenerationRef.current) return;
 
       const narrationPlayer = createAudioPlayer({ uri: voiceFile });
       playerRef.current = narrationPlayer;
@@ -96,6 +96,16 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
       await playNarration(pageNumber);
     }
   }, [isNarrating, currentNarrationPage, playNarration, stopNarration]);
+
+  // Expo Router can remove or blur the reader while an async file lookup is in
+  // flight. Invalidate that lookup and release the native player on unmount.
+  useEffect(() => () => {
+    playbackGenerationRef.current++;
+    statusSubscriptionRef.current?.remove();
+    statusSubscriptionRef.current = null;
+    playerRef.current?.remove();
+    playerRef.current = null;
+  }, []);
 
   return {
     isNarrating,

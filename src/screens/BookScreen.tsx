@@ -10,7 +10,7 @@ import {
   StatusBar,
   Share,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Colors } from '../theme/colors';
@@ -18,11 +18,12 @@ import { useBooks } from '../hooks/useBooks';
 import { useBookPages, getBookAudioUri } from '../hooks/useBookPages';
 import { useBookTexts } from '../hooks/useBookTexts';
 import { useVoicework } from '../hooks/useVoicework';
+import { useVoiceworkProfile } from '../hooks/useVoiceworkProfile';
+import { getBookCover } from '../assets/books/coverRegistry';
 import { useProfile } from '../hooks/useProfile';
 import { PageViewer } from '../components/PageViewer';
 import { BookOpeningIntro } from '../components/BookOpeningIntro';
 import { PageIndexOverlay } from '../components/PageIndexOverlay';
-import { LockOverlay } from '../components/LockOverlay';
 import {
   playBookMusic,
   pauseMusic,
@@ -34,7 +35,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 
 type BookStage = 'intro' | 'reading';
-type ReadingMode = 'read' | 'listen';
+type ReadingMode = 'read' | 'listen' | 'record';
 
 export default function BookScreen() {
   const router = useRouter();
@@ -42,17 +43,25 @@ export default function BookScreen() {
   const { getBookById, markAsRead, toggleFavorite } = useBooks();
   const { profile } = useProfile();
   const book = getBookById(id ?? '');
+  const [mode, setMode] = useState<ReadingMode | null>(null);
+  const voiceworkProfile = useVoiceworkProfile(book?.folderName);
+  const contentGender = mode === 'listen' && voiceworkProfile
+    ? voiceworkProfile.gender
+    : profile.gender;
+  const contentName = mode === 'listen' && voiceworkProfile
+    ? voiceworkProfile.name
+    : profile.name;
 
   const {
     pages,
     currentPage,
     setCurrentPage,
-  } = useBookPages(book, profile.gender);
+  } = useBookPages(book, contentGender);
 
   const { pageTexts, title, author } = useBookTexts(
     book?.folderName,
-    profile.gender,
-    profile.name
+    contentGender,
+    contentName
   );
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -60,10 +69,7 @@ export default function BookScreen() {
   const [showEndScreen, setShowEndScreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [stage, setStage] = useState<BookStage>('intro');
-  const [mode, setMode] = useState<ReadingMode | null>(null);
   const [showIndex, setShowIndex] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
-  const [showUnlockPrompt, setShowUnlockPrompt] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // In "Escuchar" mode, auto-advance to the next page once narration finishes.
@@ -77,6 +83,17 @@ export default function BookScreen() {
   }, [mode, currentPage, pages.length, setCurrentPage, book, markAsRead]);
 
   const { isNarrating, playNarration, toggleNarration, stopNarration } = useVoicework(book?.folderName, handleNarrationEnd);
+
+  // Stack screens can remain mounted after navigation. Stopping on blur (not
+  // only on unmount) prevents music or narration from leaking into the library,
+  // settings, or another book.
+  useFocusEffect(useCallback(() => {
+    return () => {
+      setIsPlaying(false);
+      void stopNarration();
+      void stopMusic();
+    };
+  }, [stopNarration]));
 
   // Keep screen awake
   useEffect(() => {
@@ -114,16 +131,6 @@ export default function BookScreen() {
     };
   }, [book?.id]);
 
-  // Ignore the hardware back button while the child lock is active.
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (isLocked) return true;
-      handleGoBack();
-      return true;
-    });
-    return () => backHandler.remove();
-  }, [isLocked]);
-
   const handleFinish = useCallback(() => {
     setShowEndScreen(true);
     if (book) markAsRead(book.id);
@@ -145,6 +152,14 @@ export default function BookScreen() {
     // Navigate back without animation delay
     router.back();
   }, [stopNarration]);
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      void handleGoBack();
+      return true;
+    });
+    return () => backHandler.remove();
+  }, [handleGoBack]);
 
   const handleToggleMusic = useCallback(async () => {
     if (isPlaying) {
@@ -177,6 +192,11 @@ export default function BookScreen() {
     setCurrentPage(pageIndex);
   }, [currentPage, stopNarration]);
 
+  const handleSelectIndexPage = useCallback((pageIndex: number) => {
+    setShowIndex(false);
+    void handlePageChange(pageIndex);
+  }, [handlePageChange]);
+
   const handleTapScreen = useCallback(() => {
     setShowControls(prev => !prev);
   }, []);
@@ -185,16 +205,12 @@ export default function BookScreen() {
     setMode(selectedMode);
     setStage('reading');
     setShowControls(false);
-    setShowUnlockPrompt(false);
-    setIsLocked(true);
   }, []);
 
   const handleReadAgain = useCallback(() => {
     setCurrentPage(0);
     setShowEndScreen(false);
     setShowControls(false);
-    setShowUnlockPrompt(false);
-    setIsLocked(true);
   }, [setCurrentPage]);
 
   const handleShare = useCallback(async () => {
@@ -210,11 +226,6 @@ export default function BookScreen() {
   const handleToggleFavoriteFromEndScreen = useCallback(() => {
     if (book) toggleFavorite(book.id);
   }, [book, toggleFavorite]);
-
-  const handleSelectIndexPage = useCallback((pageIndex: number) => {
-    setShowIndex(false);
-    handlePageChange(pageIndex);
-  }, [handlePageChange]);
 
   // "Escuchar" mode auto-plays the narration for the current page.
   useEffect(() => {
@@ -255,6 +266,7 @@ export default function BookScreen() {
           coverColor={book.coverColor}
           title={title || book.title}
           firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined}
+          coverSource={getBookCover(book.folderName)}
           musicEnabled={isPlaying}
           onToggleMusic={handleToggleMusic}
           onClose={handleGoBack}
@@ -277,7 +289,6 @@ export default function BookScreen() {
             coverColor={book.coverColor}
             pageTexts={pageTexts}
             showText={showText}
-            showNavigation={!isLocked}
           />
         </TouchableOpacity>
       ) : (
@@ -339,7 +350,7 @@ export default function BookScreen() {
       )}
 
       {/* Compact floating controls with readable labels. */}
-      {!showEndScreen && showControls && !isLocked && (
+      {!showEndScreen && showControls && (
         <View style={styles.topControls}>
           <View style={styles.titleGroup}>
             <TouchableOpacity
@@ -402,18 +413,6 @@ export default function BookScreen() {
               <Text style={styles.controlLabel}>Música</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.labeledControl}
-              onPress={() => {
-                setShowControls(false);
-                setShowUnlockPrompt(false);
-                setIsLocked(true);
-              }}
-              accessibilityLabel="Bloquear pantalla"
-            >
-              <View style={styles.lockShape} />
-              <Text style={styles.controlLabel}>Bloquear</Text>
-            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -426,17 +425,6 @@ export default function BookScreen() {
         onClose={() => setShowIndex(false)}
       />
 
-      {isLocked && !showEndScreen && (
-        <LockOverlay
-          showPrompt={showUnlockPrompt}
-          onRequestPrompt={() => setShowUnlockPrompt(true)}
-          onUnlock={() => {
-            setIsLocked(false);
-            setShowUnlockPrompt(false);
-            setShowControls(true);
-          }}
-        />
-      )}
         </>
       )}
     </Animated.View>
@@ -503,14 +491,6 @@ const styles = StyleSheet.create({
     color: Colors.textWhite,
     fontSize: 16,
     fontFamily: 'Montserrat-ExtraBold',
-  },
-  lockShape: {
-    width: 17,
-    height: 15,
-    marginTop: 3,
-    borderRadius: 3,
-    borderWidth: 3,
-    borderColor: Colors.textWhite,
   },
   controlLabel: {
     color: Colors.textWhite,
