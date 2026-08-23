@@ -77,7 +77,8 @@ export async function getDownloadedBooks(): Promise<string[]> {
  */
 export async function downloadBook(
   folderName: string,
-  onProgress: ProgressCallback
+  onProgress: ProgressCallback,
+  bundledZipUri?: string
 ): Promise<boolean> {
   const zipUrl = `${GITHUB_BOOKS_BASE_URL}/${folderName}.zip`;
   const zipLocalPath = `${FileSystem.cacheDirectory}${folderName}.zip`;
@@ -98,28 +99,32 @@ export async function downloadBook(
       totalBytes: 0,
     });
 
-    // Download with progress
-    const downloadResumable = FileSystem.createDownloadResumable(
-      zipUrl,
-      zipLocalPath,
-      {},
-      (dp) => {
-        const prog =
-          dp.totalBytesExpectedToWrite > 0
-            ? dp.totalBytesWritten / dp.totalBytesExpectedToWrite
-            : 0;
-        onProgress({
-          status: 'downloading',
-          progress: prog * 0.7, // Download = 70% of total
-          bytesDownloaded: dp.totalBytesWritten,
-          totalBytes: dp.totalBytesExpectedToWrite,
-        });
-      }
-    );
+    if (bundledZipUri) {
+      await FileSystem.copyAsync({ from: bundledZipUri, to: zipLocalPath });
+    } else {
+      // Download with progress
+      const downloadResumable = FileSystem.createDownloadResumable(
+        zipUrl,
+        zipLocalPath,
+        {},
+        (dp) => {
+          const prog =
+            dp.totalBytesExpectedToWrite > 0
+              ? dp.totalBytesWritten / dp.totalBytesExpectedToWrite
+              : 0;
+          onProgress({
+            status: 'downloading',
+            progress: prog * 0.7,
+            bytesDownloaded: dp.totalBytesWritten,
+            totalBytes: dp.totalBytesExpectedToWrite,
+          });
+        }
+      );
 
-    const result = await downloadResumable.downloadAsync();
-    if (!result || result.status !== 200) {
-      throw new Error(`Descarga falló (status ${result?.status})`);
+      const result = await downloadResumable.downloadAsync();
+      if (!result || result.status !== 200) {
+        throw new Error(`Descarga falló (status ${result?.status})`);
+      }
     }
 
     // Extract phase

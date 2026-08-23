@@ -38,6 +38,7 @@ export function BookCard({
   // files may not exist yet, so opening it before isDownloaded is true can send
   // invalid page/audio URIs to native modules and crash Android.
   const isAvailable = book.isDownloaded;
+  const isIncluded = book.isEmbedded;
   const [showMenu, setShowMenu] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
@@ -93,9 +94,9 @@ export function BookCard({
           { width: cardWidth, height: cardWidth, backgroundColor: book.coverColor },
         ]}
         onPress={handlePress}
-        activeOpacity={isAvailable ? 0.85 : 1}
+        activeOpacity={isAvailable || isIncluded ? 0.85 : 1}
         accessibilityRole="button"
-        accessibilityLabel={`${isAvailable ? 'Abrir' : 'Descargar'} cuento: ${book.title}`}
+        accessibilityLabel={`${isIncluded ? 'Cuento incluido' : isAvailable ? 'Abrir' : 'Descargar'}: ${book.title}`}
       >
       {/* Cover Image */}
       <View style={styles.imageContainer}>
@@ -117,15 +118,6 @@ export function BookCard({
           );
         })()}
 
-        {/* Overlay for not-downloaded books */}
-        {!isAvailable && (
-          <View style={styles.notDownloadedOverlay}>
-            <View style={styles.downloadCircle}>
-              <Text style={styles.downloadArrow}>↓</Text>
-            </View>
-            <Text style={styles.sizeText}>{book.sizeMB} MB</Text>
-          </View>
-        )}
       </View>
 
       <View style={styles.bookSpine} pointerEvents="none" />
@@ -138,10 +130,11 @@ export function BookCard({
       </View>
 
       {/* Download button for non-available books */}
-      {!isAvailable && (
-        <View style={styles.downloadContainer}>
+      {!isAvailable && !book.isEmbedded && (
+        <View style={styles.downloadContainer} pointerEvents="box-none">
           <DownloadButton
             folderName={book.folderName}
+            sizeMB={book.sizeMB}
             onDownloadComplete={() => onDownloadComplete(book.id)}
           />
         </View>
@@ -221,32 +214,6 @@ const styles = StyleSheet.create({
   placeholderEmoji: {
     fontSize: 48,
   },
-  notDownloadedOverlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  downloadCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 2.5,
-    borderColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  downloadArrow: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-  sizeText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '800',
-  },
   titleContainer: {
     position: 'absolute',
     bottom: 0,
@@ -264,10 +231,10 @@ const styles = StyleSheet.create({
   },
   downloadContainer: {
     position: 'absolute',
-    bottom: 36,
+    top: 0,
+    bottom: 0,
     left: 0,
-    right: 0,
-    paddingHorizontal: 6,
+    right: 9,
   },
   readBadge: {
     position: 'absolute',

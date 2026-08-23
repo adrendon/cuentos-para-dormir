@@ -35,6 +35,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import Slider from '@react-native-community/slider';
 import { LockOverlay } from '../components/LockOverlay';
+import { useReaderLock } from '../hooks/useReaderLock';
 
 type BookStage = 'intro' | 'reading';
 type ReadingMode = 'read' | 'listen' | 'record';
@@ -72,6 +73,7 @@ export default function BookScreen() {
   const [showControls, setShowControls] = useState(true);
   const [stage, setStage] = useState<BookStage>('intro');
   const [showIndex, setShowIndex] = useState(false);
+  const readerLock = useReaderLock();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // In "Escuchar" mode, auto-advance to the next page once narration finishes.
@@ -170,12 +172,12 @@ export default function BookScreen() {
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (isLocked) return true;
+      if (readerLock.isLocked) return true;
       void handleGoBack();
       return true;
     });
     return () => backHandler.remove();
-  }, [handleGoBack, isLocked]);
+  }, [handleGoBack, readerLock.isLocked]);
 
   const handleToggleMusic = useCallback(async () => {
     if (isPlaying) {
@@ -221,13 +223,15 @@ export default function BookScreen() {
     setMode(selectedMode);
     setStage('reading');
     setShowControls(false);
-  }, []);
+    readerLock.lock();
+  }, [readerLock.lock]);
 
   const handleReadAgain = useCallback(() => {
     setCurrentPage(0);
     setShowEndScreen(false);
     setShowControls(false);
-  }, [setCurrentPage]);
+    readerLock.lock();
+  }, [setCurrentPage, readerLock.lock]);
 
   const handleShare = useCallback(async () => {
     try {
@@ -366,7 +370,7 @@ export default function BookScreen() {
       )}
 
       {/* Compact floating controls with readable labels. */}
-      {!showEndScreen && showControls && (
+      {!showEndScreen && showControls && !readerLock.isLocked && (
         <View style={styles.topControls}>
           <View style={styles.titleGroup}>
             <TouchableOpacity
@@ -458,8 +462,7 @@ export default function BookScreen() {
               style={styles.labeledControl}
               onPress={() => {
                 setShowControls(false);
-                setShowUnlockPrompt(false);
-                setIsLocked(true);
+                readerLock.lock();
               }}
               accessibilityLabel="Bloquear pantalla"
             >
@@ -479,13 +482,12 @@ export default function BookScreen() {
         onClose={() => setShowIndex(false)}
       />
 
-      {isLocked && !showEndScreen && (
+      {readerLock.isLocked && !showEndScreen && (
         <LockOverlay
-          showPrompt={showUnlockPrompt}
-          onRequestPrompt={() => setShowUnlockPrompt(true)}
+          showPrompt={readerLock.showUnlockPrompt}
+          onRequestPrompt={readerLock.requestUnlock}
           onUnlock={() => {
-            setIsLocked(false);
-            setShowUnlockPrompt(false);
+            readerLock.unlock();
             setShowControls(true);
           }}
         />
