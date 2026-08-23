@@ -8,6 +8,7 @@ import type { AudioPlayer } from 'expo-audio';
 
 let player: AudioPlayer | null = null;
 let isSetup = false;
+let musicGeneration = 0;
 
 /**
  * Initialize audio mode.
@@ -40,9 +41,17 @@ export async function playBookMusic(
   audioUri: string
 ): Promise<void> {
   try {
-    await stopMusic();
-    player = createAudioPlayer({ uri: audioUri });
-    player.volume = 1.0;
+    const generation = ++musicGeneration;
+    const previousPlayer = player;
+    player = null;
+    previousPlayer?.remove();
+    const nextPlayer = createAudioPlayer({ uri: audioUri });
+    if (generation !== musicGeneration) {
+      nextPlayer.remove();
+      return;
+    }
+    player = nextPlayer;
+    player.volume = 0.35;
     player.play();
   } catch (error) {
     console.error('Error playing book music:', error);
@@ -79,10 +88,12 @@ export async function resumeMusic(): Promise<void> {
  * Stop and release the player.
  */
 export async function stopMusic(): Promise<void> {
+  musicGeneration++;
   try {
     if (player) {
-      player.remove();
+      const playerToRemove = player;
       player = null;
+      playerToRemove.remove();
     }
   } catch (error) {
     console.error('Error stopping:', error);
@@ -120,14 +131,14 @@ export async function getVolume(): Promise<number> {
  * Duck volume for narration overlay.
  */
 export async function duckVolume(): Promise<void> {
-  await setVolume(0.15);
+  await setVolume(0.08);
 }
 
 /**
  * Restore volume after ducking.
  */
 export async function restoreVolume(): Promise<void> {
-  await setVolume(1.0);
+  await setVolume(0.35);
 }
 
 /**

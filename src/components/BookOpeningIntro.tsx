@@ -22,10 +22,11 @@ interface BookOpeningIntroProps {
   coverColor: string;
   title: string;
   firstPageSource?: ImageSourcePropType;
+  coverSource?: ImageSourcePropType;
   musicEnabled: boolean;
   onToggleMusic: () => void;
   onClose: () => void;
-  onSelectMode: (mode: 'read' | 'listen') => void;
+  onSelectMode: (mode: 'read' | 'listen' | 'record') => void;
 }
 
 const STARS = [
@@ -39,6 +40,7 @@ export function BookOpeningIntro({
   coverColor,
   title,
   firstPageSource,
+  coverSource,
   musicEnabled,
   onToggleMusic,
   onClose,
@@ -104,6 +106,13 @@ export function BookOpeningIntro({
           <TouchableOpacity style={styles.modeButton} onPress={() => onSelectMode('listen')}>
             <Image source={require('../assets/ui/ic_book_listen.png')} style={styles.modeIcon} />
             <Text style={styles.modeLabel}>Escuchar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.modeButton} onPress={() => onSelectMode('record')}>
+            <View style={styles.microphoneIcon}>
+              <View style={styles.microphoneHead} />
+              <View style={styles.microphoneStand} />
+            </View>
+            <Text style={styles.modeLabel}>Grabar</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -176,7 +185,11 @@ export function BookOpeningIntro({
               coverStyle,
             ]}
           >
-            <Text style={styles.coverTitle} numberOfLines={3}>{title}</Text>
+            {coverSource ? (
+              <Image source={coverSource} style={styles.coverArtwork} resizeMode="cover" />
+            ) : (
+              <Text style={styles.coverTitle} numberOfLines={3}>{title}</Text>
+            )}
           </Animated.View>
           <View style={[styles.spine, { left: pageWidth - 2 }]} />
         </Animated.View>
@@ -228,6 +241,7 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.45)', textShadowOffset: { width: 1, height: 2 },
     textShadowRadius: 4,
   },
+  coverArtwork: { width: '100%', height: '100%', borderRadius: 7 },
   spine: {
     position: 'absolute', top: 3, bottom: 3, width: 4,
     backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 2,
@@ -253,5 +267,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#238FDD', borderWidth: 2, borderColor: '#25C8EE', elevation: 5,
   },
   modeIcon: { width: 42, height: 42, tintColor: '#FFF', resizeMode: 'contain' },
+  microphoneIcon: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
+  microphoneHead: {
+    width: 16, height: 25, borderRadius: 8, borderWidth: 3, borderColor: '#FFF',
+  },
+  microphoneStand: {
+    width: 24, height: 15, marginTop: -10, borderBottomWidth: 3,
+    borderLeftWidth: 3, borderRightWidth: 3, borderColor: '#FFF', borderRadius: 12,
+  },
   modeLabel: { color: '#FFF', fontSize: 26, fontFamily: 'Montserrat-ExtraBold' },
 });
