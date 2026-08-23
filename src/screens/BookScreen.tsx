@@ -10,7 +10,7 @@ import {
   StatusBar,
   Share,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Colors } from '../theme/colors';
@@ -18,6 +18,7 @@ import { useBooks } from '../hooks/useBooks';
 import { useBookPages, getBookAudioUri } from '../hooks/useBookPages';
 import { useBookTexts } from '../hooks/useBookTexts';
 import { useVoicework } from '../hooks/useVoicework';
+import { useVoiceworkProfile } from '../hooks/useVoiceworkProfile';
 import { useProfile } from '../hooks/useProfile';
 import { PageViewer } from '../components/PageViewer';
 import { BookOpeningIntro } from '../components/BookOpeningIntro';
@@ -42,17 +43,25 @@ export default function BookScreen() {
   const { getBookById, markAsRead, toggleFavorite } = useBooks();
   const { profile } = useProfile();
   const book = getBookById(id ?? '');
+  const [mode, setMode] = useState<ReadingMode | null>(null);
+  const voiceworkProfile = useVoiceworkProfile(book?.folderName);
+  const contentGender = mode === 'listen' && voiceworkProfile
+    ? voiceworkProfile.gender
+    : profile.gender;
+  const contentName = mode === 'listen' && voiceworkProfile
+    ? voiceworkProfile.name
+    : profile.name;
 
   const {
     pages,
     currentPage,
     setCurrentPage,
-  } = useBookPages(book, profile.gender);
+  } = useBookPages(book, contentGender);
 
   const { pageTexts, title, author } = useBookTexts(
     book?.folderName,
-    profile.gender,
-    profile.name
+    contentGender,
+    contentName
   );
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -60,7 +69,6 @@ export default function BookScreen() {
   const [showEndScreen, setShowEndScreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [stage, setStage] = useState<BookStage>('intro');
-  const [mode, setMode] = useState<ReadingMode | null>(null);
   const [showIndex, setShowIndex] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [showUnlockPrompt, setShowUnlockPrompt] = useState(false);
@@ -77,6 +85,17 @@ export default function BookScreen() {
   }, [mode, currentPage, pages.length, setCurrentPage, book, markAsRead]);
 
   const { isNarrating, playNarration, toggleNarration, stopNarration } = useVoicework(book?.folderName, handleNarrationEnd);
+
+  // Stack screens can remain mounted after navigation. Stopping on blur (not
+  // only on unmount) prevents music or narration from leaking into the library,
+  // settings, or another book.
+  useFocusEffect(useCallback(() => {
+    return () => {
+      setIsPlaying(false);
+      void stopNarration();
+      void stopMusic();
+    };
+  }, [stopNarration]));
 
   // Keep screen awake
   useEffect(() => {
