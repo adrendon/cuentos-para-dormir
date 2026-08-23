@@ -22,7 +22,6 @@ interface PageViewerProps {
   coverColor: string;
   pageTexts?: Map<number, string>;
   showText: boolean;
-  showNavigation: boolean;
 }
 
 export function PageViewer({
@@ -33,7 +32,6 @@ export function PageViewer({
   coverColor,
   pageTexts,
   showText,
-  showNavigation,
 }: PageViewerProps) {
   const pagerRef = useRef<PagerView>(null);
 
@@ -106,25 +104,21 @@ export function PageViewer({
         })}
       </PagerView>
 
-      {showNavigation && (
-        <>
-          <TouchableOpacity
-            style={[styles.arrowBtn, styles.leftArrow, currentPage === 0 && styles.arrowBtnDisabled]}
-            onPress={goPrev}
-            disabled={currentPage === 0}
-            accessibilityLabel="Página anterior"
-          >
-            <Image source={require('../assets/ui/ic_left_arrow.png')} style={styles.arrowIcon} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.arrowBtn, styles.rightArrow]}
-            onPress={goNext}
-            accessibilityLabel={currentPage === pages.length - 1 ? 'Terminar cuento' : 'Página siguiente'}
-          >
-            <Image source={require('../assets/ui/ic_right_arrow.png')} style={styles.arrowIcon} />
-          </TouchableOpacity>
-        </>
-      )}
+      <TouchableOpacity
+        style={[styles.arrowBtn, styles.leftArrow, currentPage === 0 && styles.arrowBtnDisabled]}
+        onPress={goPrev}
+        disabled={currentPage === 0}
+        accessibilityLabel="Página anterior"
+      >
+        <Image source={require('../assets/ui/ic_left_arrow.png')} style={styles.arrowIcon} />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.arrowBtn, styles.rightArrow]}
+        onPress={goNext}
+        accessibilityLabel={currentPage === pages.length - 1 ? 'Terminar cuento' : 'Página siguiente'}
+      >
+        <Image source={require('../assets/ui/ic_right_arrow.png')} style={styles.arrowIcon} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -157,12 +151,14 @@ const styles = StyleSheet.create({
   },
   textOverlay: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 82,
+    paddingVertical: 16,
+    minHeight: 92,
+    justifyContent: 'center',
     maxHeight: SCREEN_HEIGHT * 0.25,
   },
   pageText: {
@@ -174,7 +170,7 @@ const styles = StyleSheet.create({
   },
   arrowBtn: {
     position: 'absolute',
-    top: '46%',
+    bottom: 17,
     width: 40,
     height: 58,
     borderRadius: 10,
@@ -183,8 +179,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 20,
   },
-  leftArrow: { left: 12 },
-  rightArrow: { right: 12 },
+  leftArrow: { left: 18 },
+  rightArrow: { right: 18 },
   arrowBtnDisabled: {
     opacity: 0.3,
   },

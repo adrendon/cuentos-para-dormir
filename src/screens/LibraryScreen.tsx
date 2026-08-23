@@ -21,6 +21,11 @@ import { FilterModal } from '../components/FilterModal';
 import { Book } from '../types/book';
 import { setupEmbeddedBooks } from '../services/embeddedBooksService';
 
+const LIBRARY_STARS = [
+  [9, 65], [18, 91], [31, 73], [40, 54], [52, 89],
+  [61, 63], [72, 78], [83, 57], [92, 88],
+];
+
 export default function LibraryScreen() {
   const { width: windowWidth } = useWindowDimensions();
   const router = useRouter();
@@ -113,6 +118,11 @@ export default function LibraryScreen() {
         colors={[...Gradients.background]}
         style={styles.gradient}
       >
+        <View style={styles.stars} pointerEvents="none">
+          {LIBRARY_STARS.map(([left, top], index) => (
+            <View key={index} style={[styles.star, { left: `${left}%`, top: `${top}%` }]} />
+          ))}
+        </View>
         {/* Compact side rail, matching the reference landscape layout. */}
         <View style={styles.sideRail}>
           <TouchableOpacity
@@ -217,6 +227,16 @@ const styles = StyleSheet.create({
   },
   gradient: {
     flex: 1,
+  },
+  stars: {
+    ...StyleSheet.absoluteFill,
+  },
+  star: {
+    position: 'absolute',
+    width: 3,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.35)',
   },
   sideRail: {
     position: 'absolute',

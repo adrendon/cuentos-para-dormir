@@ -1,5 +1,6 @@
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import type { AudioPlayer } from 'expo-audio';
+import * as FileSystem from 'expo-file-system/legacy';
 
 /**
  * Audio service using expo-audio SDK 57.
@@ -8,6 +9,7 @@ import type { AudioPlayer } from 'expo-audio';
 
 let player: AudioPlayer | null = null;
 let isSetup = false;
+let musicGeneration = 0;
 
 /**
  * Initialize audio mode.
@@ -38,14 +40,27 @@ export async function setupPlayer(): Promise<boolean> {
 export async function playBookMusic(
   bookTitle: string,
   audioUri: string
-): Promise<void> {
+): Promise<boolean> {
   try {
-    await stopMusic();
-    player = createAudioPlayer({ uri: audioUri });
-    player.volume = 1.0;
+    const generation = ++musicGeneration;
+    const fileInfo = await FileSystem.getInfoAsync(audioUri);
+    if (!fileInfo.exists || generation !== musicGeneration) return false;
+
+    const previousPlayer = player;
+    player = null;
+    previousPlayer?.remove();
+    const nextPlayer = createAudioPlayer({ uri: audioUri });
+    if (generation !== musicGeneration) {
+      nextPlayer.remove();
+      return false;
+    }
+    player = nextPlayer;
+    player.volume = 0.35;
     player.play();
+    return true;
   } catch (error) {
     console.error('Error playing book music:', error);
+    return false;
   }
 }
 
@@ -79,10 +94,12 @@ export async function resumeMusic(): Promise<void> {
  * Stop and release the player.
  */
 export async function stopMusic(): Promise<void> {
+  musicGeneration++;
   try {
     if (player) {
-      player.remove();
+      const playerToRemove = player;
       player = null;
+      playerToRemove.remove();
     }
   } catch (error) {
     console.error('Error stopping:', error);
@@ -120,14 +137,14 @@ export async function getVolume(): Promise<number> {
  * Duck volume for narration overlay.
  */
 export async function duckVolume(): Promise<void> {
-  await setVolume(0.15);
+  await setVolume(0.08);
 }
 
 /**
  * Restore volume after ducking.
  */
 export async function restoreVolume(): Promise<void> {
-  await setVolume(1.0);
+  await setVolume(0.35);
 }
 
 /**
