@@ -120,7 +120,10 @@ export function BookCard({
 
       </View>
 
-      <View style={styles.bookSpine} pointerEvents="none" />
+      <View
+        style={[styles.bookSpine, { backgroundColor: book.coverColor }]}
+        pointerEvents="none"
+      />
 
       {/* Title */}
       <View style={styles.titleContainer}>
@@ -135,6 +138,7 @@ export function BookCard({
           <DownloadButton
             folderName={book.folderName}
             sizeMB={book.sizeMB}
+            accentColor={book.coverColor}
             onDownloadComplete={() => onDownloadComplete(book.id)}
           />
         </View>

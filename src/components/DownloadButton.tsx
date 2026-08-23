@@ -11,10 +11,11 @@ import { downloadBook, DownloadProgress } from '../services/downloadService';
 interface DownloadButtonProps {
   folderName: string;
   sizeMB: number;
+  accentColor: string;
   onDownloadComplete: () => void;
 }
 
-export function DownloadButton({ folderName, sizeMB, onDownloadComplete }: DownloadButtonProps) {
+export function DownloadButton({ folderName, sizeMB, accentColor, onDownloadComplete }: DownloadButtonProps) {
   const [progress, setProgress] = useState<DownloadProgress>({
     status: 'idle',
     progress: 0,
@@ -76,8 +77,9 @@ export function DownloadButton({ folderName, sizeMB, onDownloadComplete }: Downl
         <View style={styles.progressBarContainer}>
           <View
             style={[
-              styles.progressBarFill,
-              { width: `${Math.round(progress.progress * 100)}%` },
+            styles.progressBarFill,
+            { backgroundColor: accentColor },
+            { width: `${Math.round(progress.progress * 100)}%` },
             ]}
           />
         </View>
@@ -126,7 +128,6 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#FFFFFF',
     borderRadius: 2,
   },
   errorText: {
