@@ -24,7 +24,6 @@ import { useProfile } from '../hooks/useProfile';
 import { PageViewer } from '../components/PageViewer';
 import { BookOpeningIntro } from '../components/BookOpeningIntro';
 import { PageIndexOverlay } from '../components/PageIndexOverlay';
-import { LockOverlay } from '../components/LockOverlay';
 import {
   playBookMusic,
   pauseMusic,
@@ -71,8 +70,6 @@ export default function BookScreen() {
   const [showControls, setShowControls] = useState(true);
   const [stage, setStage] = useState<BookStage>('intro');
   const [showIndex, setShowIndex] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
-  const [showUnlockPrompt, setShowUnlockPrompt] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // In "Escuchar" mode, auto-advance to the next page once narration finishes.
@@ -134,16 +131,6 @@ export default function BookScreen() {
     };
   }, [book?.id]);
 
-  // Ignore the hardware back button while the child lock is active.
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (isLocked) return true;
-      handleGoBack();
-      return true;
-    });
-    return () => backHandler.remove();
-  }, [isLocked]);
-
   const handleFinish = useCallback(() => {
     setShowEndScreen(true);
     if (book) markAsRead(book.id);
@@ -165,6 +152,14 @@ export default function BookScreen() {
     // Navigate back without animation delay
     router.back();
   }, [stopNarration]);
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      void handleGoBack();
+      return true;
+    });
+    return () => backHandler.remove();
+  }, [handleGoBack]);
 
   const handleToggleMusic = useCallback(async () => {
     if (isPlaying) {
@@ -197,6 +192,11 @@ export default function BookScreen() {
     setCurrentPage(pageIndex);
   }, [currentPage, stopNarration]);
 
+  const handleSelectIndexPage = useCallback((pageIndex: number) => {
+    setShowIndex(false);
+    void handlePageChange(pageIndex);
+  }, [handlePageChange]);
+
   const handleTapScreen = useCallback(() => {
     setShowControls(prev => !prev);
   }, []);
@@ -205,16 +205,12 @@ export default function BookScreen() {
     setMode(selectedMode);
     setStage('reading');
     setShowControls(false);
-    setShowUnlockPrompt(false);
-    setIsLocked(true);
   }, []);
 
   const handleReadAgain = useCallback(() => {
     setCurrentPage(0);
     setShowEndScreen(false);
     setShowControls(false);
-    setShowUnlockPrompt(false);
-    setIsLocked(true);
   }, [setCurrentPage]);
 
   const handleShare = useCallback(async () => {
@@ -230,11 +226,6 @@ export default function BookScreen() {
   const handleToggleFavoriteFromEndScreen = useCallback(() => {
     if (book) toggleFavorite(book.id);
   }, [book, toggleFavorite]);
-
-  const handleSelectIndexPage = useCallback((pageIndex: number) => {
-    setShowIndex(false);
-    handlePageChange(pageIndex);
-  }, [handlePageChange]);
 
   // "Escuchar" mode auto-plays the narration for the current page.
   useEffect(() => {
@@ -298,7 +289,6 @@ export default function BookScreen() {
             coverColor={book.coverColor}
             pageTexts={pageTexts}
             showText={showText}
-            showNavigation={!isLocked}
           />
         </TouchableOpacity>
       ) : (
@@ -360,7 +350,7 @@ export default function BookScreen() {
       )}
 
       {/* Compact floating controls with readable labels. */}
-      {!showEndScreen && showControls && !isLocked && (
+      {!showEndScreen && showControls && (
         <View style={styles.topControls}>
           <View style={styles.titleGroup}>
             <TouchableOpacity
@@ -423,18 +413,6 @@ export default function BookScreen() {
               <Text style={styles.controlLabel}>Música</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.labeledControl}
-              onPress={() => {
-                setShowControls(false);
-                setShowUnlockPrompt(false);
-                setIsLocked(true);
-              }}
-              accessibilityLabel="Bloquear pantalla"
-            >
-              <View style={styles.lockShape} />
-              <Text style={styles.controlLabel}>Bloquear</Text>
-            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -447,17 +425,6 @@ export default function BookScreen() {
         onClose={() => setShowIndex(false)}
       />
 
-      {isLocked && !showEndScreen && (
-        <LockOverlay
-          showPrompt={showUnlockPrompt}
-          onRequestPrompt={() => setShowUnlockPrompt(true)}
-          onUnlock={() => {
-            setIsLocked(false);
-            setShowUnlockPrompt(false);
-            setShowControls(true);
-          }}
-        />
-      )}
         </>
       )}
     </Animated.View>
@@ -524,14 +491,6 @@ const styles = StyleSheet.create({
     color: Colors.textWhite,
     fontSize: 16,
     fontFamily: 'Montserrat-ExtraBold',
-  },
-  lockShape: {
-    width: 17,
-    height: 15,
-    marginTop: 3,
-    borderRadius: 3,
-    borderWidth: 3,
-    borderColor: Colors.textWhite,
   },
   controlLabel: {
     color: Colors.textWhite,
