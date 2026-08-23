@@ -19,6 +19,7 @@ import { useBookPages, getBookAudioUri } from '../hooks/useBookPages';
 import { useBookTexts } from '../hooks/useBookTexts';
 import { useVoicework } from '../hooks/useVoicework';
 import { useVoiceworkProfile } from '../hooks/useVoiceworkProfile';
+import { getBookCover } from '../assets/books/coverRegistry';
 import { useProfile } from '../hooks/useProfile';
 import { PageViewer } from '../components/PageViewer';
 import { BookOpeningIntro } from '../components/BookOpeningIntro';
@@ -35,7 +36,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 
 type BookStage = 'intro' | 'reading';
-type ReadingMode = 'read' | 'listen';
+type ReadingMode = 'read' | 'listen' | 'record';
 
 export default function BookScreen() {
   const router = useRouter();
@@ -274,6 +275,7 @@ export default function BookScreen() {
           coverColor={book.coverColor}
           title={title || book.title}
           firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined}
+          coverSource={getBookCover(book.folderName)}
           musicEnabled={isPlaying}
           onToggleMusic={handleToggleMusic}
           onClose={handleGoBack}
