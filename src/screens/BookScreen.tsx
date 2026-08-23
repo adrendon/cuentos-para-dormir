@@ -107,17 +107,6 @@ export default function BookScreen() {
     };
   }, [stopNarration]));
 
-  // Stack screens can remain mounted after navigation. Stopping on blur (not
-  // only on unmount) prevents music or narration from leaking into the library,
-  // settings, or another book.
-  useFocusEffect(useCallback(() => {
-    return () => {
-      setIsPlaying(false);
-      void stopNarration();
-      void stopMusic();
-    };
-  }, [stopNarration]));
-
   // Keep screen awake
   useEffect(() => {
     activateKeepAwakeAsync();
@@ -141,13 +130,16 @@ export default function BookScreen() {
 
   // Start music when book is loaded
   useEffect(() => {
+    let cancelled = false;
     if (book && profile.musicEnabled) {
       const audioUri = getBookAudioUri(book);
-      playBookMusic(book.title, audioUri);
-      setIsPlaying(true);
+      void playBookMusic(book.title, audioUri).then(started => {
+        if (!cancelled) setIsPlaying(started);
+      });
     }
 
     return () => {
+      cancelled = true;
       // ALWAYS stop all audio when leaving screen
       stopMusic();
       stopNarration();

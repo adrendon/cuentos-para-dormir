@@ -34,7 +34,10 @@ export function BookCard({
   index = 0,
   cardWidth,
 }: BookCardProps) {
-  const isAvailable = book.isDownloaded || book.isEmbedded;
+  // "Embedded" only means the catalog ZIP ships with the app. The extracted
+  // files may not exist yet, so opening it before isDownloaded is true can send
+  // invalid page/audio URIs to native modules and crash Android.
+  const isAvailable = book.isDownloaded;
   const [showMenu, setShowMenu] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;

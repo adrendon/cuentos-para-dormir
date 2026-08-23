@@ -1,5 +1,6 @@
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import type { AudioPlayer } from 'expo-audio';
+import * as FileSystem from 'expo-file-system/legacy';
 
 /**
  * Audio service using expo-audio SDK 57.
@@ -39,22 +40,27 @@ export async function setupPlayer(): Promise<boolean> {
 export async function playBookMusic(
   bookTitle: string,
   audioUri: string
-): Promise<void> {
+): Promise<boolean> {
   try {
     const generation = ++musicGeneration;
+    const fileInfo = await FileSystem.getInfoAsync(audioUri);
+    if (!fileInfo.exists || generation !== musicGeneration) return false;
+
     const previousPlayer = player;
     player = null;
     previousPlayer?.remove();
     const nextPlayer = createAudioPlayer({ uri: audioUri });
     if (generation !== musicGeneration) {
       nextPlayer.remove();
-      return;
+      return false;
     }
     player = nextPlayer;
     player.volume = 0.35;
     player.play();
+    return true;
   } catch (error) {
     console.error('Error playing book music:', error);
+    return false;
   }
 }
 
