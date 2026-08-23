@@ -72,8 +72,6 @@ export default function BookScreen() {
   const [showControls, setShowControls] = useState(true);
   const [stage, setStage] = useState<BookStage>('intro');
   const [showIndex, setShowIndex] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
-  const [showUnlockPrompt, setShowUnlockPrompt] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // In "Escuchar" mode, auto-advance to the next page once narration finishes.
@@ -97,6 +95,17 @@ export default function BookScreen() {
     resumeNarration,
     setNarrationVolume,
   } = useVoicework(book?.folderName, handleNarrationEnd);
+
+  // Stack screens can remain mounted after navigation. Stopping on blur (not
+  // only on unmount) prevents music or narration from leaking into the library,
+  // settings, or another book.
+  useFocusEffect(useCallback(() => {
+    return () => {
+      setIsPlaying(false);
+      void stopNarration();
+      void stopMusic();
+    };
+  }, [stopNarration]));
 
   // Stack screens can remain mounted after navigation. Stopping on blur (not
   // only on unmount) prevents music or narration from leaking into the library,
@@ -220,16 +229,12 @@ export default function BookScreen() {
     setMode(selectedMode);
     setStage('reading');
     setShowControls(false);
-    setShowUnlockPrompt(false);
-    setIsLocked(true);
   }, []);
 
   const handleReadAgain = useCallback(() => {
     setCurrentPage(0);
     setShowEndScreen(false);
     setShowControls(false);
-    setShowUnlockPrompt(false);
-    setIsLocked(true);
   }, [setCurrentPage]);
 
   const handleShare = useCallback(async () => {
@@ -369,7 +374,7 @@ export default function BookScreen() {
       )}
 
       {/* Compact floating controls with readable labels. */}
-      {!showEndScreen && showControls && !isLocked && (
+      {!showEndScreen && showControls && (
         <View style={styles.topControls}>
           <View style={styles.titleGroup}>
             <TouchableOpacity
