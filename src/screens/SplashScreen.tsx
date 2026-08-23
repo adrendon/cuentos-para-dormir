@@ -35,8 +35,9 @@ export default function SplashScreen() {
       toValue: 0,
       duration: 400,
       useNativeDriver: true,
-    }).start(() => {
+    }).start(async () => {
       if (profile.hasCompletedOnboarding) {
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
         router.replace('/library');
       } else {
         router.replace('/onboarding');
@@ -79,4 +80,3 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 });
-

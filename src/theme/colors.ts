@@ -41,7 +41,9 @@ export const Colors = {
   placeholderBrown: '#AC7EA5',
 
   // Splash
-  splashBackground: '#171254',
+  // Deep blue sampled from the original Diveo Media splash (not the purple
+  // used by the library screens).
+  splashBackground: '#111F59',
 
   // Overlay
   overlayBlack: 'rgba(0, 0, 0, 0.6)',

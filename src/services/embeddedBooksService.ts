@@ -1,5 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { downloadBook, isBookDownloaded } from './downloadService';
+import { Asset } from 'expo-asset';
+
+const STARTER_BOOK_ZIP = require('../../books-zip/ADayInReverse.zip');
 
 const EMBEDDED_SETUP_KEY = '@cuentos_embedded_setup_v1';
 let setupInProgress: Promise<void> | null = null;
@@ -25,7 +28,10 @@ async function runEmbeddedBooksSetup(): Promise<void> {
     if (alreadySetup === 'done' && isDownloaded) return;
 
     if (!isDownloaded) {
-      const downloaded = await downloadBook('ADayInReverse', () => {});
+      const asset = Asset.fromModule(STARTER_BOOK_ZIP);
+      await asset.downloadAsync();
+      const bundledZipUri = asset.localUri ?? asset.uri;
+      const downloaded = await downloadBook('ADayInReverse', () => {}, bundledZipUri);
       if (!downloaded) return;
     }
 

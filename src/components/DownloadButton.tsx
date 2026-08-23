@@ -4,17 +4,18 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
 } from 'react-native';
 import { Colors } from '../theme/colors';
-import { downloadBook, DownloadProgress, DownloadStatus } from '../services/downloadService';
+import { downloadBook, DownloadProgress } from '../services/downloadService';
 
 interface DownloadButtonProps {
   folderName: string;
+  sizeMB: number;
+  accentColor: string;
   onDownloadComplete: () => void;
 }
 
-export function DownloadButton({ folderName, onDownloadComplete }: DownloadButtonProps) {
+export function DownloadButton({ folderName, sizeMB, accentColor, onDownloadComplete }: DownloadButtonProps) {
   const [progress, setProgress] = useState<DownloadProgress>({
     status: 'idle',
     progress: 0,
@@ -38,32 +39,6 @@ export function DownloadButton({ folderName, onDownloadComplete }: DownloadButto
     setProgress({ status: 'idle', progress: 0, bytesDownloaded: 0, totalBytes: 0 });
   }, []);
 
-  // Format bytes to readable size
-  const formatSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  const getStatusLabel = (): string => {
-    switch (progress.status) {
-      case 'idle':
-        return 'Descargar';
-      case 'downloading':
-        return progress.totalBytes > 0
-          ? `${formatSize(progress.bytesDownloaded)} / ${formatSize(progress.totalBytes)}`
-          : 'Descargando...';
-      case 'extracting':
-        return 'Instalando...';
-      case 'done':
-        return 'Listo';
-      case 'error':
-        return 'Error';
-      default:
-        return 'Descargar';
-    }
-  };
-
   if (progress.status === 'done') {
     return null; // Hide once done
   }
@@ -80,22 +55,21 @@ export function DownloadButton({ folderName, onDownloadComplete }: DownloadButto
   }
 
   const isActive = progress.status === 'downloading' || progress.status === 'extracting';
+  const percentage = Math.round(progress.progress * 100);
 
   return (
     <View style={styles.container}>
       <TouchableOpacity
-        style={[styles.button, isActive && styles.buttonActive]}
+        style={styles.button}
         onPress={handleDownload}
         disabled={isActive}
         accessibilityLabel={`Descargar cuento`}
         accessibilityRole="button"
       >
-        {isActive ? (
-          <ActivityIndicator size="small" color={Colors.textWhite} />
-        ) : (
-          <Text style={styles.downloadIcon}>⬇</Text>
-        )}
-        <Text style={styles.buttonText}>{getStatusLabel()}</Text>
+        {!isActive && <Text style={styles.downloadIcon}>↓</Text>}
+        <Text style={styles.buttonText}>
+          {isActive ? `${percentage}%` : `${sizeMB} MB`}
+        </Text>
       </TouchableOpacity>
 
       {/* Progress bar */}
@@ -103,8 +77,9 @@ export function DownloadButton({ folderName, onDownloadComplete }: DownloadButto
         <View style={styles.progressBarContainer}>
           <View
             style={[
-              styles.progressBarFill,
-              { width: `${Math.round(progress.progress * 100)}%` },
+            styles.progressBarFill,
+            { backgroundColor: accentColor },
+            { width: `${Math.round(progress.progress * 100)}%` },
             ]}
           />
         </View>
@@ -115,44 +90,44 @@ export function DownloadButton({ folderName, onDownloadComplete }: DownloadButto
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 6,
   },
   button: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.buttonGreenStart,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    gap: 6,
-    width: '100%',
-  },
-  buttonActive: {
-    backgroundColor: 'rgba(27, 150, 104, 0.6)',
+    minWidth: 90,
+    minHeight: 80,
   },
   downloadIcon: {
-    fontSize: 14,
+    width: 48,
+    height: 48,
+    lineHeight: 43,
+    borderRadius: 24,
+    borderWidth: 3,
+    borderColor: '#FFF',
+    textAlign: 'center',
+    fontSize: 32,
     color: Colors.textWhite,
   },
   buttonText: {
     color: Colors.textWhite,
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 20,
+    fontFamily: 'Montserrat-ExtraBold',
+    marginTop: 5,
   },
   progressBarContainer: {
-    width: '100%',
-    height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 2,
-    marginTop: 4,
+    width: '72%',
+    height: 9,
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
+    borderRadius: 6,
+    marginTop: 8,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: Colors.buttonGreenEnd,
     borderRadius: 2,
   },
   errorText: {

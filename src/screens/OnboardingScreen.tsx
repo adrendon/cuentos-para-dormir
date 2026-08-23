@@ -134,6 +134,7 @@ export default function OnboardingScreen() {
       await updateGoals(goals);
       await updatePreferences(preferences);
       await completeOnboarding();
+      await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
       router.replace('/library');
     }, 1900);
 
