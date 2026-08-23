@@ -10,6 +10,9 @@ import { BOOKS_LOCAL_DIR } from '../services/downloadService';
  */
 export function useVoicework(folderName: string | undefined, onNarrationEnd?: () => void) {
   const [isNarrating, setIsNarrating] = useState(false);
+  const [isNarrationPaused, setIsNarrationPaused] = useState(false);
+  const [narrationVolume, setNarrationVolumeState] = useState(1);
+  const narrationVolumeRef = useRef(1);
   const [currentNarrationPage, setCurrentNarrationPage] = useState(-1);
   const playerRef = useRef<AudioPlayer | null>(null);
   const statusSubscriptionRef = useRef<{ remove: () => void } | null>(null);
@@ -45,6 +48,7 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
       if (!fileInfo.exists || playbackGeneration !== playbackGenerationRef.current) return;
 
       const narrationPlayer = createAudioPlayer({ uri: voiceFile });
+      narrationPlayer.volume = narrationVolumeRef.current;
       playerRef.current = narrationPlayer;
       statusSubscriptionRef.current = narrationPlayer.addListener('playbackStatusUpdate', (status) => {
         if (
@@ -56,12 +60,14 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
           narrationPlayer.remove();
           if (playerRef.current === narrationPlayer) playerRef.current = null;
           setIsNarrating(false);
+          setIsNarrationPaused(false);
           setCurrentNarrationPage(-1);
           onNarrationEndRef.current?.();
         }
       });
       narrationPlayer.play();
       setIsNarrating(true);
+      setIsNarrationPaused(false);
       setCurrentNarrationPage(pageNumber);
     } catch (error) {
       console.error('Error playing narration:', error);
@@ -83,6 +89,7 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
       }
     } catch {}
     setIsNarrating(false);
+    setIsNarrationPaused(false);
     setCurrentNarrationPage(-1);
   }, []);
 
@@ -97,6 +104,23 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
     }
   }, [isNarrating, currentNarrationPage, playNarration, stopNarration]);
 
+  const pauseNarration = useCallback(() => {
+    playerRef.current?.pause();
+    setIsNarrationPaused(true);
+  }, []);
+
+  const resumeNarration = useCallback(() => {
+    playerRef.current?.play();
+    setIsNarrationPaused(false);
+  }, []);
+
+  const setNarrationVolume = useCallback((volume: number) => {
+    const normalizedVolume = Math.max(0, Math.min(1, volume));
+    narrationVolumeRef.current = normalizedVolume;
+    if (playerRef.current) playerRef.current.volume = normalizedVolume;
+    setNarrationVolumeState(normalizedVolume);
+  }, []);
+
   // Expo Router can remove or blur the reader while an async file lookup is in
   // flight. Invalidate that lookup and release the native player on unmount.
   useEffect(() => () => {
@@ -109,10 +133,15 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
 
   return {
     isNarrating,
+    isNarrationPaused,
+    narrationVolume,
     currentNarrationPage,
     playNarration,
     stopNarration,
     toggleNarration,
+    pauseNarration,
+    resumeNarration,
+    setNarrationVolume,
     hasVoicework,
   };
 }

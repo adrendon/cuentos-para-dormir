@@ -33,6 +33,8 @@ import {
   restoreVolume,
 } from '../services/audioService';
 import { LinearGradient } from 'expo-linear-gradient';
+import Slider from '@react-native-community/slider';
+import { LockOverlay } from '../components/LockOverlay';
 
 type BookStage = 'intro' | 'reading';
 type ReadingMode = 'read' | 'listen' | 'record';
@@ -82,7 +84,28 @@ export default function BookScreen() {
     }
   }, [mode, currentPage, pages.length, setCurrentPage, book, markAsRead]);
 
-  const { isNarrating, playNarration, toggleNarration, stopNarration } = useVoicework(book?.folderName, handleNarrationEnd);
+  const {
+    isNarrating,
+    isNarrationPaused,
+    narrationVolume,
+    playNarration,
+    toggleNarration,
+    stopNarration,
+    pauseNarration,
+    resumeNarration,
+    setNarrationVolume,
+  } = useVoicework(book?.folderName, handleNarrationEnd);
+
+  // Stack screens can remain mounted after navigation. Stopping on blur (not
+  // only on unmount) prevents music or narration from leaking into the library,
+  // settings, or another book.
+  useFocusEffect(useCallback(() => {
+    return () => {
+      setIsPlaying(false);
+      void stopNarration();
+      void stopMusic();
+    };
+  }, [stopNarration]));
 
   // Stack screens can remain mounted after navigation. Stopping on blur (not
   // only on unmount) prevents music or narration from leaking into the library,
@@ -155,11 +178,12 @@ export default function BookScreen() {
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (isLocked) return true;
       void handleGoBack();
       return true;
     });
     return () => backHandler.remove();
-  }, [handleGoBack]);
+  }, [handleGoBack, isLocked]);
 
   const handleToggleMusic = useCallback(async () => {
     if (isPlaying) {
@@ -360,8 +384,33 @@ export default function BookScreen() {
             >
               <Image source={require('../assets/ui/ic_home.png')} style={styles.homeIcon} />
             </TouchableOpacity>
+
             <Text style={styles.controlTitle} numberOfLines={1}>{title || book.title}</Text>
           </View>
+
+          {mode === 'listen' && isNarrating && (
+            <View style={styles.voiceBar}>
+              <TouchableOpacity
+                style={styles.voicePauseButton}
+                onPress={isNarrationPaused ? resumeNarration : pauseNarration}
+                accessibilityLabel={isNarrationPaused ? 'Continuar narración' : 'Pausar narración'}
+              >
+                <Text style={styles.voicePauseIcon}>{isNarrationPaused ? '▶' : 'Ⅱ'}</Text>
+              </TouchableOpacity>
+              <Text style={styles.voiceLabel}>Voz</Text>
+              <Slider
+                style={styles.voiceSlider}
+                minimumValue={0}
+                maximumValue={1}
+                value={narrationVolume}
+                onValueChange={setNarrationVolume}
+                minimumTrackTintColor={Colors.accentTurquoise}
+                maximumTrackTintColor="rgba(255,255,255,0.35)"
+                thumbTintColor={Colors.textWhite}
+                accessibilityLabel="Volumen de la narración"
+              />
+            </View>
+          )}
 
           <View style={styles.rightControls}>
             <TouchableOpacity
@@ -413,6 +462,19 @@ export default function BookScreen() {
               <Text style={styles.controlLabel}>Música</Text>
             </TouchableOpacity>
 
+            <TouchableOpacity
+              style={styles.labeledControl}
+              onPress={() => {
+                setShowControls(false);
+                setShowUnlockPrompt(false);
+                setIsLocked(true);
+              }}
+              accessibilityLabel="Bloquear pantalla"
+            >
+              <View style={styles.lockShape} />
+              <Text style={styles.controlLabel}>Bloquear</Text>
+            </TouchableOpacity>
+
           </View>
         </View>
       )}
@@ -424,6 +486,18 @@ export default function BookScreen() {
         onSelectPage={handleSelectIndexPage}
         onClose={() => setShowIndex(false)}
       />
+
+      {isLocked && !showEndScreen && (
+        <LockOverlay
+          showPrompt={showUnlockPrompt}
+          onRequestPrompt={() => setShowUnlockPrompt(true)}
+          onUnlock={() => {
+            setIsLocked(false);
+            setShowUnlockPrompt(false);
+            setShowControls(true);
+          }}
+        />
+      )}
 
         </>
       )}
@@ -507,6 +581,34 @@ const styles = StyleSheet.create({
   rightControls: {
     flexDirection: 'row',
     gap: 6,
+  },
+  voiceBar: {
+    height: 52,
+    width: 210,
+    paddingHorizontal: 8,
+    borderRadius: 16,
+    backgroundColor: 'rgba(10, 8, 38, 0.88)',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  voicePauseButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: Colors.accentTurquoise,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  voicePauseIcon: { color: '#FFF', fontSize: 15, fontFamily: 'Montserrat-ExtraBold' },
+  voiceLabel: { color: '#FFF', fontSize: 10, marginLeft: 8 },
+  voiceSlider: { flex: 1, height: 40 },
+  lockShape: {
+    width: 17,
+    height: 15,
+    marginTop: 3,
+    borderRadius: 3,
+    borderWidth: 3,
+    borderColor: Colors.textWhite,
   },
   endScreen: {
     flex: 1,
