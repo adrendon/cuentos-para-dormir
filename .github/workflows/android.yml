@@ -30,7 +30,8 @@ jobs:
         with:
           sparse-checkout: |
             /*
-            !books-zip
+            !books-zip/*
+            /books-zip/ADayInReverse.zip
             !capturas_completas_video_onboarding_config_biblioteca_libro
           sparse-checkout-cone-mode: false
 
