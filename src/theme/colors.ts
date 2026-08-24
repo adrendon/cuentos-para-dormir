@@ -1,75 +1,93 @@
+/**
+ * Exact color palette recovered from Little Stories v5.5.5 APK.
+ * Source: ColorKt.java / res/values/colors.xml
+ */
 export const Colors = {
-  // Backgrounds (violet/purple starry night, matches original app)
-  backgroundDark: '#171254',
-  backgroundGradientStart: '#201660',
-  backgroundGradientEnd: '#272073',
+  // Core backgrounds
+  splashBackground: '#004B80',
+  backgroundDark: '#03032A',
+  backgroundGradientStart: '#03032A',
+  backgroundGradientEnd: '#03032A',
 
   // Text
-  titleGold: '#F5C12E',
-  textBlack: '#000000',
+  titleYellow: '#FFC000',
   textWhite: '#FFFFFF',
-  textGrayLight: '#B8B4DE',
-  subtitleGray: '#B8B4DE',
+  textBlack: '#000000',
+  red: '#FF4800',
+  orange: '#FF8024',
+  lightBlue: '#27C8FF',
+  yellow: '#FFC357',
 
-  // Buttons - Primary (yellow -> orange gradient, main CTA)
-  buttonBlueStart: '#F5C12E',
-  buttonBlueEnd: '#F7942E',
+  // UI elements
+  tooltipBackground: '#EFEFE0',
+  tooltipText: '#535970',
+  textFieldBackground: '#EFEFE0',
+  textFieldColor: '#606371',
+  inputTextColor: '#B9BAB3',
+  onboardingSubtitle: '#B5B7F8',
+  bookPagesText: '#299CD4',
+  filterIndicator: '#2CACEB',
+  deleteAction: '#FE5109',
+  unviewedIndicator: '#FE3D2F',
+  adContainer: '#0D7CC4',
 
-  // Buttons - Secondary (blue, secondary actions)
-  buttonOrangeStart: '#3E70DC',
-  buttonOrangeEnd: '#2C4EED',
+  // Chips
+  chipGreen: '#0CAC47',
+  chipPurple: '#8E4BF2',
+  chipBlue: '#29B7DF',
+  chipOrange: '#FB8200',
+  chipDisabled: '#898A9E',
 
-  // Buttons - Green gradient
-  buttonGreenStart: '#1B9668',
-  buttonGreenEnd: '#06A867',
-
-  // Chips/Tags
-  chipGreen: '#0E8547',
-  chipPurple: '#8B43F2',
-  chipBlue: '#29B3DF',
-  chipOrange: '#F89900',
-
-  // Accents
-  accentCyan: '#25C8EE',
-  accentTurquoise: '#14CFC9',
-  accentYellow: '#F5C12E',
-  accentOrange: '#F7942E',
-
-  // Placeholders
-  placeholderGreen: '#B17EA4',
-  placeholderPurple: '#A67EA5',
-  placeholderBrown: '#AC7EA5',
-
-  // Splash
-  // Deep blue sampled from the original Diveo Media splash (not the purple
-  // used by the library screens).
-  splashBackground: '#111F59',
-
-  // Overlay
+  // Legacy aliases (keep for components not yet updated)
+  titleGold: '#FFC000',
+  textGrayLight: '#B5B7F8',
+  subtitleGray: '#B5B7F8',
+  accentCyan: '#27C8FF',
+  accentTurquoise: '#27C8FF',
+  accentYellow: '#FFC000',
+  accentOrange: '#FF8024',
+  success: '#0CAC47',
+  error: '#FE5109',
+  cardShadow: 'rgba(0, 0, 0, 0.4)',
   overlayBlack: 'rgba(0, 0, 0, 0.6)',
   overlayLight: 'rgba(255, 255, 255, 0.1)',
-  capsuleSelected: 'rgba(139, 67, 242, 0.35)',
+  capsuleSelected: 'rgba(142, 75, 242, 0.35)',
 
-  // Status
-  success: '#06A867',
-  error: '#E53935',
-
-  // Card
-  cardShadow: 'rgba(0, 0, 0, 0.3)',
+  // Deprecated names kept for backward compat
+  buttonBlueStart: '#FFC000',
+  buttonBlueEnd: '#FF8024',
+  buttonOrangeStart: '#3548A2',
+  buttonOrangeEnd: '#2A3C84',
+  buttonGreenStart: '#1BBF68',
+  buttonGreenEnd: '#088E67',
 } as const;
 
 export const Gradients = {
-  primaryButton: [Colors.buttonBlueStart, Colors.buttonBlueEnd] as const,
-  secondaryButton: [Colors.buttonOrangeStart, Colors.buttonOrangeEnd] as const,
-  greenButton: [Colors.buttonGreenStart, Colors.buttonGreenEnd] as const,
-  background: [Colors.backgroundGradientStart, Colors.backgroundGradientEnd] as const,
+  // Blue gradient (mode buttons, library accents)
+  blue: ['#36C0ED', '#2E80ED'] as const,
+  // Dark blue (secondary containers)
+  darkBlue: ['#3548A2', '#2A3C84'] as const,
+  // Orange (primary CTA: Continuar, main buttons)
+  orange: ['#E5B840', '#F1893C'] as const,
+  // Green
+  green: ['#1BBF68', '#088E67'] as const,
+  // Red
+  red: ['#F67834', '#FF4901'] as const,
+  // Pink
+  pink: ['#F780C5', '#C828A6'] as const,
+
+  // Aliases
+  primaryButton: ['#E5B840', '#F1893C'] as const,
+  secondaryButton: ['#3548A2', '#2A3C84'] as const,
+  greenButton: ['#1BBF68', '#088E67'] as const,
+  background: ['#03032A', '#03032A'] as const,
 } as const;
 
 export const Fonts = {
   /** Rounded bold font for titles (Baloo Bhaijaan) */
   title: 'BalooBhaijaan',
-  /** Semi-bold body text */
+  /** Semi-bold body text (Montserrat) */
   body: 'Montserrat-SemiBold',
-  /** Extra bold headings */
+  /** Extra bold headings/buttons (Montserrat) */
   heading: 'Montserrat-ExtraBold',
 } as const;
