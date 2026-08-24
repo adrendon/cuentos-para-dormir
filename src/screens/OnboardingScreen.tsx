@@ -135,7 +135,7 @@ export default function OnboardingScreen() {
 
     Animated.timing(progressBarWidth, {
       toValue: 1,
-      duration: 1800,
+      duration: 5000,
       useNativeDriver: false,
     }).start();
 
@@ -149,7 +149,7 @@ export default function OnboardingScreen() {
       await completeOnboarding();
       await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
       router.replace('/library');
-    }, 1900);
+    }, 5100);
 
     return () => {
       progressBarWidth.removeListener(listenerId);
@@ -451,6 +451,11 @@ export default function OnboardingScreen() {
 
   return (
     <View style={styles.container}>
+      <Image
+        source={require('../assets/onboarding/stars.webp')}
+        style={styles.starBackground}
+        resizeMode="cover"
+      />
       {step !== 'loading' && (
         <OnboardingHeader
           step={stepIndex + 1}
@@ -513,7 +518,7 @@ export default function OnboardingScreen() {
               accessibilityLabel="Continuar"
             >
               <LinearGradient
-                colors={isButtonDisabled ? ['#555', '#444'] : [...Gradients.primaryButton]}
+                colors={isButtonDisabled ? [...Gradients.darkBlue] : [...Gradients.primaryButton]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.button}
@@ -543,13 +548,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.backgroundDark,
   },
+  starBackground: {
+    ...StyleSheet.absoluteFill,
+    width: '100%',
+    height: '100%',
+    opacity: 0.42,
+  },
   flex: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingTop: 18,
     justifyContent: 'center',
   },
   stepContainer: {
@@ -567,7 +578,7 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     color: Colors.textWhite,
-    fontSize: 28,
+    fontSize: 36,
     fontFamily: 'BalooBhaijaan',
     textAlign: 'center',
     marginBottom: 8,
@@ -577,11 +588,11 @@ const styles = StyleSheet.create({
   },
   stepSubtitle: {
     color: Colors.subtitleGray,
-    fontSize: 15,
+    fontSize: 17,
     fontFamily: 'Montserrat-SemiBold',
     textAlign: 'center',
     marginBottom: 24,
-    lineHeight: 22,
+    lineHeight: 25,
   },
   languageCapsule: {
     paddingHorizontal: 28,
@@ -594,20 +605,18 @@ const styles = StyleSheet.create({
   languageCapsuleText: {
     color: Colors.textWhite,
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Montserrat-ExtraBold',
   },
   input: {
     width: '100%',
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.textFieldBackground,
     paddingHorizontal: 20,
     fontSize: 20,
-    color: Colors.textWhite,
-    fontWeight: '600',
+    color: Colors.textFieldColor,
+    fontFamily: 'Montserrat-SemiBold',
     textAlign: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   optionsList: {
     width: '100%',
@@ -648,7 +657,7 @@ const styles = StyleSheet.create({
   optionText: {
     color: Colors.textWhite,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Montserrat-SemiBold',
     flex: 1,
   },
   preferenceCardsRow: {
@@ -678,7 +687,7 @@ const styles = StyleSheet.create({
   preferenceLabel: {
     color: Colors.textWhite,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Montserrat-ExtraBold',
     textAlign: 'center',
   },
   loadingTrack: {
@@ -698,6 +707,7 @@ const styles = StyleSheet.create({
     color: Colors.subtitleGray,
     fontSize: 13,
     marginTop: 8,
+    fontFamily: 'Montserrat-SemiBold',
   },
   buttonContainer: {
     flexDirection: 'row',

@@ -8,6 +8,7 @@ import {
   BackHandler,
   StatusBar,
   Share,
+  AppState,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -126,6 +127,18 @@ export default function BookScreen() {
       void stopMusic();
     };
   }, [stopNarration]));
+
+  // Android/iOS may keep a routed screen mounted while the app is in the
+  // background. Explicitly release both native players when it is minimized.
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') return;
+      setIsPlaying(false);
+      void stopNarration();
+      void stopMusic();
+    });
+    return () => subscription.remove();
+  }, [stopNarration]);
 
   // Keep screen awake
   useEffect(() => {
@@ -444,6 +457,10 @@ export default function BookScreen() {
             pages={pages}
             currentPage={currentPage}
             onPageChange={handlePageChange}
+            onPageNavigationStart={() => {
+              void stopNarration();
+              void restoreVolume();
+            }}
             onFinish={handleFinish}
             onBackFromFirstPage={handleBackFromFirstPage}
             coverColor={book.coverColor}
