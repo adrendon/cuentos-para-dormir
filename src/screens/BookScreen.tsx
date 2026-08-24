@@ -29,6 +29,7 @@ import {
   pauseMusic,
   resumeMusic,
   stopMusic,
+  setVolume,
   duckVolume,
   restoreVolume,
 } from '../services/audioService';
@@ -68,6 +69,8 @@ export default function BookScreen() {
   );
 
   const [isPlaying, setIsPlaying] = useState(false);
+  const [musicVolume, setMusicVolume] = useState(0.35);
+  const musicVolumeBeforeMute = useRef(0.35);
   const [showText, setShowText] = useState(true);
   const [showEndScreen, setShowEndScreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
@@ -193,13 +196,24 @@ export default function BookScreen() {
 
   const handleToggleMusic = useCallback(async () => {
     if (isPlaying) {
+      // Mute: save volume, set to 0, pause
+      musicVolumeBeforeMute.current = musicVolume;
+      await setVolume(0);
       await pauseMusic();
       setIsPlaying(false);
     } else {
+      // Unmute: resume with saved volume
       await resumeMusic();
+      await setVolume(musicVolumeBeforeMute.current);
+      setMusicVolume(musicVolumeBeforeMute.current);
       setIsPlaying(true);
     }
-  }, [isPlaying]);
+  }, [isPlaying, musicVolume]);
+
+  const handleMusicVolumeChange = useCallback(async (vol: number) => {
+    setMusicVolume(vol);
+    await setVolume(vol);
+  }, []);
 
   const handleToggleNarration = useCallback(async () => {
     if (!pages[currentPage]) return;
@@ -472,6 +486,21 @@ export default function BookScreen() {
               />
               <Text style={styles.controlLabel}>Música</Text>
             </TouchableOpacity>
+            {isPlaying && (
+              <View style={styles.musicSliderWrap}>
+                <Slider
+                  style={styles.musicSlider}
+                  minimumValue={0}
+                  maximumValue={1}
+                  value={musicVolume}
+                  onValueChange={handleMusicVolumeChange}
+                  minimumTrackTintColor={Colors.accentYellow}
+                  maximumTrackTintColor="rgba(255,255,255,0.25)"
+                  thumbTintColor={Colors.accentYellow}
+                  accessibilityLabel="Volumen de la música"
+                />
+              </View>
+            )}
 
             <TouchableOpacity
               style={styles.labeledControl}
@@ -611,6 +640,11 @@ const styles = StyleSheet.create({
   voicePauseIcon: { color: '#FFF', fontSize: 15, fontFamily: 'Montserrat-ExtraBold' },
   voiceLabel: { color: '#FFF', fontSize: 10, marginLeft: 8 },
   voiceSlider: { flex: 1, height: 40 },
+  musicSliderWrap: {
+    width: 100,
+    justifyContent: 'center',
+  },
+  musicSlider: { width: 100, height: 36 },
   lockShape: {
     width: 17,
     height: 15,
