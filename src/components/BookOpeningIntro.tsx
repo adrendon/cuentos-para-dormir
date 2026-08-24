@@ -69,10 +69,13 @@ export function BookOpeningIntro({
   const bookStyle = useAnimatedStyle(() => ({
     transform: [{ scale: bookScale.value }],
   }));
+
+  // Cover starts flat (0deg) and flips open to the left (150deg),
+  // hinged on its RIGHT edge (transformOrigin: 'right center').
   const coverStyle = useAnimatedStyle(() => ({
     transform: [
       { perspective: 1400 },
-      { rotateY: `${interpolate(coverRotation.value, [0, 1], [0, -178])}deg` },
+      { rotateY: `${interpolate(coverRotation.value, [0, 1], [0, 150])}deg` },
     ],
   }));
 
@@ -155,12 +158,7 @@ export function BookOpeningIntro({
             bookStyle,
           ]}
         >
-          <View
-            style={[
-              styles.leftPage,
-              { width: pageWidth, height: pageHeight, backgroundColor: coverColor },
-            ]}
-          />
+          {/* First story page — sits on the RIGHT side, revealed as cover flips open */}
           <View
             style={[
               styles.storyPage,
@@ -173,11 +171,13 @@ export function BookOpeningIntro({
               <View style={[styles.pageFallback, { backgroundColor: coverColor }]} />
             )}
           </View>
+
+          {/* Cover — starts at LEFT position, hinged on its RIGHT edge, flips open to the left */}
           <Animated.View
             style={[
               styles.cover,
               {
-                left: pageWidth,
+                left: 0,
                 width: pageWidth,
                 height: pageHeight,
                 backgroundColor: coverColor,
@@ -191,9 +191,10 @@ export function BookOpeningIntro({
               <Text style={styles.coverTitle} numberOfLines={3}>{title}</Text>
             )}
           </Animated.View>
+
+          {/* Spine at center */}
           <View style={[styles.spine, { left: pageWidth - 2 }]} />
         </Animated.View>
-
       </View>
     </View>
   );
@@ -220,10 +221,6 @@ const styles = StyleSheet.create({
     flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 30,
   },
   book: { position: 'relative' },
-  leftPage: {
-    position: 'absolute', left: 0, top: 0, borderRadius: 10,
-    borderWidth: 3, borderColor: Colors.accentTurquoise,
-  },
   storyPage: {
     position: 'absolute', top: 0, overflow: 'hidden', borderRadius: 10,
     backgroundColor: '#FFF', borderWidth: 3, borderColor: Colors.accentTurquoise,
@@ -234,10 +231,11 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 0, borderRadius: 10, padding: 20,
     justifyContent: 'center', alignItems: 'center', borderWidth: 3,
     borderColor: Colors.accentTurquoise, backfaceVisibility: 'hidden',
-    transformOrigin: 'left center', elevation: 8,
+    transformOrigin: 'right center', elevation: 8,
   },
   coverTitle: {
-    color: '#FFF', fontSize: 22, fontFamily: 'BalooBhaijaan', textAlign: 'center',
+    color: '#FFF', fontSize: 22, fontWeight: 'bold', fontFamily: 'BalooBhaijaan',
+    textAlign: 'center',
     textShadowColor: 'rgba(0,0,0,0.45)', textShadowOffset: { width: 1, height: 2 },
     textShadowRadius: 4,
   },
