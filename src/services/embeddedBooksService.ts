@@ -2,14 +2,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Asset } from 'expo-asset';
 import { downloadBook, isBookDownloaded } from './downloadService';
 
-const STARTER_BOOK_ZIP = require('../assets/ADayInReverse.zip');
+const STARTER_BOOK_ZIP = require('../../books-zip/ADayInReverse.zip');
 
 const EMBEDDED_SETUP_KEY = '@cuentos_embedded_setup_v1';
 let setupInProgress: Promise<void> | null = null;
 
 /**
  * Install the default book (ADayInReverse) from the bundled ZIP on first launch.
- * The ZIP is embedded in src/assets/ so it's always available offline.
+ * The ZIP lives in books-zip/ and is referenced via require() so Metro bundles it.
  */
 export function setupEmbeddedBooks(): Promise<void> {
   if (!setupInProgress) {
