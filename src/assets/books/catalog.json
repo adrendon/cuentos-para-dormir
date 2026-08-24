@@ -2,75 +2,739 @@
   "books": [
     {
       "folderName": "ADayInReverse",
-      "coverColor": "#09911a",
+      "coverColor": "#283593",
       "embedded": true,
-      "title": "Un Día al Revés",
-      "author": "Little Stories",
-      "sizeMB": 23
+      "title": "Un día al revés",
+      "author": "Yevgeniia Grebeniuk",
+      "sizeMB": 22
     },
     {
       "folderName": "AFunWalk",
-      "coverColor": "#00838f",
+      "coverColor": "#283593",
       "embedded": false,
-      "title": "Un Paseo Divertido",
-      "author": "Little Stories",
-      "sizeMB": 37
+      "title": "Un paseo divertido",
+      "author": "Lisa Debruyne",
+      "sizeMB": 36
     },
     {
       "folderName": "AGoodIdea",
       "coverColor": "#283593",
       "embedded": false,
-      "title": "Una Buena Idea",
-      "author": "Little Stories",
+      "title": "¿Es una buena idea?",
+      "author": "Yuliya Medvedeva",
       "sizeMB": 35
     },
     {
       "folderName": "AGreatFriendship",
-      "coverColor": "#558b2f",
+      "coverColor": "#283593",
       "embedded": false,
-      "title": "Una Gran Amistad",
-      "author": "Little Stories",
-      "sizeMB": 40
+      "title": "Una gran amistad",
+      "author": "María Rafaela Varuzza",
+      "sizeMB": 39
     },
     {
       "folderName": "ALittleAntsBigJob",
-      "coverColor": "#4e342e",
+      "coverColor": "#283593",
       "embedded": false,
-      "title": "El Gran Trabajo de una Hormiguita",
-      "author": "Little Stories",
+      "title": "La gran tarea de la hormiguita",
+      "author": "Michelle Brown",
       "sizeMB": 26
     },
     {
-      "folderName": "AllIsNotLost",
-      "coverColor": "#1565c0",
+      "folderName": "APerfectHome",
+      "coverColor": "#283593",
       "embedded": false,
-      "title": "No Todo Está Perdido",
-      "author": "Little Stories",
-      "sizeMB": 31
+      "title": "Un hogar perfecto",
+      "author": "Nicola Snow",
+      "sizeMB": 24
     },
     {
-      "folderName": "APerfectHome",
-      "coverColor": "#6a1b9a",
+      "folderName": "AllIsNotLost",
+      "coverColor": "#283593",
       "embedded": false,
-      "title": "Un Hogar Perfecto",
-      "author": "Little Stories",
-      "sizeMB": 25
+      "title": "No todo está perdido",
+      "author": "Becky Kleanthous",
+      "sizeMB": 30
     },
     {
       "folderName": "Belka",
-      "coverColor": "#4e342e",
+      "coverColor": "#283593",
       "embedded": false,
-      "title": "Belka",
-      "author": "Little Stories",
-      "sizeMB": 35
+      "title": "Cómo alcanzar tus sueños",
+      "author": "Dale Neal",
+      "sizeMB": 34
     },
     {
       "folderName": "BirdsChoir",
-      "coverColor": "#00838f",
+      "coverColor": "#283593",
       "embedded": false,
-      "title": "El Coro de los Pájaros",
-      "author": "Little Stories",
-      "sizeMB": 21
+      "title": "El coro de los pájaros",
+      "author": "Yuliya Medvedeva",
+      "sizeMB": 20
+    },
+    {
+      "folderName": "BraveEaglet",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El aguilucho valiente",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "BuyMeSomethingMom",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "¡Cómprame algo, mamá!",
+      "author": "Yuliya Medvedeva",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "ChangeCanBeGood",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Cambiar puede ser bueno",
+      "author": "Liz Bickerstaff",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "Cow",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "¡Puedo hacerlo!",
+      "author": "Liz Bickerstaff",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "Dolphin",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Mi amigo el delfín",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "DontCockYourNose",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "No seas arrogante",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "FamilyLove",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El amor de la familia",
+      "author": "Liz Bickerstaff",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "Farm",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Una invitada en la granja",
+      "author": "Dale Neal",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "FavorableFriendship",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Amistad interesada",
+      "author": "Yuliya Medvedeva",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "Firefly",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Más brillante que una estrella",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "ForestSchool",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "La escuela del bosque",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "Friendship",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Amistad verdadera",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "FruitKingdom",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El Reino de la Fruta",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "GoodWeather",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Buen tiempo",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "GrasshoppersGift",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El regalo del saltamontes",
+      "author": "Becky Kleanthous",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "GrowingAGarden",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Cultivando un jardín",
+      "author": "Becky Kleanthous",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "Gvozdik",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El engaño de un pequeño clavo",
+      "author": "Igor Vostriakov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "HomeWhereTheHeartIs",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El hogar está donde perteneces",
+      "author": "Liz Bickerstaff",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "HowToFindAFriend",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Cómo encontrar un amigo",
+      "author": "Yuliya Medvedeva",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "Hvol",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El Ploblema",
+      "author": "Konstantin Zhukov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "ImaginaryIsland",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "La isla imaginaria",
+      "author": "Lisa Debruyne",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "Lamb",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Diferente a los demás",
+      "author": "Liz Bickerstaff",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "LateToTheParty",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Llegas tarde a la fiesta",
+      "author": "Grace Gidman",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "LetsPlayTogether",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "¡Juguemos juntos!",
+      "author": "Liz Bickerstaff",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "LittleTigerFightsMicrobes",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Luchando contra los microbios",
+      "author": "Anton Panov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "LonelyPuppy",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El cachorrito solitario",
+      "author": "Becky Kleanthous",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "MagicChristmasTree",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El árbol de navidad mágico",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "MonkeysLesson",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Los modales de un mono",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "Mouse",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Un ratoncito curioso",
+      "author": "Igor Vostriakov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "MrSquirrelsHome",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El hogar de la señora Ardilla",
+      "author": "Liz Bickerstaff",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "MyDadIsAGiant",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Mi papá es un gigante",
+      "author": "Yuliya Medvedeva",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "MysteriousSickness",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Una enfermedad misteriosa",
+      "author": "Yuliya Medvedeva",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "NewFriends",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Nuevos amigos",
+      "author": "Yuliya Medvedeva",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "NightSecret",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Un secreto nocturno",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "OhCrumbs",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "¡Oh, migajas!",
+      "author": "Becky Kleanthous",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "Panda",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "¿Quién es el mejor?",
+      "author": "Konstantin Zhukov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "PandaExcuse",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "La excusa del osito panda",
+      "author": "Becky Kleanthous",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "PlanetsUnion",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Tres planetas unidos",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "PoleStar",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "La estrella polar",
+      "author": "Vladislav Polyanskiy",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "Puddle",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "¡Hola, Charco!",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "ResponsibilityIsTheKey",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "La responsabilidad es la clave",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "RoseGlasses",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Gafas color de rosa",
+      "author": "Konstantin Zhukov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "SeaLily",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El lirio de mar",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "SlowDownSeal",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "¡Más despacio, foca!",
+      "author": "Emerson Quinn",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "Star",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Cómo salvar una estrella",
+      "author": "Konstantin Zhukov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "Stegosaur",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "La leyenda del Estegosaurio",
+      "author": "Paul Ian Cross",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "ThankingTheClouds",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Agradecer a las nubes",
+      "author": "Becky Kleanthous",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "ThatWillDo",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "¡Así está bien!",
+      "author": "Yuliya Medvedeva",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheAutumnContest",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El concurso de otoño",
+      "author": "Yuliya Medvedeva",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheBeautifulWeb",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "La hermosa tela de araña",
+      "author": "Yuliya Medvedeva",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheBeeSavesTheHive",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Las abejas salvan la colmena",
+      "author": "Yuliya Medvedeva",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheBestTeacher",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El mejor maestro",
+      "author": "Michelle Brown",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheBigConcertRescue",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El rescate del concierto",
+      "author": "Asifa Khalil",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheBigWideWorld",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El mundo es inmenso",
+      "author": "Liz Bickerstaff",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheBirthdayParty",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "La fiesta de cumpleaños",
+      "author": "Liz Bickerstaff",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheBirthdayPresent",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El regalo de cumpleaños",
+      "author": "Emilia Roslaniec",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheBoastingBugs",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Bichos fanfarrones",
+      "author": "Elmar Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheCoolestDragon",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Un dragón peculiar",
+      "author": "Bella Rei",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheDeepSeaFestival",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El festival del fondo del mar",
+      "author": "Andrea Hope",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheDinoWhoCheatedAtTag",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El dinosaurio tramposo",
+      "author": "Bella Rei",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheElixirOfHealth",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El Elixir de la Salud",
+      "author": "Emilia Roslaniec",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheFairyWhoFlewTooFast",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El hada que volaba muy rápido",
+      "author": "Nicola Snow",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheFinding",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El hallazgo",
+      "author": "Yuliya Medvedeva",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheGreedyBee",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Avaricia",
+      "author": "Yuliya Medvedeva",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheHungriestHare",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "La liebre hambrienta",
+      "author": "Nicola Snow",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheJoyfulLamb",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Mera felicidad",
+      "author": "Danielle Slade",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheLittleAstronaut",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Un viaje espacial",
+      "author": "Liz Bickerstaff",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheLittleBearCub",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El pequeño osito",
+      "author": "Liz Bickerstaff",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "ThePurpleSparrow",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El gorrión violeta",
+      "author": "Sandra Petrova",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheSecretToAGoodHeart",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El secreto de un buen corazón",
+      "author": "V. Unshiv",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheSelfishKitty",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "No hay que ser egoísta",
+      "author": "Yulia Medvedeva",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheSheepIsLost",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Se perdió una oveja",
+      "author": "Aleksei Mutovkin",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheShiveringCat",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El gato friolento",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheSpikedChampion",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Valentía pinchuda",
+      "author": "Sandra Petrova",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheSpiritOfChristmas",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "El espíritu navideño",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheTrappedFirefly",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "La luciérnaga",
+      "author": "Sandra Petrova",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TheTrickiestFox",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "¡Hace trampa!",
+      "author": "Yuliya Medvedeva",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "TooManyPainters",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Demasiados pintores",
+      "author": "Becky Kleanthous",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "VeggiesAreYummy",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "¡Las verduras son deliciosas!",
+      "author": "Alice Musyoka",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "WhatDoCloudsTasteLike",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Las nubes, ¿cuál es su sabor?",
+      "author": "Yuliya Medvedeva",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "WhenYouNeedAHelpingHand",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "Necesitas que te den una mano",
+      "author": "Becky Kleanthous",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "WhereIsMyRoar",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "¿Dónde está mi rugido?",
+      "author": "Dale Neal",
+      "sizeMB": 25
+    },
+    {
+      "folderName": "WhereTheClouds",
+      "coverColor": "#283593",
+      "embedded": false,
+      "title": "¿A dónde se han ido las nubes?",
+      "author": "Altai Zeinalov",
+      "sizeMB": 25
     }
   ]
 }
