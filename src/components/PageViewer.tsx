@@ -6,7 +6,7 @@ import {
   Dimensions,
   ActivityIndicator,
   Text,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
 } from 'react-native';
 import PagerView from 'react-native-pager-view';
@@ -114,22 +114,40 @@ export function PageViewer({
       </PagerView>
 
       {/* Floating left arrow - vertically centered on the main image area */}
-      <TouchableOpacity
+      <Pressable
         style={[styles.arrowBtn, styles.leftArrow]}
         onPress={goPrev}
         accessibilityLabel={currentPage === 0 ? 'Volver al menú' : 'Página anterior'}
       >
-        <Image source={require('../assets/ui/ic_left_arrow.png')} style={styles.arrowIcon} />
-      </TouchableOpacity>
+        {({ pressed }) => (
+          <Image
+            source={
+              pressed
+                ? require('../assets/ui/ic_left_arrow_pressed.png')
+                : require('../assets/ui/ic_left_arrow.png')
+            }
+            style={styles.arrowIcon}
+          />
+        )}
+      </Pressable>
 
       {/* Floating right arrow - vertically centered on the main image area */}
-      <TouchableOpacity
+      <Pressable
         style={[styles.arrowBtn, styles.rightArrow]}
         onPress={goNext}
         accessibilityLabel={currentPage === pages.length - 1 ? 'Terminar cuento' : 'Página siguiente'}
       >
-        <Image source={require('../assets/ui/ic_right_arrow.png')} style={styles.arrowIcon} />
-      </TouchableOpacity>
+        {({ pressed }) => (
+          <Image
+            source={
+              pressed
+                ? require('../assets/ui/ic_right_arrow_pressed.png')
+                : require('../assets/ui/ic_right_arrow.png')
+            }
+            style={styles.arrowIcon}
+          />
+        )}
+      </Pressable>
     </View>
   );
 }
@@ -196,6 +214,5 @@ const styles = StyleSheet.create({
   arrowIcon: {
     width: 32,
     height: 32,
-    tintColor: '#FFF',
   },
 });
