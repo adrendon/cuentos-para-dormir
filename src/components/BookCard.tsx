@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Animated,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Book } from '../types/book';
 import { Colors } from '../theme/colors';
 import { DownloadButton } from './DownloadButton';
@@ -59,7 +60,7 @@ export function BookCard({
   }, []);
 
   const handlePress = () => {
-    if (isAvailable) {
+    if (isAvailable || isIncluded) {
       Animated.sequence([
         Animated.spring(pressScale, {
           toValue: 1.045,
@@ -115,20 +116,17 @@ export function BookCard({
           })()}
         </View>
 
-        {/* Turquoise binding on the right, matching the physical-book reference. */}
-        <View style={styles.bookSpine} pointerEvents="none" />
-
-        {/* Inward shadow/depth effect */}
-        <View style={styles.innerShadow} pointerEvents="none" />
-
-        {/* Title at bottom with dark overlay */}
-        <View style={styles.titleContainer}>
+        {/* Title bar with gradient at bottom */}
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.75)']}
+          style={styles.titleGradient}
+        >
           <Text style={styles.title} numberOfLines={2}>
             {book.title}
           </Text>
-        </View>
+        </LinearGradient>
 
-        {/* Download button for non-available books */}
+        {/* Download overlay for non-available books */}
         {!isAvailable && !book.isEmbedded && (
           <View style={styles.downloadContainer} pointerEvents="box-none">
             <DownloadButton
@@ -140,14 +138,16 @@ export function BookCard({
           </View>
         )}
 
-        {/* The overflow menu lives inside the bookmark, not over the artwork. */}
+        {/* White ribbon/bookmark at top-right */}
+        <View style={styles.ribbon} />
+
+        {/* Three dots menu - white, no background */}
         <TouchableOpacity
           style={styles.menuButton}
           onPress={() => setShowMenu(true)}
           accessibilityRole="button"
           accessibilityLabel="Más opciones"
         >
-          <Image source={require('../assets/ui/ic_page_mark.png')} style={styles.ribbonImage} />
           <Text style={styles.menuButtonText}>⋮</Text>
         </TouchableOpacity>
 
@@ -179,42 +179,25 @@ export function BookCard({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 4,
-    marginBottom: 14,
+    borderRadius: 12,
+    marginBottom: 12,
     overflow: 'hidden',
-    elevation: 5,
+    elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 2, height: 3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
   imageContainer: {
-    flex: 1,
-    overflow: 'hidden',
-  },
-  coverImage: {
-    width: '100%',
-    height: '100%',
-  },
-  bookSpine: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    right: 0,
-    width: 12,
-    backgroundColor: 'rgba(20, 207, 201, 0.85)',
-    borderLeftWidth: 1,
-    borderLeftColor: 'rgba(255,255,255,0.4)',
-  },
-  innerShadow: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.15)',
-    borderRadius: 4,
+  },
+  coverImage: {
+    width: '100%',
+    height: '100%',
   },
   placeholder: {
     flex: 1,
@@ -224,14 +207,14 @@ const styles = StyleSheet.create({
   placeholderEmoji: {
     fontSize: 48,
   },
-  titleContainer: {
+  titleGradient: {
     position: 'absolute',
     bottom: 0,
     left: 0,
-    right: 12,
-    paddingHorizontal: 8,
+    right: 0,
     paddingVertical: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.62)',
+    paddingHorizontal: 8,
+    justifyContent: 'flex-end',
   },
   title: {
     color: Colors.textWhite,
@@ -243,20 +226,39 @@ const styles = StyleSheet.create({
   downloadContainer: {
     position: 'absolute',
     top: 0,
-    bottom: 0,
     left: 0,
-    right: 12,
+    right: 0,
+    bottom: 0,
   },
-  ribbonImage: {
-    ...StyleSheet.absoluteFill,
-    width: '100%',
-    height: '100%',
-    resizeMode: 'stretch',
+  ribbon: {
+    position: 'absolute',
+    top: 0,
+    right: 24,
+    width: 14,
+    height: 22,
+    backgroundColor: '#FFFFFF',
+    borderBottomLeftRadius: 2,
+    borderBottomRightRadius: 2,
+  },
+  menuButton: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    lineHeight: 20,
   },
   readBadge: {
     position: 'absolute',
     bottom: 40,
-    left: 18,
+    left: 8,
     width: 22,
     height: 22,
     borderRadius: 11,
@@ -272,7 +274,7 @@ const styles = StyleSheet.create({
   favoriteBadge: {
     position: 'absolute',
     top: 6,
-    left: 18,
+    left: 8,
     width: 22,
     height: 22,
     borderRadius: 11,
@@ -283,22 +285,5 @@ const styles = StyleSheet.create({
   favoriteText: {
     color: Colors.textWhite,
     fontSize: 13,
-  },
-  menuButton: {
-    position: 'absolute',
-    top: 0,
-    right: 18,
-    width: 30,
-    height: 50,
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  menuButtonText: {
-    color: '#3D3B43',
-    fontSize: 20,
-    fontWeight: 'bold',
-    lineHeight: 20,
-    marginTop: -14,
   },
 });

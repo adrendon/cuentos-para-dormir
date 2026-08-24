@@ -68,8 +68,8 @@ export function DownloadButton({ folderName, sizeMB, accentColor, onDownloadComp
   }
 
   const isActive = progress.status === 'downloading' || progress.status === 'extracting';
-  const circleSize = 56;
-  const strokeWidth = 4;
+  const circleSize = 52;
+  const strokeWidth = 2;
   const radius = (circleSize - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
@@ -122,7 +122,7 @@ export function DownloadButton({ folderName, sizeMB, accentColor, onDownloadComp
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -133,8 +133,8 @@ const styles = StyleSheet.create({
     minHeight: 80,
   },
   circleWrap: {
-    width: 56,
-    height: 56,
+    width: 52,
+    height: 52,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -142,16 +142,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   downloadIcon: {
-    fontSize: 28,
+    fontSize: 24,
     color: Colors.textWhite,
     fontWeight: 'bold',
-    lineHeight: 32,
+    lineHeight: 28,
   },
   buttonText: {
     color: Colors.textWhite,
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'Montserrat-ExtraBold',
-    marginTop: 4,
+    fontWeight: '800',
+    marginTop: 6,
   },
   errorText: {
     color: Colors.error,

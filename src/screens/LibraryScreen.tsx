@@ -379,10 +379,10 @@ const styles = StyleSheet.create({
   },
   gridContent: {
     paddingBottom: 24,
-    gap: 16,
+    gap: 12,
   },
   gridRow: {
-    gap: 16,
+    gap: 12,
   },
   loadingContainer: {
     flex: 1,
