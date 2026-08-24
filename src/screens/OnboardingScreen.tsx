@@ -10,10 +10,18 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import ReanimatedAnimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+  runOnJS,
+} from 'react-native-reanimated';
 import { Colors, Gradients } from '../theme/colors';
 import { Gender, OnboardingGoal, StoryPreference } from '../types/book';
 import { useProfile } from '../hooks/useProfile';
@@ -99,8 +107,19 @@ export default function OnboardingScreen() {
   const [goals, setGoals] = useState<OnboardingGoal[]>([]);
   const [preferences, setPreferences] = useState<StoryPreference[]>([]);
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
   const progressBarWidth = useRef(new Animated.Value(0)).current;
+
+  // Reanimated slide + alpha transition
+  const { width: screenWidth } = useWindowDimensions();
+  const slideTranslateX = useSharedValue(0);
+  const slideOpacity = useSharedValue(1);
+  const [directionRef] = useState({ current: 1 }); // 1 = forward, -1 = back
+
+  const slideAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: slideTranslateX.value }],
+    opacity: slideOpacity.value,
+  }));
 
   const step = STEP_ORDER[stepIndex] ?? 'loading';
 
@@ -108,13 +127,7 @@ export default function OnboardingScreen() {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
   }, []);
 
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 550,
-      useNativeDriver: true,
-    }).start();
-  }, [step]);
+  // No per-step fade needed—reanimated handles it in goToStep.
 
   // Drive the "preparing stories" loading screen, then enter the library.
   useEffect(() => {
@@ -146,10 +159,27 @@ export default function OnboardingScreen() {
 
   const goToStep = useCallback(
     (nextIndex: number) => {
-      fadeAnim.setValue(0);
-      setStepIndex(nextIndex);
+      const direction = nextIndex > stepIndex ? 1 : -1;
+      directionRef.current = direction;
+      // Animate current content out (slide out + fade)
+      slideTranslateX.value = withTiming(-direction * screenWidth * 0.3, {
+        duration: 200,
+        easing: Easing.out(Easing.cubic),
+      });
+      slideOpacity.value = withTiming(0, { duration: 200 }, (finished) => {
+        if (finished) {
+          // Jump to the opposite side instantly, then animate in
+          slideTranslateX.value = direction * screenWidth * 0.3;
+          runOnJS(setStepIndex)(nextIndex);
+          slideTranslateX.value = withTiming(0, {
+            duration: 250,
+            easing: Easing.out(Easing.cubic),
+          });
+          slideOpacity.value = withTiming(1, { duration: 250 });
+        }
+      });
     },
-    [fadeAnim]
+    [stepIndex, screenWidth, slideTranslateX, slideOpacity, directionRef]
   );
 
   const handleBack = useCallback(() => {
@@ -413,7 +443,7 @@ export default function OnboardingScreen() {
   const isButtonDisabled = isNameStep && name.trim().length === 0;
 
   return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+    <View style={styles.container}>
       {step !== 'loading' && (
         <OnboardingHeader
           step={stepIndex + 1}
@@ -433,7 +463,9 @@ export default function OnboardingScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {renderStep()}
+          <ReanimatedAnimated.View style={slideAnimStyle}>
+            {renderStep()}
+          </ReanimatedAnimated.View>
         </ScrollView>
 
         {step === 'notifications' ? (
@@ -495,7 +527,7 @@ export default function OnboardingScreen() {
           </View>
         ) : null}
       </KeyboardAvoidingView>
-    </Animated.View>
+    </View>
   );
 }
 

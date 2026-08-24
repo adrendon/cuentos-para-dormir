@@ -49,42 +49,42 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          animation: 'fade',
-          animationDuration: 550,
-          contentStyle: { backgroundColor: '#171254' },
+          animation: 'none',
+          contentStyle: { backgroundColor: '#03032A' },
         }}
       >
         <Stack.Screen
           name="index"
           options={{
-            animation: 'fade',
+            animation: 'none',
           }}
         />
         <Stack.Screen
           name="onboarding"
           options={{
-            animation: 'fade',
+            animation: 'none',
             gestureEnabled: false,
           }}
         />
         <Stack.Screen
           name="library"
           options={{
-            animation: 'fade',
+            animation: 'none',
             gestureEnabled: false,
           }}
         />
         <Stack.Screen
           name="book/[id]"
           options={{
-            animation: 'fade',
+            animation: 'none',
             gestureEnabled: false,
           }}
         />
         <Stack.Screen
           name="settings"
           options={{
-            animation: 'slide_from_right',
+            animation: 'slide_from_bottom',
+            gestureEnabled: true,
           }}
         />
       </Stack>

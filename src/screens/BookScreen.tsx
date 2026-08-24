@@ -75,6 +75,7 @@ export default function BookScreen() {
   const [showIndex, setShowIndex] = useState(false);
   const readerLock = useReaderLock();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const controlsOpacity = useRef(new Animated.Value(1)).current;
 
   // In "Escuchar" mode, auto-advance to the next page once narration finishes.
   const handleNarrationEnd = useCallback(() => {
@@ -156,8 +157,19 @@ export default function BookScreen() {
   // Auto-hide controls after 4 seconds
   useEffect(() => {
     if (showControls) {
+      Animated.timing(controlsOpacity, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
       const timer = setTimeout(() => setShowControls(false), 4000);
       return () => clearTimeout(timer);
+    } else {
+      Animated.timing(controlsOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
     }
   }, [showControls, currentPage]);
 
@@ -370,8 +382,11 @@ export default function BookScreen() {
       )}
 
       {/* Compact floating controls with readable labels. */}
-      {!showEndScreen && showControls && !readerLock.isLocked && (
-        <View style={styles.topControls}>
+      {!showEndScreen && !readerLock.isLocked && (
+        <Animated.View
+          style={[styles.topControls, { opacity: controlsOpacity }]}
+          pointerEvents={showControls ? 'auto' : 'none'}
+        >
           <View style={styles.titleGroup}>
             <TouchableOpacity
               style={styles.homeButton}
@@ -471,7 +486,7 @@ export default function BookScreen() {
             </TouchableOpacity>
 
           </View>
-        </View>
+        </Animated.View>
       )}
 
       <PageIndexOverlay
@@ -502,7 +517,7 @@ export default function BookScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: Colors.backgroundDark,
   },
   fullscreen: {
     flex: 1,

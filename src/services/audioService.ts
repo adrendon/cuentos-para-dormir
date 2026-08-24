@@ -148,6 +148,60 @@ export async function restoreVolume(): Promise<void> {
 }
 
 /**
+ * Gradually increase volume from 0 to 1 over the given duration.
+ */
+export function fadeInVolume(durationMs = 1000): Promise<void> {
+  return new Promise((resolve) => {
+    if (!player) {
+      resolve();
+      return;
+    }
+    const steps = Math.max(1, Math.floor(durationMs / 50));
+    const increment = 1 / steps;
+    let current = 0;
+    player.volume = 0;
+    const interval = setInterval(() => {
+      current += increment;
+      if (current >= 1) {
+        current = 1;
+        if (player) player.volume = 1;
+        clearInterval(interval);
+        resolve();
+      } else {
+        if (player) player.volume = current;
+      }
+    }, 50);
+  });
+}
+
+/**
+ * Gradually decrease volume from current level to 0, then stop playback.
+ */
+export function fadeOutVolume(durationMs = 500): Promise<void> {
+  return new Promise((resolve) => {
+    if (!player) {
+      resolve();
+      return;
+    }
+    const startVolume = player.volume;
+    const steps = Math.max(1, Math.floor(durationMs / 50));
+    const decrement = startVolume / steps;
+    let current = startVolume;
+    const interval = setInterval(() => {
+      current -= decrement;
+      if (current <= 0) {
+        current = 0;
+        if (player) player.volume = 0;
+        clearInterval(interval);
+        void stopMusic().then(resolve);
+      } else {
+        if (player) player.volume = current;
+      }
+    }, 50);
+  });
+}
+
+/**
  * PlaybackService placeholder — not needed with expo-audio.
  */
 export async function PlaybackService(): Promise<void> {}
