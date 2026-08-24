@@ -142,7 +142,7 @@ src/
     books/                    # 1 libro embebido + 9 portadas + catálogo
     onboarding/               # 30 assets del onboarding
     settings/                 # bear.webp + fox.webp
-    ui/                       # 35+ iconos del APK original
+    ui/                       # 35+ iconos de interfaz
     fonts/                    # BalooBhaijaan + Montserrat
     logo_video.mp4            # Splash video (9s)
   components/
@@ -177,7 +177,7 @@ src/
     downloadService.ts        # GitHub ZIP + fflate unzip
     embeddedBooksService.ts   # Primer libro al arranque
     notificationService.ts    # FCM placeholder
-  theme/colors.ts             # Paleta exacta del APK
+  theme/colors.ts             # Paleta de colores
   types/book.ts               # Tipos completos
 books-zip/                    # ZIPs para descarga (excluido de EAS)
 ```
