@@ -14,14 +14,17 @@ import { BookPage } from '../types/book';
 import { Colors } from '../theme/colors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('screen');
+
 interface PageViewerProps {
   pages: BookPage[];
   currentPage: number;
   onPageChange: (pageIndex: number) => void;
   onFinish: () => void;
+  onBackFromFirstPage?: () => void;
   coverColor: string;
   pageTexts?: Map<number, string>;
   showText: boolean;
+  textSize?: number;
 }
 
 export function PageViewer({
@@ -29,9 +32,11 @@ export function PageViewer({
   currentPage,
   onPageChange,
   onFinish,
+  onBackFromFirstPage,
   coverColor,
   pageTexts,
   showText,
+  textSize = 14,
 }: PageViewerProps) {
   const pagerRef = useRef<PagerView>(null);
 
@@ -60,8 +65,10 @@ export function PageViewer({
   const goPrev = useCallback(() => {
     if (currentPage > 0) {
       pagerRef.current?.setPage(currentPage - 1);
+    } else if (currentPage === 0 && onBackFromFirstPage) {
+      onBackFromFirstPage();
     }
-  }, [currentPage]);
+  }, [currentPage, onBackFromFirstPage]);
 
   if (pages.length === 0) {
     return (
@@ -95,7 +102,9 @@ export function PageViewer({
               {showText && textForPage && (
                 <View style={styles.textOverlay}>
                   <ScrollView showsVerticalScrollIndicator={false}>
-                    <Text style={styles.pageText}>{textForPage}</Text>
+                    <Text style={[styles.pageText, { fontSize: textSize, lineHeight: textSize * 1.5 }]}>
+                      {textForPage}
+                    </Text>
                   </ScrollView>
                 </View>
               )}
@@ -104,14 +113,16 @@ export function PageViewer({
         })}
       </PagerView>
 
+      {/* Floating left arrow - vertically centered on the main image area */}
       <TouchableOpacity
-        style={[styles.arrowBtn, styles.leftArrow, currentPage === 0 && styles.arrowBtnDisabled]}
+        style={[styles.arrowBtn, styles.leftArrow]}
         onPress={goPrev}
-        disabled={currentPage === 0}
-        accessibilityLabel="Página anterior"
+        accessibilityLabel={currentPage === 0 ? 'Volver al menú' : 'Página anterior'}
       >
         <Image source={require('../assets/ui/ic_left_arrow.png')} style={styles.arrowIcon} />
       </TouchableOpacity>
+
+      {/* Floating right arrow - vertically centered on the main image area */}
       <TouchableOpacity
         style={[styles.arrowBtn, styles.rightArrow]}
         onPress={goNext}
@@ -170,23 +181,21 @@ const styles = StyleSheet.create({
   },
   arrowBtn: {
     position: 'absolute',
-    bottom: 17,
-    width: 40,
-    height: 58,
-    borderRadius: 10,
+    top: '50%',
+    marginTop: -29,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: 'rgba(10, 8, 38, 0.68)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 20,
   },
-  leftArrow: { left: 18 },
-  rightArrow: { right: 18 },
-  arrowBtnDisabled: {
-    opacity: 0.3,
-  },
+  leftArrow: { left: 14 },
+  rightArrow: { right: 14 },
   arrowIcon: {
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     tintColor: '#FFF',
   },
 });

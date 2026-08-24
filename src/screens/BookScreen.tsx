@@ -5,11 +5,17 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  Animated,
   BackHandler,
   StatusBar,
   Share,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+  runOnJS,
+} from 'react-native-reanimated';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import * as ScreenOrientation from 'expo-screen-orientation';
@@ -24,6 +30,8 @@ import { useProfile } from '../hooks/useProfile';
 import { PageViewer } from '../components/PageViewer';
 import { BookOpeningIntro } from '../components/BookOpeningIntro';
 import { PageIndexOverlay } from '../components/PageIndexOverlay';
+import { NarrationPanel } from '../components/NarrationPanel';
+import { ReaderMenu } from '../components/ReaderMenu';
 import {
   playBookMusic,
   pauseMusic,
@@ -38,7 +46,7 @@ import Slider from '@react-native-community/slider';
 import { LockOverlay } from '../components/LockOverlay';
 import { useReaderLock } from '../hooks/useReaderLock';
 
-type BookStage = 'intro' | 'reading';
+type BookStage = 'intro' | 'narrationPanel' | 'recordPanel' | 'reading';
 type ReadingMode = 'read' | 'listen' | 'record';
 
 export default function BookScreen() {
@@ -76,9 +84,15 @@ export default function BookScreen() {
   const [showControls, setShowControls] = useState(true);
   const [stage, setStage] = useState<BookStage>('intro');
   const [showIndex, setShowIndex] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [textSize, setTextSize] = useState(14);
   const readerLock = useReaderLock();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const controlsOpacity = useRef(new Animated.Value(1)).current;
+
+  // Reanimated values for book close animation
+  const screenScale = useSharedValue(1);
+  const screenOpacity = useSharedValue(1);
+
+  const controlsOpacity = useSharedValue(1);
 
   // In "Escuchar" mode, auto-advance to the next page once narration finishes.
   const handleNarrationEnd = useCallback(() => {
@@ -125,13 +139,9 @@ export default function BookScreen() {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
   }, []);
 
-  // Fade in
+  // Fade in on mount
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 550,
-      useNativeDriver: true,
-    }).start();
+    screenOpacity.value = withTiming(1, { duration: 550 });
   }, []);
 
   // Start music when book is loaded
@@ -160,30 +170,39 @@ export default function BookScreen() {
   // Auto-hide controls after 4 seconds
   useEffect(() => {
     if (showControls) {
-      Animated.timing(controlsOpacity, {
-        toValue: 1,
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
+      controlsOpacity.value = withTiming(1, { duration: 250 });
       const timer = setTimeout(() => setShowControls(false), 4000);
       return () => clearTimeout(timer);
     } else {
-      Animated.timing(controlsOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
+      controlsOpacity.value = withTiming(0, { duration: 200 });
     }
   }, [showControls, currentPage]);
 
+  const controlsAnimStyle = useAnimatedStyle(() => ({
+    opacity: controlsOpacity.value,
+  }));
+
+  // Feature 8: Book closing animation
   const handleGoBack = useCallback(async () => {
     // Stop ALL audio immediately
     await stopMusic();
     await stopNarration();
     setIsPlaying(false);
-    // Navigate back without animation delay
-    router.back();
-  }, [stopNarration]);
+
+    // Animate scale down + fade out
+    screenScale.value = withTiming(0.85, { duration: 400, easing: Easing.inOut(Easing.cubic) });
+    screenOpacity.value = withTiming(0, { duration: 400, easing: Easing.inOut(Easing.cubic) });
+
+    // Wait for the animation to complete, then navigate
+    setTimeout(() => {
+      router.back();
+    }, 420);
+  }, [stopNarration, router, screenScale, screenOpacity]);
+
+  const screenAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: screenScale.value }],
+    opacity: screenOpacity.value,
+  }));
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -245,12 +264,45 @@ export default function BookScreen() {
     setShowControls(prev => !prev);
   }, []);
 
+  // Feature 7: Back on first page → return to intro
+  const handleBackFromFirstPage = useCallback(() => {
+    void stopNarration();
+    void restoreVolume();
+    setCurrentPage(0);
+    setMode(null);
+    setStage('intro');
+    setShowControls(true);
+  }, [stopNarration, setCurrentPage]);
+
   const handleSelectMode = useCallback((selectedMode: ReadingMode) => {
-    setMode(selectedMode);
+    if (selectedMode === 'listen') {
+      // Feature 2: Show narration panel instead of going directly to reading
+      setMode('listen');
+      setStage('narrationPanel');
+    } else if (selectedMode === 'record') {
+      // Feature 10: Show record panel
+      setMode('record');
+      setStage('recordPanel');
+    } else {
+      setMode(selectedMode);
+      setStage('reading');
+      setShowControls(false);
+      readerLock.lock();
+    }
+  }, [readerLock.lock]);
+
+  // When user selects the professional narration from the panel
+  const handleSelectProfessionalNarration = useCallback(() => {
     setStage('reading');
     setShowControls(false);
     readerLock.lock();
   }, [readerLock.lock]);
+
+  // Close narration/record panel → back to intro
+  const handleClosePanels = useCallback(() => {
+    setMode(null);
+    setStage('intro');
+  }, []);
 
   const handleReadAgain = useCallback(() => {
     setCurrentPage(0);
@@ -272,6 +324,15 @@ export default function BookScreen() {
   const handleToggleFavoriteFromEndScreen = useCallback(() => {
     if (book) toggleFavorite(book.id);
   }, [book, toggleFavorite]);
+
+  // Feature 6: Text size controls
+  const handleIncrementTextSize = useCallback(() => {
+    setTextSize(prev => Math.min(24, prev + 2));
+  }, []);
+
+  const handleDecrementTextSize = useCallback(() => {
+    setTextSize(prev => Math.max(10, prev - 2));
+  }, []);
 
   // "Escuchar" mode auto-plays the narration for the current page.
   useEffect(() => {
@@ -304,7 +365,7 @@ export default function BookScreen() {
   }
 
   return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+    <Animated.View style={[styles.container, screenAnimStyle]}>
       <StatusBar hidden />
 
       {stage === 'intro' ? (
@@ -318,9 +379,61 @@ export default function BookScreen() {
           onClose={handleGoBack}
           onSelectMode={handleSelectMode}
         />
+      ) : stage === 'narrationPanel' ? (
+        <NarrationPanel
+          narratorName={voiceworkProfile?.narrator ?? ''}
+          childName={voiceworkProfile?.name || profile.name}
+          coverColor={book.coverColor}
+          firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined}
+          onSelectProfessional={handleSelectProfessionalNarration}
+          onClose={handleClosePanels}
+        />
+      ) : stage === 'recordPanel' ? (
+        /* Feature 10: Record mode panel */
+        <View style={styles.recordPanelContainer}>
+          {pages[0] && (
+            <Image source={{ uri: pages[0].uri }} style={styles.recordBackground} resizeMode="cover" />
+          )}
+          <View style={styles.recordShade} />
+
+          {/* Small mode icons on the left */}
+          <View style={styles.recordLeftIcons}>
+            <View style={styles.smallIconWrap}>
+              <Image source={require('../assets/ui/ic_book_read.png')} style={styles.smallIcon} />
+            </View>
+            <View style={styles.smallIconWrap}>
+              <Image source={require('../assets/ui/ic_book_listen.png')} style={styles.smallIcon} />
+            </View>
+            <View style={[styles.smallIconWrap, styles.smallIconActive]}>
+              <View style={styles.micSmall}>
+                <View style={styles.micHead} />
+                <View style={styles.micStand} />
+              </View>
+            </View>
+          </View>
+
+          {/* Main content */}
+          <View style={styles.recordContent}>
+            <TouchableOpacity style={styles.recordCloseBtn} onPress={handleClosePanels} accessibilityLabel="Cerrar">
+              <Image source={require('../assets/ui/ic_close.png')} style={styles.recordCloseIcon} />
+            </TouchableOpacity>
+
+            <Text style={styles.recordSectionTitle}>Narraciones personales</Text>
+            <Text style={styles.recordDescription}>
+              Graba tu propia narración para este cuento
+            </Text>
+
+            <TouchableOpacity style={styles.recordButton} disabled accessibilityLabel="Grabar (próximamente)">
+              <View style={styles.recordCircle}>
+                <View style={styles.recordDot} />
+              </View>
+              <Text style={styles.recordBtnText}>Próximamente</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       ) : (
         <>
-      {/* Page viewer - fullscreen portrait */}
+      {/* Page viewer - fullscreen */}
       {!showEndScreen ? (
         <TouchableOpacity
           activeOpacity={1}
@@ -332,9 +445,11 @@ export default function BookScreen() {
             currentPage={currentPage}
             onPageChange={handlePageChange}
             onFinish={handleFinish}
+            onBackFromFirstPage={handleBackFromFirstPage}
             coverColor={book.coverColor}
             pageTexts={pageTexts}
             showText={showText}
+            textSize={textSize}
           />
         </TouchableOpacity>
       ) : (
@@ -395,20 +510,27 @@ export default function BookScreen() {
         </View>
       )}
 
-      {/* Compact floating controls with readable labels. */}
+      {/* Compact floating controls */}
       {!showEndScreen && !readerLock.isLocked && (
         <Animated.View
-          style={[styles.topControls, { opacity: controlsOpacity }]}
+          style={[styles.topControls, controlsAnimStyle]}
           pointerEvents={showControls ? 'auto' : 'none'}
         >
           <View style={styles.titleGroup}>
-            <TouchableOpacity
-              style={styles.homeButton}
-              onPress={handleGoBack}
-              accessibilityLabel="Biblioteca"
-            >
-              <Image source={require('../assets/ui/ic_home.png')} style={styles.homeIcon} />
-            </TouchableOpacity>
+            {/* Home button + page counter below it */}
+            <View style={styles.homeColumn}>
+              <TouchableOpacity
+                style={styles.homeButton}
+                onPress={handleGoBack}
+                accessibilityLabel="Biblioteca"
+              >
+                <Image source={require('../assets/ui/ic_home.png')} style={styles.homeIcon} />
+              </TouchableOpacity>
+              {/* Feature 3: Page counter below home icon */}
+              <Text style={styles.pageCounter}>
+                {currentPage + 1}/{pages.length}
+              </Text>
+            </View>
 
             <Text style={styles.controlTitle} numberOfLines={1}>{title || book.title}</Text>
           </View>
@@ -438,16 +560,20 @@ export default function BookScreen() {
           )}
 
           <View style={styles.rightControls}>
+            {/* Feature 5: Hamburger menu button */}
             <TouchableOpacity
               style={styles.labeledControl}
-              onPress={() => setShowIndex(true)}
-              accessibilityLabel="Índice de páginas"
+              onPress={() => {
+                setShowControls(false);
+                setShowMenu(true);
+              }}
+              accessibilityLabel="Menú"
             >
               <Image
                 source={require('../assets/ui/ic_content_burger.png')}
                 style={styles.controlIconImage}
               />
-              <Text style={styles.controlLabel}>Páginas</Text>
+              <Text style={styles.controlLabel}>Menú</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -518,6 +644,16 @@ export default function BookScreen() {
         </Animated.View>
       )}
 
+      {/* Feature 5: Hamburger menu overlay */}
+      <ReaderMenu
+        visible={showMenu}
+        textSize={textSize}
+        onClose={() => setShowMenu(false)}
+        onOpenIndex={() => setShowIndex(true)}
+        onIncrementTextSize={handleIncrementTextSize}
+        onDecrementTextSize={handleDecrementTextSize}
+      />
+
       <PageIndexOverlay
         visible={showIndex}
         pages={pages}
@@ -563,12 +699,15 @@ const styles = StyleSheet.create({
   },
   titleGroup: {
     maxWidth: '34%',
-    height: 48,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 24,
     backgroundColor: 'rgba(10, 8, 38, 0.78)',
     paddingRight: 18,
+  },
+  homeColumn: {
+    alignItems: 'center',
   },
   homeButton: {
     width: 48,
@@ -579,6 +718,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   homeIcon: { width: 27, height: 27, resizeMode: 'contain' },
+  // Feature 3: Page counter
+  pageCounter: {
+    color: Colors.textWhite,
+    fontSize: 10,
+    fontFamily: 'Montserrat-ExtraBold',
+    marginTop: 3,
+  },
   labeledControl: {
     minWidth: 68,
     height: 52,
@@ -728,5 +874,144 @@ const styles = StyleSheet.create({
     color: Colors.chipBlue,
     fontSize: 16,
     textDecorationLine: 'underline',
+  },
+  // Feature 10: Record panel styles
+  recordPanelContainer: {
+    flex: 1,
+    backgroundColor: Colors.backgroundDark,
+  },
+  recordBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  recordShade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(8, 4, 30, 0.78)',
+  },
+  recordLeftIcons: {
+    position: 'absolute',
+    left: 18,
+    top: '50%',
+    marginTop: -80,
+    gap: 12,
+    zIndex: 10,
+  },
+  smallIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  smallIconActive: {
+    backgroundColor: '#238FDD',
+    borderWidth: 2,
+    borderColor: '#25C8EE',
+  },
+  smallIcon: {
+    width: 22,
+    height: 22,
+    tintColor: '#FFF',
+    resizeMode: 'contain',
+  },
+  micSmall: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  micHead: {
+    width: 9,
+    height: 14,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: '#FFF',
+  },
+  micStand: {
+    width: 14,
+    height: 8,
+    marginTop: -5,
+    borderBottomWidth: 2,
+    borderLeftWidth: 2,
+    borderRightWidth: 2,
+    borderColor: '#FFF',
+    borderRadius: 7,
+  },
+  recordContent: {
+    flex: 1,
+    marginLeft: 80,
+    paddingTop: 32,
+    paddingRight: 32,
+    justifyContent: 'center',
+  },
+  recordCloseBtn: {
+    position: 'absolute',
+    top: 18,
+    right: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  recordCloseIcon: {
+    width: 16,
+    height: 16,
+    tintColor: '#FFF',
+  },
+  recordSectionTitle: {
+    color: Colors.titleGold,
+    fontSize: 16,
+    fontFamily: 'Montserrat-ExtraBold',
+    marginBottom: 12,
+  },
+  recordDescription: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 15,
+    fontFamily: 'Montserrat-SemiBold',
+    marginBottom: 28,
+  },
+  recordButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 28,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    gap: 14,
+    opacity: 0.5,
+  },
+  recordCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 3,
+    borderColor: '#FF4800',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  recordDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#FF4800',
+  },
+  recordBtnText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 14,
+    fontFamily: 'Montserrat-SemiBold',
   },
 });

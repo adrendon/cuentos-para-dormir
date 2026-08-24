@@ -6,6 +6,7 @@ import { BOOKS_LOCAL_DIR } from '../services/downloadService';
 interface VoiceworkProfile {
   gender: Gender;
   name: string;
+  narrator: string;
 }
 
 /**
@@ -26,13 +27,15 @@ export function useVoiceworkProfile(folderName: string | undefined) {
       try {
         const path = `${BOOKS_LOCAL_DIR}${folderName}/voicework_es/VoiceworkInfo.json`;
         const content = await FileSystem.readAsStringAsync(path);
-        const child = JSON.parse(content)?.child;
+        const parsed = JSON.parse(content);
+        const child = parsed?.child;
+        const narrator = parsed?.narrator ?? '';
         if (
           !cancelled &&
           (child?.gender === 'boy' || child?.gender === 'girl') &&
           typeof child?.name === 'string'
         ) {
-          setVoiceworkProfile({ gender: child.gender, name: child.name });
+          setVoiceworkProfile({ gender: child.gender, name: child.name, narrator });
         }
       } catch {
         // Not every downloadable book includes a prerecorded voicework.
