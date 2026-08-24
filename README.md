@@ -1,6 +1,6 @@
 # Cuentos para Dormir
 
-Réplica funcional de Little Stories v5.5.5 — app de cuentos infantiles personalizados con audio, narración por página, y sistema de descarga bajo demanda. Diseño pixel-perfect basado en el APK original decompilado.
+App de cuentos infantiles personalizados con audio, narración por página, y sistema de descarga bajo demanda. Los niños son los protagonistas de cada historia, con su nombre integrado en el texto y páginas ilustradas según su género.
 
 ## Flujo completo de la app
 
@@ -58,9 +58,7 @@ Biblioteca (landscape, grid 3 columnas)
 
 ## Diseño visual
 
-Basado en la especificación `Little_Stories_v5.5.5_Especificacion_Visual_Funcional_Animaciones.md` extraída del APK decompilado.
-
-### Paleta de colores (recuperada del APK)
+### Paleta de colores
 
 | Uso | Hex |
 |---|---|
@@ -81,7 +79,7 @@ Basado en la especificación `Little_Stories_v5.5.5_Especificacion_Visual_Funcio
 | Blue gradient | `#36C0ED` → `#2E80ED` |
 | Green gradient | `#1BBF68` → `#088E67` |
 
-### Fuentes (del APK original)
+### Fuentes
 
 - **BalooBhaijaan** — títulos redondeados
 - **Montserrat SemiBold** — cuerpo de texto
