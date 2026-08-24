@@ -34,9 +34,6 @@ export function BookCard({
   index = 0,
   cardWidth,
 }: BookCardProps) {
-  // "Embedded" only means the catalog ZIP ships with the app. The extracted
-  // files may not exist yet, so opening it before isDownloaded is true can send
-  // invalid page/audio URIs to native modules and crash Android.
   const isAvailable = book.isDownloaded;
   const isIncluded = book.isEmbedded;
   const [showMenu, setShowMenu] = useState(false);
@@ -77,7 +74,6 @@ export function BookCard({
         }),
       ]).start(() => onPress(book));
     }
-    // If not available, do nothing — user must download first
   };
 
   return (
@@ -98,76 +94,82 @@ export function BookCard({
         accessibilityRole="button"
         accessibilityLabel={`${isIncluded ? 'Cuento incluido' : isAvailable ? 'Abrir' : 'Descargar'}: ${book.title}`}
       >
-      {/* Cover Image */}
-      <View style={styles.imageContainer}>
-        {(() => {
-          const coverSource = getBookCover(book.folderName);
-          if (coverSource) {
+        {/* Cover Image */}
+        <View style={styles.imageContainer}>
+          {(() => {
+            const coverSource = getBookCover(book.folderName);
+            if (coverSource) {
+              return (
+                <Image
+                  source={coverSource}
+                  style={styles.coverImage}
+                  resizeMode="cover"
+                />
+              );
+            }
             return (
-              <Image
-                source={coverSource}
-                style={styles.coverImage}
-                resizeMode="cover"
-              />
+              <View style={[styles.placeholder, { backgroundColor: book.coverColor }]}>
+                <Text style={styles.placeholderEmoji}>📖</Text>
+              </View>
             );
-          }
-          return (
-            <View style={[styles.placeholder, { backgroundColor: book.coverColor }]}>
-              <Text style={styles.placeholderEmoji}>📖</Text>
-            </View>
-          );
-        })()}
-
-      </View>
-
-      <View
-        style={[styles.bookSpine, { backgroundColor: book.coverColor }]}
-        pointerEvents="none"
-      />
-
-      {/* Title */}
-      <View style={styles.titleContainer}>
-        <Text style={styles.title} numberOfLines={2}>
-          {book.title}
-        </Text>
-      </View>
-
-      {/* Download button for non-available books */}
-      {!isAvailable && !book.isEmbedded && (
-        <View style={styles.downloadContainer} pointerEvents="box-none">
-          <DownloadButton
-            folderName={book.folderName}
-            sizeMB={book.sizeMB}
-            accentColor={book.coverColor}
-            onDownloadComplete={() => onDownloadComplete(book.id)}
-          />
+          })()}
         </View>
-      )}
 
-      {/* Read indicator */}
-      {isAvailable && book.isRead && (
-        <View style={styles.readBadge}>
-          <Text style={styles.readBadgeText}>✓</Text>
+        {/* Turquoise LEFT spine (book binding) */}
+        <View style={styles.bookSpine} pointerEvents="none" />
+
+        {/* Inward shadow/depth effect */}
+        <View style={styles.innerShadow} pointerEvents="none" />
+
+        {/* Title at bottom with dark overlay */}
+        <View style={styles.titleContainer}>
+          <Text style={styles.title} numberOfLines={2}>
+            {book.title}
+          </Text>
         </View>
-      )}
 
-      {/* Favorite indicator */}
-      {book.isFavorite && (
-        <View style={styles.favoriteBadge}>
-          <Text style={styles.favoriteText}>★</Text>
+        {/* Download button for non-available books */}
+        {!isAvailable && !book.isEmbedded && (
+          <View style={styles.downloadContainer} pointerEvents="box-none">
+            <DownloadButton
+              folderName={book.folderName}
+              sizeMB={book.sizeMB}
+              accentColor={book.coverColor}
+              onDownloadComplete={() => onDownloadComplete(book.id)}
+            />
+          </View>
+        )}
+
+        {/* White bookmark ribbon at top-right */}
+        <View style={styles.ribbonContainer} pointerEvents="none">
+          <View style={styles.ribbon} />
+          <View style={styles.ribbonTail} />
         </View>
-      )}
 
-      {/* The original library uses a white bookmark tab, not a floating dot. */}
-      <TouchableOpacity
-        style={styles.menuButton}
-        onPress={() => setShowMenu(true)}
-        accessibilityRole="button"
-        accessibilityLabel="Más opciones"
-      >
-        <Text style={styles.menuButtonText}>⋮</Text>
+        {/* ⋮ menu at top-right */}
+        <TouchableOpacity
+          style={styles.menuButton}
+          onPress={() => setShowMenu(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Más opciones"
+        >
+          <Text style={styles.menuButtonText}>⋮</Text>
+        </TouchableOpacity>
+
+        {/* Read indicator */}
+        {isAvailable && book.isRead && (
+          <View style={styles.readBadge}>
+            <Text style={styles.readBadgeText}>✓</Text>
+          </View>
+        )}
+
+        {/* Favorite indicator */}
+        {book.isFavorite && (
+          <View style={styles.favoriteBadge}>
+            <Text style={styles.favoriteText}>★</Text>
+          </View>
+        )}
       </TouchableOpacity>
-    </TouchableOpacity>
 
       <BookCardMenu
         visible={showMenu}
@@ -182,15 +184,14 @@ export function BookCard({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 3,
+    borderRadius: 4,
     marginBottom: 14,
     overflow: 'hidden',
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.35,
+    shadowOffset: { width: 2, height: 3 },
+    shadowOpacity: 0.4,
     shadowRadius: 5,
-    borderWidth: 0,
   },
   imageContainer: {
     flex: 1,
@@ -204,11 +205,21 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     bottom: 0,
+    left: 0,
+    width: 12,
+    backgroundColor: 'rgba(20, 207, 201, 0.85)',
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(255,255,255,0.4)',
+  },
+  innerShadow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
     right: 0,
-    width: 9,
-    backgroundColor: 'rgba(20, 207, 201, 0.78)',
-    borderLeftWidth: 2,
-    borderLeftColor: 'rgba(255,255,255,0.5)',
+    bottom: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.15)',
+    borderRadius: 4,
   },
   placeholder: {
     flex: 1,
@@ -221,8 +232,8 @@ const styles = StyleSheet.create({
   titleContainer: {
     position: 'absolute',
     bottom: 0,
-    left: 0,
-    right: 9,
+    left: 12,
+    right: 0,
     paddingHorizontal: 8,
     paddingVertical: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.62)',
@@ -231,61 +242,85 @@ const styles = StyleSheet.create({
     color: Colors.textWhite,
     fontSize: 13,
     fontFamily: 'Montserrat-SemiBold',
+    fontWeight: '700',
     textAlign: 'center',
   },
   downloadContainer: {
     position: 'absolute',
     top: 0,
     bottom: 0,
-    left: 0,
-    right: 9,
+    left: 12,
+    right: 0,
+  },
+  ribbonContainer: {
+    position: 'absolute',
+    top: 0,
+    right: 14,
+    width: 16,
+    height: 24,
+    alignItems: 'center',
+  },
+  ribbon: {
+    width: 16,
+    height: 20,
+    backgroundColor: '#FFFFFF',
+  },
+  ribbonTail: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 8,
+    borderRightWidth: 8,
+    borderBottomWidth: 6,
+    borderLeftColor: '#FFFFFF',
+    borderRightColor: '#FFFFFF',
+    borderBottomColor: 'transparent',
   },
   readBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    bottom: 40,
+    left: 18,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: Colors.success,
     justifyContent: 'center',
     alignItems: 'center',
   },
   readBadgeText: {
     color: Colors.textWhite,
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   favoriteBadge: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    top: 6,
+    left: 18,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: Colors.chipOrange,
     justifyContent: 'center',
     alignItems: 'center',
   },
   favoriteText: {
     color: Colors.textWhite,
-    fontSize: 14,
+    fontSize: 13,
   },
   menuButton: {
     position: 'absolute',
-    top: 0,
-    right: 18,
-    width: 30,
-    height: 48,
-    borderRadius: 0,
-    backgroundColor: '#F7F5E8',
+    top: 4,
+    right: 4,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.7)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   menuButtonText: {
     color: '#3D3B43',
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
-    lineHeight: 16,
+    lineHeight: 20,
   },
 });

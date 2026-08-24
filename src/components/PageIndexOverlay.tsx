@@ -11,7 +11,7 @@ interface PageIndexOverlayProps {
   onClose: () => void;
 }
 
-const THUMB_COLUMNS = 5;
+const THUMB_COLUMNS = 2;
 
 export function PageIndexOverlay({
   visible,
@@ -55,13 +55,14 @@ export function PageIndexOverlay({
                 accessibilityLabel={`Ir a la página ${index + 1}`}
               >
                 <Image source={{ uri: item.uri }} style={styles.thumbImage} resizeMode="cover" />
-                <View style={styles.pageMarkWrap}>
-                  <Image
-                    source={require('../assets/ui/ic_page_mark.png')}
-                    style={styles.pageMark}
-                    resizeMode="contain"
-                  />
+                {/* Page number in top-left */}
+                <View style={styles.pageNumberWrap}>
                   <Text style={styles.pageNumber}>{index + 1}</Text>
+                </View>
+                {/* White bookmark ribbon in top-right */}
+                <View style={styles.thumbRibbonContainer}>
+                  <View style={styles.thumbRibbon} />
+                  <View style={styles.thumbRibbonTail} />
                 </View>
               </TouchableOpacity>
             );
@@ -102,16 +103,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   grid: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 32,
     paddingBottom: 24,
   },
   thumb: {
     flex: 1 / THUMB_COLUMNS,
-    aspectRatio: 0.75,
-    margin: 6,
+    aspectRatio: 0.72,
+    margin: 8,
     borderRadius: 10,
     overflow: 'hidden',
-    borderWidth: 2,
+    borderWidth: 2.5,
     borderColor: 'transparent',
   },
   thumbActive: {
@@ -121,24 +122,37 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  pageMarkWrap: {
+  pageNumberWrap: {
     position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 24,
-    height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pageMark: {
-    ...StyleSheet.absoluteFill,
-    width: 24,
-    height: 28,
+    top: 6,
+    left: 8,
   },
   pageNumber: {
-    color: Colors.backgroundDark,
-    fontSize: 11,
+    color: Colors.chipBlue,
+    fontSize: 14,
     fontWeight: '800',
-    marginTop: -6,
+  },
+  thumbRibbonContainer: {
+    position: 'absolute',
+    top: 0,
+    right: 10,
+    width: 14,
+    height: 20,
+    alignItems: 'center',
+  },
+  thumbRibbon: {
+    width: 14,
+    height: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  thumbRibbonTail: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 7,
+    borderRightWidth: 7,
+    borderBottomWidth: 5,
+    borderLeftColor: '#FFFFFF',
+    borderRightColor: '#FFFFFF',
+    borderBottomColor: 'transparent',
   },
 });

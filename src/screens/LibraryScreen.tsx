@@ -44,7 +44,10 @@ export default function LibraryScreen() {
     refreshBooks,
   } = useBooks();
   const [isFilterModalVisible, setFilterModalVisible] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scrollTopAnim = useRef(new Animated.Value(0)).current;
+  const flatListRef = useRef<FlatList>(null);
   const sideRailWidth = 92;
   const gridLeftPadding = sideRailWidth + 28;
   const gridRightPadding = 20;
@@ -76,6 +79,29 @@ export default function LibraryScreen() {
 
   const handleBookPress = useCallback((book: Book) => {
     router.push(`/book/${book.id}`);
+  }, []);
+
+  const handleScroll = useCallback((event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    const shouldShow = offsetY > cardWidth + 20;
+    if (shouldShow && !showScrollTop) {
+      setShowScrollTop(true);
+      Animated.timing(scrollTopAnim, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    } else if (!shouldShow && showScrollTop) {
+      Animated.timing(scrollTopAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => setShowScrollTop(false));
+    }
+  }, [showScrollTop, cardWidth, scrollTopAnim]);
+
+  const scrollToTop = useCallback(() => {
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
   }, []);
 
   const handleSettingsPress = () => {
@@ -141,21 +167,17 @@ export default function LibraryScreen() {
         {/* Search + filter bar */}
         <View style={styles.searchRow}>
           <View style={styles.searchBox}>
-            <View style={styles.searchIcon}>
-              <View style={styles.searchLens} />
-              <View style={styles.searchHandle} />
-            </View>
             <TextInput
               style={styles.searchInput}
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Escribe el texto que buscas…"
-              placeholderTextColor={Colors.subtitleGray}
+              placeholderTextColor={Colors.textFieldColor}
               returnKeyType="search"
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Limpiar búsqueda">
-                <Text style={styles.clearSearch}>×</Text>
+                <Image source={require('../assets/ui/ic_close.png')} style={styles.clearSearchIcon} />
               </TouchableOpacity>
             )}
           </View>
@@ -203,6 +225,7 @@ export default function LibraryScreen() {
           </View>
         ) : (
           <FlatList
+            ref={flatListRef}
             data={filteredBooks}
             renderItem={renderBookItem}
             keyExtractor={(item) => item.id}
@@ -214,7 +237,18 @@ export default function LibraryScreen() {
             ]}
             columnWrapperStyle={styles.gridRow}
             showsVerticalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
           />
+        )}
+
+        {/* Scroll-to-top floating button */}
+        {showScrollTop && (
+          <Animated.View style={[styles.scrollTopButton, { opacity: scrollTopAnim }]}>
+            <TouchableOpacity onPress={scrollToTop} accessibilityLabel="Volver arriba" accessibilityRole="button">
+              <Image source={require('../assets/ui/ic_arrow_up.png')} style={styles.scrollTopIcon} />
+            </TouchableOpacity>
+          </Animated.View>
         )}
       </LinearGradient>
     </Animated.View>
@@ -289,46 +323,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#F2F4DD',
+    backgroundColor: Colors.tooltipBackground,
     paddingHorizontal: 16,
     gap: 8,
   },
-  searchIcon: {
-    width: 22,
-    height: 22,
-    position: 'relative',
-  },
-  searchLens: {
-    position: 'absolute',
-    left: 1,
-    top: 1,
-    width: 14,
-    height: 14,
-    borderWidth: 2,
-    borderColor: '#77776F',
-    borderRadius: 7,
-  },
-  searchHandle: {
-    position: 'absolute',
-    width: 9,
-    height: 2,
-    left: 13,
-    top: 15,
-    backgroundColor: '#77776F',
-    transform: [{ rotate: '45deg' }],
-  },
   searchInput: {
     flex: 1,
-    color: '#333',
+    color: Colors.textFieldColor,
     fontSize: 14,
     fontFamily: 'Montserrat-SemiBold',
     height: '100%',
   },
-  clearSearch: {
-    color: '#3E3E38',
-    fontSize: 30,
-    lineHeight: 32,
-    paddingHorizontal: 4,
+  clearSearchIcon: {
+    width: 18,
+    height: 18,
+    tintColor: Colors.textFieldColor,
+    resizeMode: 'contain',
   },
   filterButton: {
     flexDirection: 'row',
@@ -397,5 +407,27 @@ const styles = StyleSheet.create({
     color: Colors.textGrayLight,
     fontSize: 16,
     textAlign: 'center',
+  },
+  scrollTopButton: {
+    position: 'absolute',
+    bottom: 24,
+    left: 104,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(39, 200, 255, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  scrollTopIcon: {
+    width: 22,
+    height: 22,
+    tintColor: '#FFFFFF',
+    resizeMode: 'contain',
   },
 });

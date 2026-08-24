@@ -1,12 +1,16 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
+  Animated,
 } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { Colors } from '../theme/colors';
 import { downloadBook, DownloadProgress } from '../services/downloadService';
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface DownloadButtonProps {
   folderName: string;
@@ -22,6 +26,15 @@ export function DownloadButton({ folderName, sizeMB, accentColor, onDownloadComp
     bytesDownloaded: 0,
     totalBytes: 0,
   });
+  const progressAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: progress.progress,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [progress.progress]);
 
   const handleDownload = useCallback(async () => {
     if (progress.status === 'downloading' || progress.status === 'extracting') return;
@@ -40,7 +53,7 @@ export function DownloadButton({ folderName, sizeMB, accentColor, onDownloadComp
   }, []);
 
   if (progress.status === 'done') {
-    return null; // Hide once done
+    return null;
   }
 
   if (progress.status === 'error') {
@@ -55,7 +68,10 @@ export function DownloadButton({ folderName, sizeMB, accentColor, onDownloadComp
   }
 
   const isActive = progress.status === 'downloading' || progress.status === 'extracting';
-  const percentage = Math.round(progress.progress * 100);
+  const circleSize = 56;
+  const strokeWidth = 4;
+  const radius = (circleSize - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
 
   return (
     <View style={styles.container}>
@@ -63,27 +79,42 @@ export function DownloadButton({ folderName, sizeMB, accentColor, onDownloadComp
         style={styles.button}
         onPress={handleDownload}
         disabled={isActive}
-        accessibilityLabel={`Descargar cuento`}
+        accessibilityLabel="Descargar cuento"
         accessibilityRole="button"
       >
-        {!isActive && <Text style={styles.downloadIcon}>↓</Text>}
+        <View style={styles.circleWrap}>
+          <Svg width={circleSize} height={circleSize} style={styles.svgCircle}>
+            {/* Background circle track */}
+            <Circle
+              cx={circleSize / 2}
+              cy={circleSize / 2}
+              r={radius}
+              stroke="rgba(255,255,255,0.3)"
+              strokeWidth={strokeWidth}
+              fill="none"
+            />
+            {/* Progress circle */}
+            {isActive && (
+              <Circle
+                cx={circleSize / 2}
+                cy={circleSize / 2}
+                r={radius}
+                stroke="#FFFFFF"
+                strokeWidth={strokeWidth}
+                fill="none"
+                strokeDasharray={`${circumference}`}
+                strokeDashoffset={circumference * (1 - progress.progress)}
+                strokeLinecap="round"
+                transform={`rotate(-90 ${circleSize / 2} ${circleSize / 2})`}
+              />
+            )}
+          </Svg>
+          <Text style={styles.downloadIcon}>↓</Text>
+        </View>
         <Text style={styles.buttonText}>
-          {isActive ? `${percentage}%` : `${sizeMB} MB`}
+          {isActive ? `${Math.round(progress.progress * 100)}%` : `${sizeMB} MB`}
         </Text>
       </TouchableOpacity>
-
-      {/* Progress bar */}
-      {isActive && (
-        <View style={styles.progressBarContainer}>
-          <View
-            style={[
-            styles.progressBarFill,
-            { backgroundColor: accentColor },
-            { width: `${Math.round(progress.progress * 100)}%` },
-            ]}
-          />
-        </View>
-      )}
     </View>
   );
 }
@@ -101,34 +132,26 @@ const styles = StyleSheet.create({
     minWidth: 90,
     minHeight: 80,
   },
+  circleWrap: {
+    width: 56,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  svgCircle: {
+    position: 'absolute',
+  },
   downloadIcon: {
-    width: 48,
-    height: 48,
-    lineHeight: 43,
-    borderRadius: 24,
-    borderWidth: 3,
-    borderColor: '#FFF',
-    textAlign: 'center',
-    fontSize: 32,
+    fontSize: 28,
     color: Colors.textWhite,
+    fontWeight: 'bold',
+    lineHeight: 32,
   },
   buttonText: {
     color: Colors.textWhite,
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: 'Montserrat-ExtraBold',
-    marginTop: 5,
-  },
-  progressBarContainer: {
-    width: '72%',
-    height: 9,
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
-    borderRadius: 6,
-    marginTop: 8,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 2,
+    marginTop: 4,
   },
   errorText: {
     color: Colors.error,
