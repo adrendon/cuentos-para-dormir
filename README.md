@@ -1,237 +1,214 @@
 # Cuentos para Dormir
 
-App de cuentos infantiles con audio de fondo y narración por página para Android. Lector de historias ilustradas con texto personalizado, música ambiental, y sistema de descarga de libros bajo demanda desde GitHub. Interfaz inspirada en el flujo y la identidad visual de la app original de Diveo Media (violeta/morado estrellado + CTA amarillo-naranja).
+Réplica funcional de Little Stories v5.5.5 — app de cuentos infantiles personalizados con audio, narración por página, y sistema de descarga bajo demanda. Diseño pixel-perfect basado en el APK original decompilado.
 
-## Estado actual
+## Flujo completo de la app
 
-### Implementado
-- Splash screen reproduce un video del logo (`src/assets/logo_video.mp4`) con `expo-video`, luego navega a onboarding o biblioteca (orientación portrait)
-- Onboarding completo de 9 pasos + pantalla de carga: idioma (solo español, seleccionable), "sin IA", protagonistas, nombre, género, preview personalizado, objetivos, preferencias (leer/escuchar/narrar), notificaciones, "preparando cuentos" (orientación portrait)
-- **Orientación por pantalla**: Splash y Onboarding en portrait; Biblioteca, Ajustes y Lector en landscape (`expo-screen-orientation`, bloqueado dinámicamente por pantalla en vez de forzado a nivel de `app.json`)
-- Barra de estado oculta vía plugin `expo-status-bar` (`hidden: true`) — la barra de navegación de Android (atrás/inicio/recientes) permanece siempre visible (`expo-navigation-bar` fuerza `setVisibilityAsync('visible')` al iniciar)
-- Biblioteca con grid de 3 columnas, portadas reales, buscador de texto y modal de filtros (no leídos, favoritos, con/sin narración, cortos/largos)
-- Menú de tres puntos por cuento: marcar/desmarcar favorito, borrar libro descargado (bloqueado para libros integrados)
-- Apertura de cuento con animación tipo "libro abriéndose" y selección de modo Leer / Escuchar
-- Bloqueo de pantalla para niños al entrar a un cuento (mantener presionado 1.5s el botón 🔓 para desbloquear, ignora el botón físico de atrás mientras está bloqueado; botón 🔒 en los controles para volver a bloquear)
-- Visor de cuento fullscreen con swipe horizontal + índice de páginas en miniatura (overlay tipo grid)
-- Texto personalizado por página (reemplaza `{NAME:P1}` con el nombre del niño)
-- Páginas diferenciadas por género (carpetas `boy/` y `girl/`)
-- Audio de fondo del cuento con botón silenciar 🔊/🔇
-- Narración por página con botón 🎧 (reproduce `voicework_es/voiceN.mp3`)
-- **Modo "Escuchar"**: la narración se reproduce automáticamente al entrar a cada página, y **al terminar el audio avanza sola a la siguiente página** (detectado vía evento `playbackStatusUpdate` / `didJustFinish` de `expo-audio`)
-- Duck de volumen: baja música de fondo automáticamente durante narración
-- Botón mostrar/ocultar texto superpuesto (Aa)
-- Controles auto-hide (aparecen al tocar, desaparecen a los 4s)
-- Pantalla de "Fin" con créditos, "Leer otra vez", "Agregar a favoritos" y "Compartir"
-- Keep-awake (pantalla no se apaga durante lectura)
-- Sistema de descarga de libros desde GitHub con barra de progreso, y borrado desde el menú de la tarjeta
-- Descompresión ZIP en el dispositivo (fflate)
-- Persistencia de perfil, favoritos y libros leídos (AsyncStorage)
-- Pantalla de ajustes (nombre, género, avatar, música on/off)
-- Portadas bundleadas para todos los libros del catálogo
-- Primer libro (ADayInReverse) se descarga automáticamente al primer arranque
-- Expo Doctor: 21/21 checks pasando
+```
+Splash (video logo_video.mp4, fondo #004B80, portrait)
+  ↓ fade-out
+Onboarding (portrait, 9 pasos + pantalla de carga)
+  1. Idioma (solo español)
+  2. Sin inteligencia artificial
+  3. Tus hijos son los protagonistas
+  4. Nombre del niño
+  5. Género (niño/niña)
+  6. Preview personalizado ("¡A {nombre} le va a encantar!")
+  7. ¿Qué es lo que buscas? (multi-select)
+  8. ¿Qué prefieres? (Leer/Escuchar/Narrar)
+  9. Permitir notificaciones (permiso real Android)
+  → Pantalla de carga "Preparando cuentos" (5s, barra progreso)
+  ↓
+Biblioteca (landscape, grid 3 columnas)
+  ├── Buscar (input crema, X para borrar)
+  ├── Filtro modal (chips coloreados: púrpura/cyan/naranja)
+  ├── Configuración (slide from bottom)
+  │   ├── Nombre + Género
+  │   ├── Oso (izquierda) + Zorro (derecha)
+  │   ├── Globo idioma + Música toggle
+  │   └── Continuar (guarda y vuelve)
+  ├── Descargar cuento (progreso circular SVG)
+  └── Abrir cuento
+      ↓ animación 3D book-flip
+    Selector de modo (Leer / Escuchar / Grabar)
+      ├── Leer → Reader con música de fondo
+      ├── Escuchar → Panel narraciones + auto-narrar por página
+      └── Grabar → "Próximamente"
+      ↓
+    Reader (landscape, fullscreen)
+      ├── Imagen de página (cover, fullscreen)
+      ├── Texto personalizado ({NAME} reemplazado)
+      ├── Flechas ← → (pressed state)
+      ├── Barra inferior de thumbnails (2-col index disponible)
+      ├── Controles superiores (auto-hide 4s):
+      │   ├── Casa (volver con animación close)
+      │   ├── Página X/Total
+      │   ├── Menú hamburguesa (slide from right):
+      │   │   ├── Tamaño texto (A- / A+)
+      │   │   ├── Índice de páginas
+      │   │   └── Reportar
+      │   ├── Narrar (toggle voicework)
+      │   ├── Texto Aa (show/hide)
+      │   ├── Música (toggle + slider volumen)
+      │   └── Bloquear (lock infantil)
+      ├── Slider volumen música (amarillo, aparece con toggle)
+      ├── Slider volumen narración (cyan, aparece en modo Escuchar)
+      └── Pantalla Fin (Leer otra vez / Favoritos / Compartir)
+```
 
-### Pendiente / TODO
-- [ ] **Diseño visual de la biblioteca** (portadas, barra superior, iconos) no está a la par del video/APK de referencia — es un rediseño visual más grande, aún no abordado
-- [ ] Selector de idioma dentro de Ajustes (el onboarding ya tiene el paso, pero solo hay español disponible)
-- [ ] Filtro "Incluye a N niños" (heroes) — requiere agregar ese dato al catálogo (`Book` type)
-- [ ] Push notifications (Firebase Cloud Messaging) — removido por incompatibilidad con build limpio
-- [ ] Grabación de narración propia ("Narrar cuentos") — omitido a propósito, no implementado
-- [ ] Compras / suscripción — omitido a propósito (uso personal)
-- [ ] Animaciones de entrada escalonada en la biblioteca
-- [ ] Más libros (hay 92 en el catálogo original, 9 integrados actualmente)
-- [ ] Tema claro/oscuro según hora del día
-- [ ] Confirmar en dispositivo real que el "ANR"/congelamiento reportado durante el onboarding se resolvió tras el fix de orientación por pantalla (no se pudo reproducir/diagnosticar con logs; el forzado global a landscape mientras el layout esperaba portrait era la hipótesis principal)
+## Diseño visual
 
-### Bugs corregidos en la última sesión
-- `app.json`: `androidStatusBar` (deprecado en SDK 57) migrado al plugin `expo-status-bar`; primer intento usó `"hidden": {"android": true}` (formato inválido, rompía el link de recursos de Android con `expected boolean but got (raw string) [object Object]`) — corregido a `"hidden": true`
-- `LockOverlay`: usaba `pointerEvents="box-only"`, que hace que el contenedor reciba los toques pero **bloquea a sus hijos** — el botón de desbloqueo nunca respondía. Corregido con un `Pressable` de fondo (bloquea el lector) + `pointerEvents="box-none"` (deja pasar el toque al botón)
-- Gradle build local: un daemon de Gradle colgado (`OutOfMemoryError: Metaspace` de una corrida previa) dejaba bloqueada la carpeta `android/` y el caché `.gradle/caches/journal-1` en builds siguientes (`EBUSY` / `Timeout waiting to lock journal cache`) — se soluciona matando el proceso `java.exe` de Gradle antes de reintentar
-- `build:eas` no corría en PowerShell porque usaba sintaxis bash (`VAR=value comando`) — se usa `cross-env` para setear `EAS_SKIP_AUTO_FINGERPRINT` de forma multiplataforma
+Basado en la especificación `Little_Stories_v5.5.5_Especificacion_Visual_Funcional_Animaciones.md` extraída del APK decompilado.
+
+### Paleta de colores (recuperada del APK)
+
+| Uso | Hex |
+|---|---|
+| Splash background | `#004B80` |
+| App background | `#03032A` |
+| Title yellow | `#FFC000` |
+| Orange | `#FF8024` |
+| Light blue / accent | `#27C8FF` |
+| Tooltip/input background | `#EFEFE0` |
+| Input text | `#606371` |
+| Onboarding subtitle | `#B5B7F8` |
+| Chip green | `#0CAC47` |
+| Chip purple | `#8E4BF2` |
+| Chip blue | `#29B7DF` |
+| Chip orange | `#FB8200` |
+| Filter indicator | `#2CACEB` |
+| CTA gradient | `#E5B840` → `#F1893C` |
+| Blue gradient | `#36C0ED` → `#2E80ED` |
+| Green gradient | `#1BBF68` → `#088E67` |
+
+### Fuentes (del APK original)
+
+- **BalooBhaijaan** — títulos redondeados
+- **Montserrat SemiBold** — cuerpo de texto
+- **Montserrat ExtraBold** — botones y headings
+
+### Animaciones y transiciones
+
+| Transición | Tipo |
+|---|---|
+| Splash → siguiente | fade-out 400ms |
+| Onboarding entre pasos | slide horizontal (translateX) + opacity crossfade |
+| Biblioteca → Settings | slide from bottom |
+| Settings → Biblioteca | slide to bottom |
+| Biblioteca → Libro | 3D book-flip (rotateY + perspective + scale) |
+| Libro → Biblioteca | scale-down 0.85 + fade-out 400ms |
+| Controles del reader | opacity 250ms in / 200ms out |
+| Menú hamburguesa | slide from right + dark overlay |
+| Filtro modal | fade + centered |
+| Audio | fadeInVolume 1000ms / fadeOutVolume 500ms |
+| Flechas | pressed state (imagen alternativa) |
+| Cards biblioteca | staggered fade-in + scale (80ms delay por card) |
+| Scroll-to-top | fade-in/out |
+| Descarga | progreso circular SVG |
 
 ## Stack técnico
 
 | Tecnología | Versión | Uso |
 |---|---|---|
-| Expo SDK | 57 | Framework base |
+| Expo SDK | 57 | Framework |
 | React Native | 0.86.2 | UI nativa |
 | React | 19.2.3 | Componentes |
 | TypeScript | 6.0.3 | Tipado |
 | expo-router | 57.x | Navegación file-based |
-| expo-audio | 57.x | Música de fondo + narración por página |
-| expo-file-system/legacy | 57.x | Lectura/escritura de archivos locales |
-| fflate | 0.8.2 | Descompresión ZIP en JS |
-| react-native-pager-view | 8.0.2 | Swipe horizontal de páginas |
-| react-native-reanimated | 4.5.1 | Animaciones |
-| AsyncStorage | 2.2.0 | Persistencia local |
-| expo-keep-awake | 57.x | Evitar que la pantalla se apague |
+| expo-audio | 57.x | Música + narración |
+| expo-video | 57.x | Splash video |
+| expo-file-system/legacy | 57.x | Filesystem |
+| expo-notifications | 57.x | Permiso push |
+| expo-navigation-bar | 57.x | Immersive mode |
+| expo-screen-orientation | 57.x | Portrait/Landscape per-screen |
+| expo-keep-awake | 57.x | Pantalla activa |
+| fflate | 0.8.2 | Unzip |
+| react-native-reanimated | 4.5.1 | Animaciones 60fps |
+| react-native-pager-view | 8.0.2 | Swipe páginas |
+| react-native-svg | latest | Progreso circular descarga |
+| @react-native-community/slider | 5.2.x | Sliders volumen |
+| @react-native-async-storage | 2.2.0 | Persistencia |
 
-## Estructura del proyecto
-
-```
-cuentos-app/
-├── app/                          # Rutas (expo-router file-based)
-│   ├── _layout.tsx               # Root layout, init audio + embedded books + nav bar visible
-│   ├── index.tsx                 # Splash (video) → onboarding o library
-│   ├── onboarding.tsx             # Primera vez: 9 pasos + pantalla de carga
-│   ├── library.tsx               # Biblioteca principal (grid 3 columnas + búsqueda/filtros)
-│   ├── book/[id].tsx             # Apertura de cuento + visor fullscreen
-│   └── settings.tsx              # Ajustes de perfil
-├── src/
-│   ├── assets/
-│   │   ├── books/                # Libro embebido + portadas + catálogo
-│   │   ├── onboarding/            # Ilustraciones/íconos reales extraídos del APK original
-│   │   ├── ui/                   # Íconos del lector (leer/escuchar, casa, música, índice...)
-│   │   └── logo_video.mp4        # Video del splash
-│   ├── components/
-│   │   ├── BookCard.tsx          # Card 3-col con portada, favorito y menú de tres puntos
-│   │   ├── BookCardMenu.tsx      # Menú: favorito / borrar libro descargado
-│   │   ├── BookOpeningIntro.tsx  # Animación de apertura + selección Leer/Escuchar
-│   │   ├── PageViewer.tsx        # Pager fullscreen + texto overlay
-│   │   ├── PageIndexOverlay.tsx  # Índice de páginas en miniatura
-│   │   ├── LockOverlay.tsx       # Bloqueo de pantalla para niños (mantener presionado)
-│   │   ├── DownloadButton.tsx    # Botón con barra de progreso
-│   │   ├── FilterModal.tsx       # Modal de filtros de biblioteca
-│   │   ├── OnboardingHeader.tsx  # Flecha atrás + progreso segmentado + música (onboarding)
-│   │   ├── GenderSelector.tsx    # Niño/niña cards con íconos reales
-│   │   └── AnimalSelector.tsx    # Grid de animales avatar
-│   ├── hooks/
-│   │   ├── useBooks.ts           # Lista de libros + búsqueda + filtros + favoritos + borrado
-│   │   ├── useBookPages.ts      # Páginas del libro (boy/girl/common)
-│   │   ├── useBookTexts.ts      # Texto personalizado por página
-│   │   ├── useVoicework.ts      # Narración por página (voicework_es/)
-│   │   └── useProfile.ts        # Perfil del niño (AsyncStorage)
-│   ├── screens/                  # Pantallas principales
-│   ├── services/
-│   │   ├── audioService.ts       # expo-audio: play/pause/stop/volume/duck
-│   │   ├── downloadService.ts   # Descarga ZIP + extracción con fflate + borrado
-│   │   └── embeddedBooksService.ts # Descarga del primer libro al arranque
-│   ├── theme/colors.ts           # Paleta de colores (violeta/morado + amarillo-naranja)
-│   └── types/book.ts            # Tipos TypeScript
-├── books-zip/                    # ZIPs para descarga (en GitHub, excluido de EAS)
-├── assets/                       # Íconos y splash
-├── app.json                      # Config Expo (landscape, package name, status bar oculta)
-├── eas.json                      # Config EAS Build
-├── .easignore                    # Excluye books-zip del upload a EAS
-└── .npmrc                        # legacy-peer-deps para install
-```
-
-## Estructura de un libro
+## Estructura
 
 ```
-{BookFolderName}/
-├── Pages/
-│   ├── boy/              # Imágenes cuando el perfil es niño
-│   │   ├── page_001.webp
-│   │   └── ...
-│   ├── girl/             # Imágenes cuando el perfil es niña
-│   └── common/           # Páginas compartidas (fallback)
-├── {BookFolderName}.mp3  # Música de fondo
-├── Texts.csv             # Textos multiidioma (TSV, columna ES)
-├── AdditionalInfo.json   # Metadata: numberOfPages, imageType, resolution
-└── voicework_es/         # Narración por página
-    ├── VoiceworkInfo.json
-    ├── voice0-name.mp3   # Pronunciación del nombre
-    ├── voice1.mp3        # Narración página 1
-    ├── voice2.mp3        # Narración página 2
-    └── ...
+app/                          # Rutas (expo-router)
+  _layout.tsx                 # Root: fonts, audio, nav-bar hidden, splash
+  index.tsx                   # → SplashScreen
+  onboarding.tsx              # → OnboardingScreen
+  library.tsx                 # → LibraryScreen
+  book/[id].tsx               # → BookScreen
+  settings.tsx                # → SettingsScreen (slide_from_bottom)
+src/
+  assets/
+    books/                    # 1 libro embebido + 9 portadas + catálogo
+    onboarding/               # 30 assets del onboarding
+    settings/                 # bear.webp + fox.webp
+    ui/                       # 35+ iconos del APK original
+    fonts/                    # BalooBhaijaan + Montserrat
+    logo_video.mp4            # Splash video (9s)
+  components/
+    BookCard.tsx              # Card tipo libro con spine + ribbon + MB
+    BookCardMenu.tsx          # Menú 3 puntos (favorito/eliminar)
+    BookOpeningIntro.tsx      # Animación 3D flip + selector modo
+    DownloadButton.tsx        # Progreso circular SVG
+    FilterModal.tsx           # Modal filtros con chips coloreados
+    GenderSelector.tsx        # Niño/niña con iconos on/off
+    LockOverlay.tsx           # Bloqueo infantil
+    NarrationPanel.tsx        # Panel narradores profesionales/personales
+    OnboardingHeader.tsx      # Barra progreso pencil + step counter
+    PageIndexOverlay.tsx      # Grid 2-col thumbnails + ribbon
+    PageViewer.tsx            # Pager fullscreen + arrows pressed
+    ReaderMenu.tsx            # Hamburguesa: texto, índice, reportar
+  hooks/
+    useBookPages.ts           # Carga páginas boy/girl/common
+    useBooks.ts               # Catálogo + descarga + filtros + búsqueda
+    useBookTexts.ts           # Texto personalizado {NAME}
+    useProfile.ts             # AsyncStorage perfil
+    useReaderLock.ts          # Lock infantil
+    useVoicework.ts           # Narración por página
+    useVoiceworkProfile.ts    # Narrator info del JSON
+  screens/
+    SplashScreen.tsx          # Video + fade + orientación
+    OnboardingScreen.tsx      # 9 pasos + loading (712 líneas)
+    LibraryScreen.tsx         # Grid 3-col + búsqueda + filtros
+    BookScreen.tsx            # Reader completo (559 líneas)
+    SettingsScreen.tsx        # Config con oso+zorro
+  services/
+    audioService.ts           # expo-audio: play/stop/fade/duck/loop
+    downloadService.ts        # GitHub ZIP + fflate unzip
+    embeddedBooksService.ts   # Primer libro al arranque
+    notificationService.ts    # FCM placeholder
+  theme/colors.ts             # Paleta exacta del APK
+  types/book.ts               # Tipos completos
+books-zip/                    # ZIPs para descarga (excluido de EAS)
 ```
 
-### Texts.csv (formato TSV)
-- Columnas: Key, EN, RU, DE, FR, IT, PT, **ES**, JA, ID, MS, AR
-- Keys importantes: `title`, `author`, `illustrator`, `boy.page.1`, `boy.page.2`, `girl.page.1`...
-- Placeholder `{NAME:P1}` → se reemplaza con el nombre del niño en el visor
+## Descarga de libros
 
-## Flujo de la app
-
-1. **Splash** (video del logo) → fade out
-2. **Onboarding** (solo primera vez, 9 pasos): idioma → sin IA → protagonistas → nombre → género → preview → objetivos → preferencias → notificaciones → preparando cuentos
-3. **Biblioteca**: grid 3 columnas con portadas, buscador y filtros. Los no descargados muestran botón "Descargar" con barra de progreso. Menú ⋮ por tarjeta para favorito/borrar
-4. **Apertura de cuento**: animación de libro abriéndose + elegir Leer o Escuchar → pantalla se bloquea automáticamente (mantener presionado 1.5s para desbloquear)
-5. **Visor**: fullscreen, swipe entre páginas, texto personalizado superpuesto
-   - 📑 Índice de páginas en miniatura
-   - 🎧 Escuchar narración de la página (automática en modo Escuchar)
-   - Aa Mostrar/ocultar texto
-   - 🔊/🔇 Silenciar música de fondo
-   - 🔒 Bloquear pantalla de nuevo
-   - ← Volver (detiene todo el audio)
-6. **Fin del cuento**: créditos, "Leer otra vez", "Agregar a favoritos", "Compartir", "Volver a la biblioteca"
-7. **Ajustes**: cambiar nombre, género, avatar, música on/off
-
-## Comandos
-
-```bash
-# Instalar dependencias
-npm install --legacy-peer-deps
-
-# Verificar salud del proyecto
-npx expo-doctor
-
-# Compilar TypeScript (verificar errores)
-npx tsc --noEmit
-
-# Bundle local (verificar que Metro funciona)
-npx expo export --platform android --output-dir dist
-
-# Build local de APK release en macOS/Linux (prebuild + gradlew assembleRelease)
-npm run build:local
-
-# Build local de APK release en Windows (PowerShell, mismo resultado que build:local)
-npm run build:local:win
-
-# Build APK en la nube (EAS), perfil preview
-npm run build:apk
-
-# Build AAB en la nube (EAS), perfil production (para Google Play)
-npm run build:android
-
-# Build APK en la nube en background, sin esperar (EAS)
-npm run build:eas
-
-# Compila el APK local y lo sube al servidor configurado en scripts/deploy-apk.sh (macOS/Linux)
-npm run deploy:apk
-
-# Sube el APK YA COMPILADO (./cuentos-para-dormir.apk) al servidor por scp, sin recompilar (Windows)
-npm run deploy:apk:win
-
-# Desarrollo local (requiere dispositivo conectado)
-npx expo start
-```
-
-> `build:local` / `build:local:win` requieren Android SDK + JDK instalados localmente. La primera compilación tarda bastante (Gradle descarga su distribución + compila módulos nativos como `react-native-worklets`); builds siguientes son mucho más rápidas gracias al cache de Gradle.
->
-> En Windows, si un build previo falla o se cuelga (p. ej. `OutOfMemoryError`), puede quedar un proceso `java.exe` de Gradle colgado bloqueando `android/` y `.gradle/caches`. Si el siguiente build falla con `EBUSY` o `Timeout waiting to lock journal cache`, mata el proceso:
-> ```powershell
-> Get-CimInstance Win32_Process -Filter "Name='java.exe'" | Where-Object { $_.CommandLine -like '*gradle*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
-> ```
-
-## Sistema de descarga de libros
-
-Los libros se almacenan como ZIP en este mismo repo en `books-zip/`. La app descarga desde:
+Los libros se descargan como ZIP desde GitHub:
 ```
 https://github.com/adrendon/cuentos-para-dormir/raw/main/books-zip/{FolderName}.zip
 ```
 
-El `.easignore` excluye `books-zip/` del upload a EAS Build (solo sube ~23MB de código + assets).
+9 libros disponibles: ADayInReverse (embebido), AFunWalk, AGoodIdea, AGreatFriendship, ALittleAntsBigJob, AllIsNotLost, APerfectHome, Belka, BirdsChoir.
 
-Para generar nuevos ZIPs:
+## Comandos
+
 ```bash
-cd /ruta/a/books/originales
-for book in NombreLibro1 NombreLibro2; do
-  zip -r "books-zip/${book}.zip" "$book/" -x "*.DS_Store"
-done
+npm install --legacy-peer-deps    # Instalar dependencias
+npx expo-doctor                   # Verificar salud (21/21)
+npx tsc --noEmit                  # TypeScript check
+npm run build:eas                 # Build APK en la nube (EAS)
+npm run deploy:apk                # Build local + subir al servidor Oracle
 ```
 
-## Notas técnicas
+## Notas
 
-- **Node.js 22** requerido (24+ incompatible con expo-modules-core)
-- **expo-file-system/legacy** — SDK 57 tiene nueva API, usamos legacy import
-- **expo-audio** reemplaza a expo-av (deprecado en SDK 57)
-- **expo-video** para reproducir el logo del splash
-- **react-native-track-player removido** — incompatible con EAS build limpio
+- **Node.js 22** requerido (24+ incompatible)
+- **expo-file-system/legacy** para API clásica en SDK 57
+- **Orientación**: portrait para splash/onboarding, landscape para biblioteca/libro/settings
 - **Package name**: `com.cuentos.dormir`
-- **Android target**: API 27+ (Android 8.1+)
-- **Orientación**: landscape siempre (configurado en app.json)
-- **Barra de estado**: oculta globalmente (`androidStatusBar.hidden` + `expo-status-bar`); la barra de navegación de Android se fuerza visible con `expo-navigation-bar` para no interferir con la navegación del sistema
-- En Windows, `build:local:win` fuerza `-Djavax.net.ssl.trustStoreType=Windows-ROOT` para evitar errores de certificado SSL al descargar la distribución de Gradle en redes corporativas con inspección SSL
+- **Navigation bar** oculta (immersive mode)
+- **Audio**: loop infinito, volume slider, fade in/out, duck durante narración
+- **Grabación**: placeholder "Próximamente" (infraestructura lista)
