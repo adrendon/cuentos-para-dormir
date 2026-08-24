@@ -87,7 +87,7 @@ export function BookCard({
       <TouchableOpacity
         style={[
           styles.container,
-          { width: cardWidth, height: cardWidth, backgroundColor: book.coverColor },
+          { width: cardWidth, height: cardWidth * 1.12, backgroundColor: book.coverColor },
         ]}
         onPress={handlePress}
         activeOpacity={isAvailable || isIncluded ? 0.85 : 1}
@@ -115,7 +115,7 @@ export function BookCard({
           })()}
         </View>
 
-        {/* Turquoise LEFT spine (book binding) */}
+        {/* Turquoise binding on the right, matching the physical-book reference. */}
         <View style={styles.bookSpine} pointerEvents="none" />
 
         {/* Inward shadow/depth effect */}
@@ -140,19 +140,14 @@ export function BookCard({
           </View>
         )}
 
-        {/* White bookmark ribbon at top-right */}
-        <View style={styles.ribbonContainer} pointerEvents="none">
-          <View style={styles.ribbon} />
-          <View style={styles.ribbonTail} />
-        </View>
-
-        {/* ⋮ menu at top-right */}
+        {/* The overflow menu lives inside the bookmark, not over the artwork. */}
         <TouchableOpacity
           style={styles.menuButton}
           onPress={() => setShowMenu(true)}
           accessibilityRole="button"
           accessibilityLabel="Más opciones"
         >
+          <Image source={require('../assets/ui/ic_page_mark.png')} style={styles.ribbonImage} />
           <Text style={styles.menuButtonText}>⋮</Text>
         </TouchableOpacity>
 
@@ -205,11 +200,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     bottom: 0,
-    left: 0,
+    right: 0,
     width: 12,
     backgroundColor: 'rgba(20, 207, 201, 0.85)',
-    borderRightWidth: 1,
-    borderRightColor: 'rgba(255,255,255,0.4)',
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(255,255,255,0.4)',
   },
   innerShadow: {
     position: 'absolute',
@@ -232,8 +227,8 @@ const styles = StyleSheet.create({
   titleContainer: {
     position: 'absolute',
     bottom: 0,
-    left: 12,
-    right: 0,
+    left: 0,
+    right: 12,
     paddingHorizontal: 8,
     paddingVertical: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.62)',
@@ -249,31 +244,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     bottom: 0,
-    left: 12,
-    right: 0,
+    left: 0,
+    right: 12,
   },
-  ribbonContainer: {
-    position: 'absolute',
-    top: 0,
-    right: 14,
-    width: 12,
-    height: 26,
-    alignItems: 'center',
-  },
-  ribbon: {
-    width: 12,
-    height: 20,
-    backgroundColor: '#FFFFFF',
-  },
-  ribbonTail: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 6,
-    borderRightWidth: 6,
-    borderBottomWidth: 5,
-    borderLeftColor: '#FFFFFF',
-    borderRightColor: '#FFFFFF',
-    borderBottomColor: 'transparent',
+  ribbonImage: {
+    ...StyleSheet.absoluteFill,
+    width: '100%',
+    height: '100%',
+    resizeMode: 'stretch',
   },
   readBadge: {
     position: 'absolute',
@@ -308,19 +286,19 @@ const styles = StyleSheet.create({
   },
   menuButton: {
     position: 'absolute',
-    top: 4,
-    right: 4,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    top: 0,
+    right: 18,
+    width: 30,
+    height: 50,
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
   },
   menuButtonText: {
     color: '#3D3B43',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     lineHeight: 20,
+    marginTop: -14,
   },
 });

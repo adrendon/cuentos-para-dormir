@@ -36,8 +36,6 @@ export function PageIndexOverlay({
               resizeMode="contain"
             />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Índice</Text>
-          <View style={styles.closeButton} />
         </View>
 
         <FlatList
@@ -55,14 +53,14 @@ export function PageIndexOverlay({
                 accessibilityLabel={`Ir a la página ${index + 1}`}
               >
                 <Image source={{ uri: item.uri }} style={styles.thumbImage} resizeMode="cover" />
-                {/* Page number in top-left */}
-                <View style={styles.pageNumberWrap}>
+                {/* The page number is printed over the bookmark on the left. */}
+                <View style={styles.pageNumberWrap} pointerEvents="none">
+                  <Image
+                    source={require('../assets/ui/ic_page_mark.png')}
+                    style={styles.pageMark}
+                    resizeMode="stretch"
+                  />
                   <Text style={styles.pageNumber}>{index + 1}</Text>
-                </View>
-                {/* White bookmark ribbon in top-right */}
-                <View style={styles.thumbRibbonContainer}>
-                  <View style={styles.thumbRibbon} />
-                  <View style={styles.thumbRibbonTail} />
                 </View>
               </TouchableOpacity>
             );
@@ -76,41 +74,38 @@ export function PageIndexOverlay({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(23, 18, 84, 0.97)',
-    paddingTop: 24,
+    backgroundColor: 'rgba(0, 0, 0, 0.64)',
+    paddingTop: 16,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 16,
+    paddingHorizontal: 12,
+    marginBottom: 4,
   },
   closeButton: {
-    width: 36,
-    height: 36,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: Colors.tooltipBackground,
     justifyContent: 'center',
     alignItems: 'center',
   },
   closeIcon: {
-    width: 20,
-    height: 20,
-    tintColor: Colors.textWhite,
-  },
-  headerTitle: {
-    color: Colors.textWhite,
-    fontSize: 18,
-    fontWeight: '800',
+    width: 30,
+    height: 30,
+    tintColor: Colors.bookPagesText,
   },
   grid: {
-    paddingHorizontal: 32,
+    paddingHorizontal: '12%',
     paddingBottom: 24,
   },
   thumb: {
     flex: 1 / THUMB_COLUMNS,
-    aspectRatio: 0.72,
-    margin: 8,
-    borderRadius: 10,
+    aspectRatio: 1.61,
+    marginHorizontal: 14,
+    marginVertical: 8,
+    borderRadius: 0,
     overflow: 'hidden',
     borderWidth: 2.5,
     borderColor: 'transparent',
@@ -124,35 +119,21 @@ const styles = StyleSheet.create({
   },
   pageNumberWrap: {
     position: 'absolute',
-    top: 6,
-    left: 8,
-  },
-  pageNumber: {
-    color: Colors.chipBlue,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  thumbRibbonContainer: {
-    position: 'absolute',
     top: 0,
-    right: 10,
-    width: 14,
-    height: 20,
+    left: 18,
+    width: 42,
+    height: 70,
     alignItems: 'center',
   },
-  thumbRibbon: {
-    width: 14,
-    height: 16,
-    backgroundColor: '#FFFFFF',
+  pageMark: {
+    ...StyleSheet.absoluteFill,
+    width: '100%',
+    height: '100%',
   },
-  thumbRibbonTail: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 7,
-    borderRightWidth: 7,
-    borderBottomWidth: 5,
-    borderLeftColor: '#FFFFFF',
-    borderRightColor: '#FFFFFF',
-    borderBottomColor: 'transparent',
+  pageNumber: {
+    color: Colors.bookPagesText,
+    fontSize: 20,
+    fontFamily: 'Montserrat-ExtraBold',
+    marginTop: 9,
   },
 });

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../theme/colors';
 
 interface OnboardingHeaderProps {
@@ -28,17 +29,19 @@ export function OnboardingHeader({
         accessibilityRole="button"
         accessibilityLabel="Regresar"
       >
-        <Text style={styles.backIcon}>‹</Text>
+        <Image source={require('../assets/ui/ic_left_arrow.png')} style={styles.backIcon} />
       </TouchableOpacity>
 
-      {/* Progress bar with pencil + step label */}
+      {/* Single pencil-shaped track, as used by the reference application. */}
       <View style={styles.progressWrapper}>
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: `${progress * 100}%` }]}>
-            <Text style={styles.pencilIcon}>✏️</Text>
+            {[0, 1, 2, 3, 4].map((stripe) => (
+              <View key={stripe} style={[styles.progressStripe, { left: stripe * 24 }]} />
+            ))}
           </View>
+          <Text style={styles.stepLabel}>{step}/{totalSteps}</Text>
         </View>
-        <Text style={styles.stepLabel}>{step}/{totalSteps}</Text>
       </View>
 
       <TouchableOpacity
@@ -47,15 +50,17 @@ export function OnboardingHeader({
         accessibilityRole="button"
         accessibilityLabel={musicEnabled ? 'Silenciar música' : 'Activar música'}
       >
-        <Image
-          source={
-            musicEnabled
-              ? require('../assets/onboarding/ic_music_on.png')
-              : require('../assets/onboarding/ic_music_off.png')
-          }
-          style={styles.musicIcon}
-          resizeMode="contain"
-        />
+        <LinearGradient colors={['#4544A7', '#282776']} style={styles.iconGradient}>
+          <Image
+            source={
+              musicEnabled
+                ? require('../assets/onboarding/ic_music_on.png')
+                : require('../assets/onboarding/ic_music_off.png')
+            }
+            style={styles.musicIcon}
+            resizeMode="contain"
+          />
+        </LinearGradient>
       </TouchableOpacity>
     </View>
   );
@@ -65,69 +70,75 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    gap: 14,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    gap: 18,
   },
   iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#34338B',
     justifyContent: 'center',
     alignItems: 'center',
   },
   backIcon: {
-    color: Colors.textWhite,
-    fontSize: 24,
-    fontWeight: '300',
-    marginTop: -2,
+    width: 25,
+    height: 25,
+    tintColor: Colors.textWhite,
+    resizeMode: 'contain',
   },
   progressWrapper: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
   },
   progressTrack: {
-    flex: 1,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    width: '100%',
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#29285F',
     overflow: 'hidden',
     justifyContent: 'center',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 4,
-    backgroundColor: Colors.accentYellow,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingRight: 2,
-    minWidth: 24,
+    borderRadius: 11,
+    backgroundColor: '#FFC000',
+    minWidth: 42,
+    overflow: 'hidden',
   },
-  pencilIcon: {
-    fontSize: 12,
+  progressStripe: {
+    position: 'absolute',
+    top: -10,
+    width: 9,
+    height: 42,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    transform: [{ rotate: '35deg' }],
   },
   stepLabel: {
+    position: 'absolute',
+    alignSelf: 'center',
+    top: -8,
     color: Colors.textWhite,
-    fontSize: 14,
-    fontWeight: '700',
-    minWidth: 28,
+    fontSize: 28,
+    fontFamily: 'Montserrat-ExtraBold',
+    textShadowColor: '#171641',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 1,
   },
   musicButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(62, 112, 220, 0.3)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(62, 112, 220, 0.5)',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    overflow: 'hidden',
+  },
+  iconGradient: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   musicIcon: {
-    width: 20,
-    height: 20,
+    width: 34,
+    height: 34,
   },
 });

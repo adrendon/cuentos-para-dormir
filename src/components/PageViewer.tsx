@@ -19,6 +19,7 @@ interface PageViewerProps {
   pages: BookPage[];
   currentPage: number;
   onPageChange: (pageIndex: number) => void;
+  onPageNavigationStart?: () => void;
   onFinish: () => void;
   onBackFromFirstPage?: () => void;
   coverColor: string;
@@ -31,6 +32,7 @@ export function PageViewer({
   pages,
   currentPage,
   onPageChange,
+  onPageNavigationStart,
   onFinish,
   onBackFromFirstPage,
   coverColor,
@@ -55,20 +57,22 @@ export function PageViewer({
   );
 
   const goNext = useCallback(() => {
+    onPageNavigationStart?.();
     if (currentPage < pages.length - 1) {
       pagerRef.current?.setPage(currentPage + 1);
     } else {
       onFinish();
     }
-  }, [currentPage, pages.length, onFinish]);
+  }, [currentPage, pages.length, onFinish, onPageNavigationStart]);
 
   const goPrev = useCallback(() => {
+    onPageNavigationStart?.();
     if (currentPage > 0) {
       pagerRef.current?.setPage(currentPage - 1);
     } else if (currentPage === 0 && onBackFromFirstPage) {
       onBackFromFirstPage();
     }
-  }, [currentPage, onBackFromFirstPage]);
+  }, [currentPage, onBackFromFirstPage, onPageNavigationStart]);
 
   if (pages.length === 0) {
     return (
@@ -87,6 +91,9 @@ export function PageViewer({
         style={styles.pager}
         initialPage={currentPage}
         onPageSelected={handlePageSelected}
+        onPageScrollStateChanged={(event) => {
+          if (event.nativeEvent.pageScrollState === 'dragging') onPageNavigationStart?.();
+        }}
         orientation="horizontal"
       >
         {pages.map((page) => {
@@ -101,6 +108,14 @@ export function PageViewer({
               {/* Text overlay above bottom bar */}
               {showText && textForPage && (
                 <View style={styles.textOverlay}>
+                  <View style={styles.textPageMark} pointerEvents="none">
+                    <Image
+                      source={require('../assets/ui/ic_page_mark.png')}
+                      style={styles.textPageMarkImage}
+                      resizeMode="stretch"
+                    />
+                    <Text style={styles.textPageNumber}>{page.pageNumber}</Text>
+                  </View>
                   <ScrollView showsVerticalScrollIndicator={false}>
                     <Text style={[styles.pageText, { fontSize: textSize, lineHeight: textSize * 1.5 }]}>
                       {textForPage}
@@ -183,36 +198,56 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 82,
-    paddingVertical: 16,
-    minHeight: 92,
+    backgroundColor: 'rgba(239, 239, 224, 0.94)',
+    paddingHorizontal: 96,
+    paddingVertical: 14,
+    minHeight: 86,
     justifyContent: 'center',
     maxHeight: SCREEN_HEIGHT * 0.25,
   },
   pageText: {
-    color: '#FFF',
+    color: Colors.tooltipText,
     fontSize: 14,
     lineHeight: 21,
     textAlign: 'center',
     fontFamily: 'Montserrat-SemiBold',
   },
+  textPageMark: {
+    position: 'absolute',
+    top: 0,
+    left: 22,
+    width: 42,
+    height: 68,
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  textPageMarkImage: {
+    ...StyleSheet.absoluteFill,
+    width: '100%',
+    height: '100%',
+  },
+  textPageNumber: {
+    color: Colors.bookPagesText,
+    fontSize: 18,
+    fontFamily: 'Montserrat-ExtraBold',
+    marginTop: 8,
+  },
   arrowBtn: {
     position: 'absolute',
     top: '50%',
-    marginTop: -29,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(10, 8, 38, 0.68)',
+    marginTop: -42,
+    width: 60,
+    height: 84,
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 20,
   },
-  leftArrow: { left: 14 },
-  rightArrow: { right: 14 },
+  leftArrow: { left: 2 },
+  rightArrow: { right: 2 },
   arrowIcon: {
-    width: 32,
-    height: 32,
+    width: 44,
+    height: 62,
+    resizeMode: 'contain',
   },
 });

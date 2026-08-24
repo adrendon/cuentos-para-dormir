@@ -20,6 +20,20 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
   const onNarrationEndRef = useRef(onNarrationEnd);
   onNarrationEndRef.current = onNarrationEnd;
 
+  const releaseCurrentPlayer = useCallback(() => {
+    statusSubscriptionRef.current?.remove();
+    statusSubscriptionRef.current = null;
+    const currentPlayer = playerRef.current;
+    playerRef.current = null;
+    if (!currentPlayer) return;
+    // remove() alone is not guaranteed to silence the native decoder before
+    // the next JS tick. Mute and pause it first so rapid page changes cannot
+    // leave overlapping narration instances behind.
+    try { currentPlayer.volume = 0; } catch {}
+    try { currentPlayer.pause(); } catch {}
+    try { currentPlayer.remove(); } catch {}
+  }, []);
+
   const hasVoicework = useCallback(async (): Promise<boolean> => {
     if (!folderName) return false;
     try {
@@ -38,8 +52,10 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
     if (!folderName) return;
 
     try {
-      // Stop current narration first
-      await stopNarration();
+      // Invalidate and release synchronously before the asynchronous file
+      // lookup. This makes repeated next/previous taps race-safe.
+      playbackGenerationRef.current++;
+      releaseCurrentPlayer();
       const playbackGeneration = ++playbackGenerationRef.current;
 
       const voiceFile = `${BOOKS_LOCAL_DIR}${folderName}/voicework_es/voice${pageNumber}.mp3`;
@@ -73,25 +89,18 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
       console.error('Error playing narration:', error);
       setIsNarrating(false);
     }
-  }, [folderName]);
+  }, [folderName, releaseCurrentPlayer]);
 
   /**
    * Stop current narration.
    */
   const stopNarration = useCallback(async () => {
     playbackGenerationRef.current++;
-    try {
-      statusSubscriptionRef.current?.remove();
-      statusSubscriptionRef.current = null;
-      if (playerRef.current) {
-        playerRef.current.remove();
-        playerRef.current = null;
-      }
-    } catch {}
+    releaseCurrentPlayer();
     setIsNarrating(false);
     setIsNarrationPaused(false);
     setCurrentNarrationPage(-1);
-  }, []);
+  }, [releaseCurrentPlayer]);
 
   /**
    * Toggle narration for a page.
@@ -125,11 +134,8 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
   // flight. Invalidate that lookup and release the native player on unmount.
   useEffect(() => () => {
     playbackGenerationRef.current++;
-    statusSubscriptionRef.current?.remove();
-    statusSubscriptionRef.current = null;
-    playerRef.current?.remove();
-    playerRef.current = null;
-  }, []);
+    releaseCurrentPlayer();
+  }, [releaseCurrentPlayer]);
 
   return {
     isNarrating,
