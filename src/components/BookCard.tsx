@@ -139,7 +139,7 @@ export function BookCard({
         )}
 
         {/* White ribbon/bookmark at top-right */}
-        <View style={styles.ribbon} />
+        <Image source={require('../assets/ui/ic_page_mark.png')} style={styles.ribbon} />
 
         {/* Three dots menu - white, no background */}
         <TouchableOpacity
@@ -232,13 +232,11 @@ const styles = StyleSheet.create({
   },
   ribbon: {
     position: 'absolute',
-    top: 0,
-    right: 24,
-    width: 14,
-    height: 22,
-    backgroundColor: '#FFFFFF',
-    borderBottomLeftRadius: 2,
-    borderBottomRightRadius: 2,
+    top: -2,
+    right: 26,
+    width: 18,
+    height: 28,
+    tintColor: '#FFFFFF',
   },
   menuButton: {
     position: 'absolute',
