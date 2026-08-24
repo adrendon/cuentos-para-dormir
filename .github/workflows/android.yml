@@ -27,6 +27,12 @@ jobs:
     steps:
       - name: Descargar repositorio
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            /*
+            !books-zip
+            !capturas_completas_video_onboarding_config_biblioteca_libro
+          sparse-checkout-cone-mode: false
 
       - name: Configurar Node.js 22
         uses: actions/setup-node@v4
