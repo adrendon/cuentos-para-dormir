@@ -133,9 +133,9 @@ export default function LibraryScreen() {
           >
             <Image source={require('../assets/ui/ic_settings.png')} style={styles.settingsIcon} />
           </TouchableOpacity>
-          <View style={styles.mailButton} accessibilityLabel="Novedades">
-            <Text style={styles.mailIcon}>✉</Text>
-          </View>
+          <TouchableOpacity style={styles.mailButton} accessibilityLabel="Novedades">
+            <Image source={require('../assets/ui/ic_mail_to.png')} style={styles.mailIcon} />
+          </TouchableOpacity>
         </View>
 
         {/* Search + filter bar */}
@@ -270,9 +270,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   mailIcon: {
-    color: '#FFFFFF',
-    fontSize: 30,
-    lineHeight: 34,
+    width: 26,
+    height: 26,
+    tintColor: '#FFFFFF',
   },
   searchRow: {
     flexDirection: 'row',

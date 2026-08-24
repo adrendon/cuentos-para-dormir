@@ -36,19 +36,20 @@ export async function setupPlayer(): Promise<boolean> {
 
 /**
  * Play background music for a book.
+ * Always stops any existing playback first.
  */
 export async function playBookMusic(
   bookTitle: string,
   audioUri: string
 ): Promise<boolean> {
   try {
+    // ALWAYS stop existing player first
+    await stopMusic();
+
     const generation = ++musicGeneration;
     const fileInfo = await FileSystem.getInfoAsync(audioUri);
     if (!fileInfo.exists || generation !== musicGeneration) return false;
 
-    const previousPlayer = player;
-    player = null;
-    previousPlayer?.remove();
     const nextPlayer = createAudioPlayer({ uri: audioUri });
     if (generation !== musicGeneration) {
       nextPlayer.remove();
@@ -56,6 +57,7 @@ export async function playBookMusic(
     }
     player = nextPlayer;
     player.volume = 0.35;
+    player.loop = true; // Loop background music
     player.play();
     return true;
   } catch (error) {
@@ -91,18 +93,22 @@ export async function resumeMusic(): Promise<void> {
 }
 
 /**
- * Stop and release the player.
+ * Stop and release the player. Ensures no audio continues.
  */
 export async function stopMusic(): Promise<void> {
   musicGeneration++;
   try {
     if (player) {
-      const playerToRemove = player;
+      const p = player;
       player = null;
-      playerToRemove.remove();
+      // Force pause before remove to ensure silence
+      try { p.pause(); } catch {}
+      try { p.volume = 0; } catch {}
+      try { p.remove(); } catch {}
     }
   } catch (error) {
     console.error('Error stopping:', error);
+    player = null;
   }
 }
 
