@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   ribbon: {
     position: 'absolute',
     top: -2,
-    right: 26,
+    right: 8,
     width: 18,
     height: 28,
     tintColor: '#FFFFFF',
