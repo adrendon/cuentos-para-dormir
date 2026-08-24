@@ -216,6 +216,13 @@ export default function OnboardingScreen() {
   }, [stepIndex, goToStep]);
 
   const handleEnableNotifications = useCallback(async () => {
+    // Request actual Android notification permission
+    try {
+      const { requestPermissionsAsync } = await import('expo-notifications');
+      await requestPermissionsAsync();
+    } catch (e) {
+      console.warn('Could not request notification permission:', e);
+    }
     await updateNotificationsEnabled(true);
     setStepIndex(STEP_ORDER.length);
   }, [updateNotificationsEnabled]);
