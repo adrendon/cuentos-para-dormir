@@ -51,36 +51,16 @@ export default function BookScreen() {
     sourceHeight?: string;
   }>();
   const { id } = params;
-  const sourceRect = useMemo(() => parseSourceRect(params), [
-    params.sourceX,
-    params.sourceY,
-    params.sourceWidth,
-    params.sourceHeight,
-  ]);
+  const sourceRect = useMemo(() => parseSourceRect(params), [params.sourceX, params.sourceY, params.sourceWidth, params.sourceHeight]);
   const { getBookById, markAsRead, toggleFavorite, isLoading: areBooksLoading } = useBooks();
   const { profile, updateMusicVolume } = useProfile();
   const book = getBookById(id ?? '');
   const [mode, setMode] = useState<ReadingMode | null>(null);
   const voiceworkProfile = useVoiceworkProfile(book?.folderName);
-  const contentGender = mode === 'listen' && voiceworkProfile
-    ? voiceworkProfile.gender
-    : profile.gender;
-  const contentName = mode === 'listen' && voiceworkProfile
-    ? voiceworkProfile.name
-    : profile.name;
-
-  const {
-    pages,
-    currentPage,
-    setCurrentPage,
-  } = useBookPages(book, contentGender);
-
-  const { pageTexts, title, author } = useBookTexts(
-    book?.folderName,
-    contentGender,
-    contentName
-  );
-
+  const contentGender = mode === 'listen' && voiceworkProfile ? voiceworkProfile.gender : profile.gender;
+  const contentName = mode === 'listen' && voiceworkProfile ? voiceworkProfile.name : profile.name;
+  const { pages, currentPage, setCurrentPage } = useBookPages(book, contentGender);
+  const { pageTexts, title, author } = useBookTexts(book?.folderName, contentGender, contentName);
   const bookMusic = useBookMusic(book, profile.musicEnabled, profile.musicVolume, updateMusicVolume);
   const [showText, setShowText] = useState(true);
   const [showEndScreen, setShowEndScreen] = useState(false);
@@ -92,436 +72,141 @@ export default function BookScreen() {
   const [hasOpened, setHasOpened] = useState(!sourceRect);
   const [isClosing, setIsClosing] = useState(false);
   const readerLock = useReaderLock();
-
-  // Reanimated values for book close animation
   const screenScale = useSharedValue(1);
   const screenOpacity = useSharedValue(1);
-
   const controlsOpacity = useSharedValue(1);
 
-  // In "Escuchar" mode, auto-advance to the next page once narration finishes.
   const handleNarrationEnd = useCallback(() => {
     void restoreVolume();
-    if (mode === 'listen' && currentPage < pages.length - 1) {
-      setCurrentPage(currentPage + 1);
-    } else if (mode === 'listen' && currentPage === pages.length - 1) {
+    if (mode === 'listen' && currentPage < pages.length - 1) setCurrentPage(currentPage + 1);
+    else if (mode === 'listen' && currentPage === pages.length - 1) {
       setShowEndScreen(true);
       if (book) markAsRead(book.id);
     }
   }, [mode, currentPage, pages.length, setCurrentPage, book, markAsRead]);
 
-  const {
-    isNarrating,
-    isNarrationPaused,
-    narrationVolume,
-    playNarration,
-    toggleNarration,
-    stopNarration,
-    pauseNarration,
-    resumeNarration,
-    setNarrationVolume,
-  } = useVoicework(book?.folderName, handleNarrationEnd);
+  const { isNarrating, isNarrationPaused, narrationVolume, playNarration, toggleNarration, stopNarration, pauseNarration, resumeNarration, setNarrationVolume } = useVoicework(book?.folderName, handleNarrationEnd);
 
-  // Fade in on mount
-  useEffect(() => {
-    screenOpacity.value = withTiming(1, { duration: 550 });
-  }, []);
+  useEffect(() => { screenOpacity.value = withTiming(1, { duration: 550 }); }, []);
+  const handleFinish = useCallback(() => { setShowEndScreen(true); if (book) markAsRead(book.id); }, [book, markAsRead]);
 
-  const handleFinish = useCallback(() => {
-    setShowEndScreen(true);
-    if (book) markAsRead(book.id);
-  }, [book, markAsRead]);
-
-  // Auto-hide controls after 4 seconds
   useEffect(() => {
     if (showControls) {
       controlsOpacity.value = withTiming(1, { duration: 250 });
       const timer = setTimeout(() => setShowControls(false), 4000);
       return () => clearTimeout(timer);
-    } else {
-      controlsOpacity.value = withTiming(0, { duration: 200 });
     }
+    controlsOpacity.value = withTiming(0, { duration: 200 });
   }, [showControls, currentPage]);
 
-  const controlsAnimStyle = useAnimatedStyle(() => ({
-    opacity: controlsOpacity.value,
-  }));
+  const controlsAnimStyle = useAnimatedStyle(() => ({ opacity: controlsOpacity.value }));
 
-  // Feature 8: Book closing animation
   const handleGoBack = useCallback(async () => {
     if (isClosing) return;
-    // Stop ALL audio immediately
     bookMusic.stop();
     await stopNarration();
-
-    if (sourceRect) {
-      setIsClosing(true);
-      return;
-    }
-
-    // Animate scale down + fade out
+    if (sourceRect) { setIsClosing(true); return; }
     screenScale.value = withTiming(0.85, { duration: 400, easing: Easing.inOut(Easing.cubic) });
     screenOpacity.value = withTiming(0, { duration: 400, easing: Easing.inOut(Easing.cubic) });
-
-    // Wait for the animation to complete, then navigate
-    setTimeout(() => {
-      router.back();
-    }, 420);
+    setTimeout(() => router.back(), 420);
   }, [isClosing, sourceRect, bookMusic.stop, stopNarration, router, screenScale, screenOpacity]);
 
-  const screenAnimStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: screenScale.value }],
-    opacity: screenOpacity.value,
-  }));
-
-  const handleDeactivate = useCallback(() => {
-    bookMusic.stop();
-    void stopNarration();
-  }, [bookMusic.stop, stopNarration]);
-
-  const handleNativeBack = useCallback(() => {
-    void handleGoBack();
-  }, [handleGoBack]);
-
-  const handleSharedOpenComplete = useCallback(() => {
-    setHasOpened(true);
-  }, []);
-
-  const handleSharedCloseComplete = useCallback(() => {
-    router.back();
-  }, [router]);
-
-  useBookLifecycle({
-    isLocked: readerLock.isLocked,
-    onBack: handleNativeBack,
-    onDeactivate: handleDeactivate,
-  });
+  const screenAnimStyle = useAnimatedStyle(() => ({ transform: [{ scale: screenScale.value }], opacity: screenOpacity.value }));
+  const handleDeactivate = useCallback(() => { bookMusic.stop(); void stopNarration(); }, [bookMusic.stop, stopNarration]);
+  const handleNativeBack = useCallback(() => { void handleGoBack(); }, [handleGoBack]);
+  const handleSharedOpenComplete = useCallback(() => { setHasOpened(true); }, []);
+  const handleSharedCloseComplete = useCallback(() => { router.back(); }, [router]);
+  useBookLifecycle({ isLocked: readerLock.isLocked, onBack: handleNativeBack, onDeactivate: handleDeactivate });
 
   const handleToggleNarration = useCallback(async () => {
     if (!pages[currentPage]) return;
     const pageNum = pages[currentPage].pageNumber;
-
-    if (isNarrating) {
-      await stopNarration();
-      await restoreVolume(); // Restore background music volume
-    } else {
-      await duckVolume(); // Lower background music
-      const started = await toggleNarration(pageNum);
-      if (!started) await restoreVolume();
-    }
+    if (isNarrating) { await stopNarration(); await restoreVolume(); }
+    else { await duckVolume(); const started = await toggleNarration(pageNum); if (!started) await restoreVolume(); }
   }, [currentPage, pages, isNarrating, toggleNarration, stopNarration]);
 
-  // Narration from the old page must never continue over the new image.
   const handlePageChange = useCallback(async (pageIndex: number) => {
     if (pageIndex === currentPage) return;
     await stopNarration();
     await restoreVolume();
     setCurrentPage(pageIndex);
   }, [currentPage, stopNarration]);
-
-  const handleSelectIndexPage = useCallback((pageIndex: number) => {
-    setShowIndex(false);
-    void handlePageChange(pageIndex);
-  }, [handlePageChange]);
-
-  const handleTapScreen = useCallback(() => {
-    setShowControls(prev => !prev);
-  }, []);
-
-  // Feature 7: Back on first page → return to intro
-  const handleBackFromFirstPage = useCallback(() => {
-    void stopNarration();
-    void restoreVolume();
-    setCurrentPage(0);
-    setMode(null);
-    setStage('intro');
-    setShowControls(true);
-  }, [stopNarration, setCurrentPage]);
+  const handleSelectIndexPage = useCallback((pageIndex: number) => { setShowIndex(false); void handlePageChange(pageIndex); }, [handlePageChange]);
+  const handleTapScreen = useCallback(() => { setShowControls(prev => !prev); }, []);
+  const handleBackFromFirstPage = useCallback(() => { void stopNarration(); void restoreVolume(); setCurrentPage(0); setMode(null); setStage('intro'); setShowControls(true); }, [stopNarration, setCurrentPage]);
 
   const handleSelectMode = useCallback((selectedMode: ReadingMode) => {
-    if (selectedMode === 'listen') {
-      // Feature 2: Show narration panel instead of going directly to reading
-      setMode('listen');
-      setStage('narrationPanel');
-    } else if (selectedMode === 'record') {
-      // Feature 10: Show record panel
-      setMode('record');
-      setStage('recordPanel');
-    } else {
-      setMode(selectedMode);
-      setStage('reading');
-      setShowControls(false);
-      readerLock.lock();
-    }
+    if (selectedMode === 'listen') { setMode('listen'); setStage('narrationPanel'); }
+    else if (selectedMode === 'record') { setMode('record'); setStage('recordPanel'); }
+    else { setMode(selectedMode); setStage('reading'); setShowControls(false); readerLock.lock(); }
   }, [readerLock.lock]);
 
-  // When user selects the professional narration from the panel
-  const handleSelectProfessionalNarration = useCallback(() => {
-    setStage('reading');
-    setShowControls(false);
-    readerLock.lock();
-  }, [readerLock.lock]);
+  const handleSelectProfessionalNarration = useCallback(() => { setStage('reading'); setShowControls(false); readerLock.lock(); }, [readerLock.lock]);
+  const handleClosePanels = useCallback(() => { setMode(null); setStage('intro'); }, []);
+  const handleReadAgain = useCallback(() => { setCurrentPage(0); setShowEndScreen(false); setShowControls(false); readerLock.lock(); }, [setCurrentPage, readerLock.lock]);
 
-  // Close narration/record panel → back to intro
-  const handleClosePanels = useCallback(() => {
-    setMode(null);
-    setStage('intro');
-  }, []);
+  const handleShare = useCallback(async () => { try { await Share.share({ message: `¡Te recomiendo el cuento "${title || book?.title}"!` }); } catch (error) { console.error('Error sharing:', error); } }, [title, book?.title]);
+  const handleToggleFavoriteFromEndScreen = useCallback(() => { if (book) toggleFavorite(book.id); }, [book, toggleFavorite]);
 
-  const handleReadAgain = useCallback(() => {
-    setCurrentPage(0);
-    setShowEndScreen(false);
-    setShowControls(false);
-    readerLock.lock();
-  }, [setCurrentPage, readerLock.lock]);
-
-  const handleShare = useCallback(async () => {
-    try {
-      await Share.share({
-        message: `¡Te recomiendo el cuento "${title || book?.title}"!`,
-      });
-    } catch (error) {
-      console.error('Error sharing:', error);
-    }
-  }, [title, book?.title]);
-
-  const handleToggleFavoriteFromEndScreen = useCallback(() => {
-    if (book) toggleFavorite(book.id);
-  }, [book, toggleFavorite]);
-
-  // "Escuchar" mode auto-plays the narration for the current page.
   useEffect(() => {
-    if (stage !== 'reading' || mode !== 'listen') return;
-    if (!pages[currentPage]) return;
-
+    if (stage !== 'reading' || mode !== 'listen' || !pages[currentPage]) return;
     const pageNum = pages[currentPage].pageNumber;
     let cancelled = false;
-    void (async () => {
-      await duckVolume();
-      if (cancelled) return;
-      const started = await playNarration(pageNum);
-      if (!started) await restoreVolume();
-    })();
-    return () => {
-      cancelled = true;
-      void stopNarration();
-      void restoreVolume();
-    };
+    void (async () => { await duckVolume(); if (cancelled) return; const started = await playNarration(pageNum); if (!started) await restoreVolume(); })();
+    return () => { cancelled = true; void stopNarration(); void restoreVolume(); };
   }, [stage, mode, currentPage, pages, playNarration, stopNarration]);
 
   if (!book) {
-    if (areBooksLoading) {
-      return <View style={styles.transitionContainer}><StatusBar hidden /></View>;
-    }
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Cuento no encontrado</Text>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.errorLink}>Volver a la biblioteca</Text>
-        </TouchableOpacity>
-      </View>
-    );
+    if (areBooksLoading) return <View style={styles.transitionContainer}><StatusBar hidden /></View>;
+    return <View style={styles.errorContainer}><Text style={styles.errorText}>Cuento no encontrado</Text><TouchableOpacity onPress={() => router.back()}><Text style={styles.errorLink}>Volver a la biblioteca</Text></TouchableOpacity></View>;
   }
 
   if (!hasOpened && sourceRect) {
-    return (
-      <View style={styles.transitionContainer}>
-        <StatusBar hidden />
-        <SharedBookTransition
-          direction="opening"
-          source={sourceRect}
-          coverSource={getBookCover(book.folderName)}
-          firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined}
-          coverColor={book.coverColor}
-          title={title || book.title}
-          onComplete={handleSharedOpenComplete}
-        />
-      </View>
-    );
+    return <View style={styles.transitionContainer}><StatusBar hidden /><SharedBookTransition direction="opening" source={sourceRect} coverSource={getBookCover(book.folderName)} firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined} coverColor={book.coverColor} title={title || book.title} onComplete={handleSharedOpenComplete} /></View>;
   }
 
   return (
     <Animated.View style={[styles.container, screenAnimStyle]}>
       <StatusBar hidden />
-
       {stage === 'intro' ? (
-        <BookOpeningIntro
-          coverColor={book.coverColor}
-          title={title || book.title}
-          firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined}
-          coverSource={getBookCover(book.folderName)}
-          musicEnabled={bookMusic.isPlaying}
-          onToggleMusic={bookMusic.toggle}
-          onClose={handleGoBack}
-          onSelectMode={handleSelectMode}
-          skipEntranceScale={!!sourceRect}
-        />
+        <BookOpeningIntro coverColor={book.coverColor} title={title || book.title} firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined} coverSource={getBookCover(book.folderName)} musicEnabled={bookMusic.isPlaying} onToggleMusic={bookMusic.toggle} onClose={handleGoBack} onSelectMode={handleSelectMode} skipEntranceScale={false} />
       ) : stage === 'narrationPanel' ? (
-        <NarrationPanel
-          narratorName={voiceworkProfile?.narrator ?? ''}
-          childName={voiceworkProfile?.name || profile.name}
-          coverColor={book.coverColor}
-          firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined}
-          onSelectProfessional={handleSelectProfessionalNarration}
-          onClose={handleClosePanels}
-        />
+        <NarrationPanel narratorName={voiceworkProfile?.narrator ?? ''} childName={voiceworkProfile?.name || profile.name} coverColor={book.coverColor} firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined} musicEnabled={bookMusic.isPlaying} onToggleMusic={() => { void bookMusic.toggle(); }} onHome={handleGoBack} onSelectProfessional={handleSelectProfessionalNarration} onClose={handleClosePanels} />
       ) : stage === 'recordPanel' ? (
         <RecordComingSoonPanel firstPageUri={pages[0]?.uri} onClose={handleClosePanels} />
       ) : (
         <>
-      {/* Page viewer - fullscreen */}
-      {!showEndScreen ? (
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={handleTapScreen}
-          style={styles.fullscreen}
-        >
-          <PageViewer
-            pages={pages}
-            currentPage={currentPage}
-            onPageChange={handlePageChange}
-            onPageNavigationStart={() => {
-              void stopNarration();
-              void restoreVolume();
-            }}
-            onFinish={handleFinish}
-            onBackFromFirstPage={handleBackFromFirstPage}
-            coverColor={book.coverColor}
-            pageTexts={pageTexts}
-            showText={showText}
-            textSize={textSize}
-          />
-        </TouchableOpacity>
-      ) : (
-        <BookEndScreen
-          color={book.coverColor}
-          title={title || book.title}
-          author={author || book.author}
-          illustrator={book.illustrator}
-          isFavorite={book.isFavorite}
-          onReadAgain={handleReadAgain}
-          onToggleFavorite={handleToggleFavoriteFromEndScreen}
-          onShare={handleShare}
-          onClose={handleGoBack}
-        />
-      )}
-
-      {/* Compact floating controls */}
-      {!showEndScreen && !readerLock.isLocked && (
-        <ReaderControls
-          animatedStyle={controlsAnimStyle}
-          interactive={showControls}
-          currentPage={currentPage}
-          totalPages={pages.length}
-          listenMode={mode === 'listen'}
-          isNarrating={isNarrating}
-          isNarrationPaused={isNarrationPaused}
-          narrationVolume={narrationVolume}
-          musicEnabled={bookMusic.isPlaying}
-          musicVolume={bookMusic.musicVolume}
-          showText={showText}
-          onHome={handleGoBack}
-          onOpenMenu={() => { setShowControls(false); setShowMenu(true); }}
-          onToggleNarration={() => { void handleToggleNarration(); }}
-          onPauseNarration={pauseNarration}
-          onResumeNarration={resumeNarration}
-          onNarrationVolumeChange={setNarrationVolume}
-          onToggleText={() => setShowText(prev => !prev)}
-          onToggleMusic={() => { void bookMusic.toggle(); }}
-          onMusicVolumeChange={(volume) => { void bookMusic.changeVolume(volume); }}
-        />
-      )}
-
-      {/* Feature 5: Hamburger menu overlay */}
-      <ReaderMenu
-        visible={showMenu}
-        textSize={textSize}
-        onClose={() => setShowMenu(false)}
-        onOpenIndex={() => setShowIndex(true)}
-        onLock={() => {
-          setShowMenu(false);
-          setShowControls(false);
-          readerLock.lock();
-        }}
-        onTextSizeChange={setTextSize}
-      />
-
-      <PageIndexOverlay
-        visible={showIndex}
-        pages={pages}
-        currentPage={currentPage}
-        onSelectPage={handleSelectIndexPage}
-        onClose={() => setShowIndex(false)}
-      />
-
-      {readerLock.isLocked && !showEndScreen && (
-        <LockOverlay
-          showPrompt={readerLock.showUnlockPrompt}
-          onRequestPrompt={readerLock.requestUnlock}
-          onUnlock={() => {
-            readerLock.unlock();
-            setShowControls(true);
-          }}
-        />
-      )}
-
+          {!showEndScreen ? (
+            <TouchableOpacity activeOpacity={1} onPress={handleTapScreen} style={styles.fullscreen}>
+              <PageViewer pages={pages} currentPage={currentPage} onPageChange={handlePageChange} onPageNavigationStart={() => { void stopNarration(); void restoreVolume(); }} onFinish={handleFinish} onBackFromFirstPage={handleBackFromFirstPage} coverColor={book.coverColor} pageTexts={pageTexts} showText={showText} textSize={textSize} />
+            </TouchableOpacity>
+          ) : (
+            <BookEndScreen color={book.coverColor} title={title || book.title} author={author || book.author} illustrator={book.illustrator} isFavorite={book.isFavorite} onReadAgain={handleReadAgain} onToggleFavorite={handleToggleFavoriteFromEndScreen} onShare={handleShare} onClose={handleGoBack} />
+          )}
+          {!showEndScreen && !readerLock.isLocked && (
+            <ReaderControls animatedStyle={controlsAnimStyle} interactive={showControls} currentPage={currentPage} totalPages={pages.length} listenMode={mode === 'listen'} isNarrating={isNarrating} isNarrationPaused={isNarrationPaused} narrationVolume={narrationVolume} musicEnabled={bookMusic.isPlaying} musicVolume={bookMusic.musicVolume} showText={showText} onHome={handleGoBack} onOpenMenu={() => { setShowControls(false); setShowMenu(true); }} onToggleNarration={() => { void handleToggleNarration(); }} onPauseNarration={pauseNarration} onResumeNarration={resumeNarration} onNarrationVolumeChange={setNarrationVolume} onToggleText={() => setShowText(prev => !prev)} onToggleMusic={() => { void bookMusic.toggle(); }} onMusicVolumeChange={(volume) => { void bookMusic.changeVolume(volume); }} />
+          )}
+          <ReaderMenu visible={showMenu} textSize={textSize} onClose={() => setShowMenu(false)} onOpenIndex={() => setShowIndex(true)} onLock={() => { setShowMenu(false); setShowControls(false); readerLock.lock(); }} onTextSizeChange={setTextSize} />
+          <PageIndexOverlay visible={showIndex} pages={pages} currentPage={currentPage} onSelectPage={handleSelectIndexPage} onClose={() => setShowIndex(false)} />
+          {readerLock.isLocked && !showEndScreen && <LockOverlay showPrompt={readerLock.showUnlockPrompt} onRequestPrompt={readerLock.requestUnlock} onUnlock={() => { readerLock.unlock(); setShowControls(true); }} />}
         </>
       )}
-
-      {isClosing && sourceRect && (
-        <SharedBookTransition
-          direction="closing"
-          source={sourceRect}
-          coverSource={getBookCover(book.folderName)}
-          firstPageSource={pages[currentPage] ? { uri: pages[currentPage].uri } : undefined}
-          coverColor={book.coverColor}
-          title={title || book.title}
-          onComplete={handleSharedCloseComplete}
-        />
-      )}
+      {isClosing && sourceRect && <SharedBookTransition direction="closing" source={sourceRect} coverSource={getBookCover(book.folderName)} firstPageSource={pages[currentPage] ? { uri: pages[currentPage].uri } : undefined} coverColor={book.coverColor} title={title || book.title} onComplete={handleSharedCloseComplete} />}
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.backgroundDark,
-  },
-  transitionContainer: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  fullscreen: {
-    flex: 1,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.backgroundDark,
-  },
-  errorText: {
-    color: Colors.textWhite,
-    fontSize: 18,
-    marginBottom: 16,
-  },
-  errorLink: {
-    color: Colors.chipBlue,
-    fontSize: 16,
-    textDecorationLine: 'underline',
-  },
+  container: { flex: 1, backgroundColor: Colors.backgroundDark },
+  transitionContainer: { flex: 1, backgroundColor: 'transparent' },
+  fullscreen: { flex: 1 },
+  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.backgroundDark },
+  errorText: { color: Colors.textWhite, fontSize: 18, marginBottom: 16 },
+  errorLink: { color: Colors.chipBlue, fontSize: 16, textDecorationLine: 'underline' },
 });
 
-function parseSourceRect(params: {
-  sourceX?: string;
-  sourceY?: string;
-  sourceWidth?: string;
-  sourceHeight?: string;
-}): BookCardLayout | undefined {
+function parseSourceRect(params: { sourceX?: string; sourceY?: string; sourceWidth?: string; sourceHeight?: string; }): BookCardLayout | undefined {
   const values = [params.sourceX, params.sourceY, params.sourceWidth, params.sourceHeight].map(Number);
-  if (values.some((value) => !Number.isFinite(value)) || values[2] <= 0 || values[3] <= 0) {
-    return undefined;
-  }
+  if (values.some((value) => !Number.isFinite(value)) || values[2] <= 0 || values[3] <= 0) return undefined;
   return { x: values[0], y: values[1], width: values[2], height: values[3] };
 }
