@@ -9,9 +9,9 @@ interface ReaderMenuProps {
 
 export function ReaderMenu({ visible, textSize, onClose, onOpenIndex, onLock, onTextSizeChange }: ReaderMenuProps) {
   const { width, height } = useWindowDimensions();
-  const scale = Math.max(0.76, Math.min(1.3, Math.min(width / 904, height / 407)));
-  const horizontalScale = Math.max(0.78, Math.min(1.35, width / 904));
-  const verticalScale = Math.max(0.78, Math.min(1.3, height / 407));
+  const scale = Math.max(0.76, Math.min(1.08, height / 407));
+  const horizontalScale = Math.max(0.78, Math.min(1.2, width / 904));
+  const verticalScale = Math.max(0.78, Math.min(1.08, height / 407));
   const [showTextSize, setShowTextSize] = useState(false);
   const entrance = useRef(new Animated.Value(0)).current;
 
@@ -77,17 +77,18 @@ export function ReaderMenu({ visible, textSize, onClose, onOpenIndex, onLock, on
   }
 
   const menuWidth = Math.min(width * 0.25, 220 * horizontalScale);
-  const menuBottom = 72 * verticalScale;
+  const topAnchor = 112 * verticalScale;
+  const rightAnchor = 16 * horizontalScale;
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       <Animated.View style={[styles.popover, {
-        right: 16 * horizontalScale,
-        bottom: menuBottom,
+        right: rightAnchor,
+        top: topAnchor,
         width: menuWidth,
         borderRadius: 12 * scale,
         opacity: entrance,
         transform: [
-          { translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [14 * verticalScale, 0] }) },
+          { translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [-10 * verticalScale, 0] }) },
           { scale: entrance.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
         ],
       }]}>
@@ -97,16 +98,16 @@ export function ReaderMenu({ visible, textSize, onClose, onOpenIndex, onLock, on
       </Animated.View>
       <TouchableOpacity
         style={[styles.popoverClose, {
-          right: 18 * horizontalScale,
-          bottom: menuBottom + 3 * verticalScale,
-          width: 34 * scale,
-          height: 34 * scale,
-          borderRadius: 17 * scale,
+          right: rightAnchor + 4 * horizontalScale,
+          top: topAnchor + 4 * verticalScale,
+          width: 30 * scale,
+          height: 30 * scale,
+          borderRadius: 15 * scale,
         }]}
         onPress={onClose}
         accessibilityLabel="Cerrar opciones"
       >
-        <Text style={[styles.popoverCloseText, { fontSize: 22 * scale }]}>×</Text>
+        <Text style={[styles.popoverCloseText, { fontSize: 20 * scale }]}>×</Text>
       </TouchableOpacity>
     </View>
   );
@@ -114,9 +115,9 @@ export function ReaderMenu({ visible, textSize, onClose, onOpenIndex, onLock, on
 
 function MenuItem({ image, label, scale, onPress, last = false }: { image: number; label: string; scale: number; onPress: () => void; last?: boolean }) {
   return (
-    <TouchableOpacity style={[styles.item, { minHeight: 45 * scale, paddingHorizontal: 14 * scale, paddingVertical: 9 * scale }, !last && styles.itemBorder]} onPress={onPress} accessibilityLabel={label}>
-      <Image source={image} style={{ width: 22 * scale, height: 22 * scale, tintColor: '#168FD1' }} resizeMode="contain" />
-      <Text style={[styles.itemText, { fontSize: 14 * scale }]}>{label}</Text>
+    <TouchableOpacity style={[styles.item, { minHeight: 42 * scale, paddingHorizontal: 13 * scale, paddingVertical: 8 * scale }, !last && styles.itemBorder]} onPress={onPress} accessibilityLabel={label}>
+      <Image source={image} style={{ width: 20 * scale, height: 20 * scale, tintColor: '#168FD1' }} resizeMode="contain" />
+      <Text style={[styles.itemText, { fontSize: 13 * scale }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -131,7 +132,7 @@ const styles = StyleSheet.create({
   popover: { position: 'absolute', zIndex: 210, backgroundColor: '#F3F4EA', overflow: 'hidden', elevation: 8 },
   popoverClose: { position: 'absolute', zIndex: 211, backgroundColor: '#F3F4EA', justifyContent: 'center', alignItems: 'center', elevation: 9 },
   popoverCloseText: { color: '#168FD1', fontFamily: 'Montserrat-ExtraBold', marginTop: -3 },
-  item: { flexDirection: 'row', alignItems: 'center', gap: 15 },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 13 },
   itemBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#C9CAC2' },
   itemText: { color: '#168FD1', fontFamily: 'Montserrat-SemiBold', flexShrink: 1 },
 });
