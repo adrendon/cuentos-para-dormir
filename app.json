@@ -34,7 +34,6 @@
           "hidden": true
         }
       ],
-      "expo-video",
       "./plugins/withMusicVolumeControls",
       "expo-asset"
     ],
