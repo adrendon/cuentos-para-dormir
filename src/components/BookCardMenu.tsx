@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Modal, Pressable, StyleSheet, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { Alert, Modal, Pressable, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Book } from '../types/book';
 
 interface BookCardMenuProps {
@@ -55,12 +55,26 @@ export function BookCardMenu({ visible, book, anchor, onToggleFavorite, onDelete
             accessibilityLabel="Borrar el libro"
             accessibilityState={{ disabled: !canDelete }}
           >
-            <Text style={[styles.deleteIcon, !canDelete && styles.disabled, { width: 34 * scale, fontSize: 27 * scale }]}>♜</Text>
+            <TrashIcon scale={scale} disabled={!canDelete} />
             <Text style={[styles.itemText, !canDelete && styles.disabled, { fontSize: 16 * scale }]}>Borrar el libro</Text>
           </TouchableOpacity>
         </Pressable>
       </Pressable>
     </Modal>
+  );
+}
+
+function TrashIcon({ scale, disabled }: { scale: number; disabled: boolean }) {
+  const color = disabled ? '#B6B7B1' : '#63697C';
+  return (
+    <View style={[styles.trashSlot, { width: 34 * scale, height: 28 * scale }]}> 
+      <View style={[styles.trashLid, { width: 18 * scale, height: 2.5 * scale, backgroundColor: color, top: 3 * scale }]} />
+      <View style={[styles.trashHandle, { width: 7 * scale, height: 3 * scale, borderColor: color, top: 0 }]} />
+      <View style={[styles.trashCan, { width: 15 * scale, height: 17 * scale, borderColor: color, borderRadius: 2 * scale, top: 7 * scale }]}>
+        <View style={[styles.trashLine, { backgroundColor: color, left: 4 * scale }]} />
+        <View style={[styles.trashLine, { backgroundColor: color, right: 4 * scale }]} />
+      </View>
+    </View>
   );
 }
 
@@ -92,11 +106,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Montserrat-SemiBold',
   },
-  deleteIcon: {
-    color: '#63697C',
-    textAlign: 'center',
-    fontFamily: 'Montserrat-SemiBold',
-  },
   itemText: {
     flex: 1,
     color: '#63697C',
@@ -104,5 +113,31 @@ const styles = StyleSheet.create({
   },
   disabled: {
     color: '#B6B7B1',
+  },
+  trashSlot: {
+    position: 'relative',
+    alignItems: 'center',
+  },
+  trashLid: {
+    position: 'absolute',
+    borderRadius: 2,
+  },
+  trashHandle: {
+    position: 'absolute',
+    borderWidth: 2,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
+  },
+  trashCan: {
+    position: 'absolute',
+    borderWidth: 2,
+  },
+  trashLine: {
+    position: 'absolute',
+    top: 3,
+    bottom: 3,
+    width: 1.5,
+    borderRadius: 1,
   },
 });
