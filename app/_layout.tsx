@@ -85,8 +85,10 @@ export default function RootLayout() {
         <Stack.Screen
           name="settings"
           options={{
-            animation: 'slide_from_bottom',
-            gestureEnabled: true,
+            animation: 'fade',
+            gestureEnabled: false,
+            presentation: 'transparentModal',
+            contentStyle: { backgroundColor: 'transparent' },
           }}
         />
       </Stack>

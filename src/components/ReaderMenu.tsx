@@ -1,251 +1,62 @@
-import React, { useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  Modal,
-} from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-  runOnJS,
-} from 'react-native-reanimated';
-import { Colors } from '../theme/colors';
+import React, { useEffect, useState } from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import Slider from '@react-native-community/slider';
 
 interface ReaderMenuProps {
-  visible: boolean;
-  textSize: number;
-  onClose: () => void;
-  onOpenIndex: () => void;
-  onIncrementTextSize: () => void;
-  onDecrementTextSize: () => void;
+  visible: boolean; textSize: number; onClose: () => void; onOpenIndex: () => void;
+  onLock: () => void; onTextSizeChange: (size: number) => void;
 }
 
-/**
- * Hamburger menu that slides in from the right.
- * Contains text size controls, page index access, and report placeholder.
- */
-export function ReaderMenu({
-  visible,
-  textSize,
-  onClose,
-  onOpenIndex,
-  onIncrementTextSize,
-  onDecrementTextSize,
-}: ReaderMenuProps) {
-  const translateX = useSharedValue(300);
-  const backdropOpacity = useSharedValue(0);
-  const [showTextPanel, setShowTextPanel] = React.useState(false);
-
-  useEffect(() => {
-    if (visible) {
-      translateX.value = withTiming(0, { duration: 280, easing: Easing.out(Easing.cubic) });
-      backdropOpacity.value = withTiming(1, { duration: 250 });
-    } else {
-      translateX.value = withTiming(300, { duration: 220, easing: Easing.in(Easing.cubic) });
-      backdropOpacity.value = withTiming(0, { duration: 200 });
-      setShowTextPanel(false);
-    }
-  }, [visible]);
-
-  const menuStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
-
-  const backdropStyle = useAnimatedStyle(() => ({
-    opacity: backdropOpacity.value,
-  }));
-
+export function ReaderMenu({ visible, textSize, onClose, onOpenIndex, onLock, onTextSizeChange }: ReaderMenuProps) {
+  const { width, height } = useWindowDimensions();
+  const scale = Math.max(0.68, Math.min(1.15, Math.min(width / 1280, height / 768)));
+  const [showTextSize, setShowTextSize] = useState(false);
+  useEffect(() => { if (!visible) setShowTextSize(false); }, [visible]);
   if (!visible) return null;
-
+  if (showTextSize) {
+    return (
+      <View style={[StyleSheet.absoluteFill, styles.overlay]}>
+        <TouchableOpacity style={[styles.closeButton, { top: 18 * scale, left: 18 * scale, width: 62 * scale, height: 62 * scale, borderRadius: 31 * scale }]} onPress={onClose} accessibilityLabel="Cerrar tamaño de texto">
+          <Image source={require('../assets/ui/ic_close.png')} style={{ width: 34 * scale, height: 34 * scale }} resizeMode="contain" />
+        </TouchableOpacity>
+        <View style={[styles.preview, { left: 116 * scale, right: 116 * scale, bottom: 45 * scale, minHeight: 250 * scale, borderRadius: 18 * scale, padding: 35 * scale }]}>
+          <View style={styles.sizeSliderRow}>
+            <Text style={[styles.tLabel, { fontSize: 30 * scale }]}>T</Text>
+            <Slider style={{ width: Math.min(width * 0.52, 560 * scale), height: 56 * scale }} minimumValue={12} maximumValue={30} step={1} value={textSize} onValueChange={onTextSizeChange} minimumTrackTintColor="#168FD1" maximumTrackTintColor="#8FD0EC" thumbTintColor="#FFFFFF" accessibilityLabel="Tamaño del texto" />
+            <Text style={[styles.tLabel, { fontSize: 48 * scale }]}>T</Text>
+          </View>
+          <Text style={[styles.previewText, { fontSize: textSize * scale, lineHeight: textSize * scale * 1.38 }]}>A primera vista era como cualquier otro gato - con orejas, bigotes y una larga cola. Pero tenía algo especial.</Text>
+        </View>
+      </View>
+    );
+  }
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      {/* Dark backdrop */}
-      <Animated.View style={[styles.backdrop, backdropStyle]}>
-        <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} activeOpacity={1} />
-      </Animated.View>
-
-      {/* Slide-in panel */}
-      <Animated.View style={[styles.panel, menuStyle]}>
-        {!showTextPanel ? (
-          <>
-            {/* Text size option */}
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => setShowTextPanel(true)}
-              accessibilityLabel="Tamaño de texto"
-            >
-              <Image
-                source={require('../assets/ui/ic_font_burger.png')}
-                style={styles.menuIcon}
-              />
-              <Text style={styles.menuLabel}>Tamaño de texto</Text>
-            </TouchableOpacity>
-
-            {/* Page index option */}
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                onClose();
-                onOpenIndex();
-              }}
-              accessibilityLabel="Índice de páginas"
-            >
-              <Image
-                source={require('../assets/ui/ic_content_burger.png')}
-                style={styles.menuIcon}
-              />
-              <Text style={styles.menuLabel}>Índice</Text>
-            </TouchableOpacity>
-
-            {/* Report option (placeholder) */}
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {}}
-              accessibilityLabel="Reportar"
-            >
-              <Image
-                source={require('../assets/ui/ic_flag_burger.png')}
-                style={styles.menuIcon}
-              />
-              <Text style={styles.menuLabel}>Reportar</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <>
-            {/* Text size sub-panel */}
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => setShowTextPanel(false)}
-              accessibilityLabel="Volver"
-            >
-              <Image
-                source={require('../assets/ui/ic_left_arrow.png')}
-                style={styles.backIcon}
-              />
-            </TouchableOpacity>
-
-            <Text style={styles.subPanelTitle}>Tamaño de texto</Text>
-            <Text style={styles.sizePreview}>Aa ({textSize})</Text>
-
-            <View style={styles.sizeControls}>
-              <TouchableOpacity
-                style={[styles.sizeBtn, textSize <= 10 && styles.sizeBtnDisabled]}
-                onPress={onDecrementTextSize}
-                disabled={textSize <= 10}
-                accessibilityLabel="Reducir texto"
-              >
-                <Text style={styles.sizeBtnText}>A-</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.sizeBtn, textSize >= 24 && styles.sizeBtnDisabled]}
-                onPress={onIncrementTextSize}
-                disabled={textSize >= 24}
-                accessibilityLabel="Aumentar texto"
-              >
-                <Text style={styles.sizeBtnText}>A+</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-      </Animated.View>
+      <TouchableOpacity style={[styles.popoverClose, { right: 24 * scale, bottom: 192 * scale, width: 42 * scale, height: 42 * scale, borderRadius: 21 * scale }]} onPress={onClose} accessibilityLabel="Cerrar opciones"><Text style={[styles.popoverCloseText, { fontSize: 25 * scale }]}>×</Text></TouchableOpacity>
+      <View style={[styles.popover, { right: 28 * scale, bottom: 76 * scale, width: 260 * scale, borderRadius: 15 * scale }]}>
+        <MenuItem image={require('../assets/ui/ic_content_burger.png')} label="Índice" scale={scale} onPress={() => { onClose(); onOpenIndex(); }} />
+        <MenuItem image={require('../assets/ui/ic_font_burger.png')} label="Tamaño del texto" scale={scale} onPress={() => setShowTextSize(true)} />
+        <MenuItem image={require('../assets/ui/ic_lock.png')} label="Bloquear controles" scale={scale} onPress={onLock} last />
+      </View>
     </View>
   );
 }
 
+function MenuItem({ image, label, scale, onPress, last = false }: { image: number; label: string; scale: number; onPress: () => void; last?: boolean }) {
+  return <TouchableOpacity style={[styles.item, { height: 57 * scale, paddingHorizontal: 18 * scale }, !last && styles.itemBorder]} onPress={onPress} accessibilityLabel={label}><Image source={image} style={{ width: 27 * scale, height: 27 * scale, tintColor: '#168FD1' }} resizeMode="contain" /><Text style={[styles.itemText, { fontSize: 17 * scale }]}>{label}</Text></TouchableOpacity>;
+}
+
 const styles = StyleSheet.create({
-  backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-  },
-  panel: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    width: 240,
-    backgroundColor: 'rgba(15, 12, 50, 0.96)',
-    paddingTop: 28,
-    paddingHorizontal: 16,
-    borderLeftWidth: 1,
-    borderLeftColor: 'rgba(255,255,255,0.1)',
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    gap: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
-  },
-  menuIcon: {
-    width: 22,
-    height: 22,
-    tintColor: Colors.textWhite,
-    resizeMode: 'contain',
-  },
-  menuLabel: {
-    color: Colors.textWhite,
-    fontSize: 15,
-    fontFamily: 'Montserrat-SemiBold',
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  backIcon: {
-    width: 16,
-    height: 16,
-    tintColor: '#FFF',
-    resizeMode: 'contain',
-  },
-  subPanelTitle: {
-    color: Colors.titleGold,
-    fontSize: 16,
-    fontFamily: 'Montserrat-ExtraBold',
-    marginBottom: 16,
-  },
-  sizePreview: {
-    color: '#FFF',
-    fontSize: 18,
-    fontFamily: 'Montserrat-SemiBold',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  sizeControls: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 20,
-  },
-  sizeBtn: {
-    width: 64,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: '#238FDD',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sizeBtnDisabled: {
-    opacity: 0.35,
-  },
-  sizeBtnText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontFamily: 'Montserrat-ExtraBold',
-  },
+  overlay: { zIndex: 220, backgroundColor: 'rgba(0,0,0,0.70)' },
+  closeButton: { position: 'absolute', zIndex: 4, backgroundColor: '#F3F4EA', justifyContent: 'center', alignItems: 'center', elevation: 5 },
+  preview: { position: 'absolute', backgroundColor: '#F3F4EA', justifyContent: 'center', alignItems: 'center' },
+  sizeSliderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
+  tLabel: { color: '#168FD1', fontFamily: 'Montserrat-ExtraBold' },
+  previewText: { color: '#303037', fontFamily: 'Montserrat-SemiBold', textAlign: 'center' },
+  popover: { position: 'absolute', zIndex: 210, backgroundColor: '#F3F4EA', overflow: 'hidden', elevation: 8 },
+  popoverClose: { position: 'absolute', zIndex: 211, backgroundColor: '#F3F4EA', justifyContent: 'center', alignItems: 'center', elevation: 9 },
+  popoverCloseText: { color: '#168FD1', fontFamily: 'Montserrat-ExtraBold', marginTop: -3 },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 15 },
+  itemBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#C9CAC2' },
+  itemText: { color: '#168FD1', fontFamily: 'Montserrat-SemiBold' },
 });

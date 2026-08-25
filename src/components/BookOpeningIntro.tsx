@@ -16,6 +16,7 @@ import Animated, {
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../theme/colors';
 
 interface BookOpeningIntroProps {
@@ -52,6 +53,11 @@ export function BookOpeningIntro({
   const layoutScale = Math.min(width / 1280, height / 768);
   const pageWidth = 396 * layoutScale;
   const pageHeight = 434 * layoutScale;
+  const chromeScale = Math.max(0.72, Math.min(1.15, layoutScale));
+  const roundButtonSize = 72 * chromeScale;
+  const modeButtonWidth = 390 * chromeScale;
+  const modeButtonHeight = 96 * chromeScale;
+  const modeButtonRadius = modeButtonHeight / 2;
   const [menuReady, setMenuReady] = useState(false);
   const coverRotation = useSharedValue(0);
   const bookScale = useSharedValue(skipEntranceScale ? 1 : 0.72);
@@ -94,36 +100,43 @@ export function BookOpeningIntro({
           <Image source={firstPageSource} style={styles.modeBackground} resizeMode="cover" />
         )}
         <View style={styles.modeShade} />
-        <View style={styles.topBar}>
-          <TouchableOpacity style={styles.roundButton} onPress={onClose} accessibilityLabel="Biblioteca">
-            <Image source={require('../assets/ui/ic_home.png')} style={styles.topIcon} />
+        <View style={[styles.topBar, { top: 16 * chromeScale, left: -6 * chromeScale, right: 18 * chromeScale }]}>
+          <TouchableOpacity style={[styles.roundButton, { width: roundButtonSize, height: roundButtonSize, borderRadius: roundButtonSize / 2 }]} onPress={onClose} accessibilityLabel="Biblioteca">
+            <Image source={require('../assets/ui/ic_home.png')} style={{ width: 36 * chromeScale, height: 36 * chromeScale }} resizeMode="contain" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.roundButton} onPress={onToggleMusic} accessibilityLabel="Música">
+          <TouchableOpacity style={[styles.roundButton, { width: roundButtonSize, height: roundButtonSize, borderRadius: roundButtonSize / 2 }]} onPress={onToggleMusic} accessibilityLabel="Música">
             <Image
               source={
                 musicEnabled
                   ? require('../assets/onboarding/ic_music_on.png')
                   : require('../assets/onboarding/ic_music_off.png')
               }
-              style={styles.musicIcon}
+              style={{ width: 30 * chromeScale, height: 30 * chromeScale }}
+              resizeMode="contain"
             />
           </TouchableOpacity>
         </View>
-        <View style={styles.centeredMenu}>
-          <TouchableOpacity style={styles.modeButton} onPress={() => onSelectMode('read')}>
-            <Image source={require('../assets/ui/ic_book_read.png')} style={styles.modeIcon} />
-            <Text style={styles.modeLabel}>Leer</Text>
+        <View style={[styles.centeredMenu, { gap: 40 * chromeScale, transform: [{ translateX: 82 * chromeScale }] }]}>
+          <TouchableOpacity style={{ width: modeButtonWidth, height: modeButtonHeight, borderRadius: modeButtonRadius }} onPress={() => onSelectMode('read')}>
+            <LinearGradient colors={['#28D4EB', '#278BEC']} style={[styles.modeButton, { borderRadius: modeButtonRadius, paddingHorizontal: 48 * chromeScale }]}>
+              <Image source={require('../assets/ui/ic_book_read.png')} style={{ width: 42 * chromeScale, height: 42 * chromeScale }} resizeMode="contain" />
+              <Text style={[styles.modeLabel, { fontSize: 36 * chromeScale }]}>Leer</Text>
+            </LinearGradient>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.modeButton} onPress={() => onSelectMode('listen')}>
-            <Image source={require('../assets/ui/ic_book_listen.png')} style={styles.modeIcon} />
-            <Text style={styles.modeLabel}>Escuchar</Text>
+          <TouchableOpacity style={{ width: modeButtonWidth, height: modeButtonHeight, borderRadius: modeButtonRadius }} onPress={() => onSelectMode('listen')}>
+            <LinearGradient colors={['#28D4EB', '#278BEC']} style={[styles.modeButton, { borderRadius: modeButtonRadius, paddingHorizontal: 48 * chromeScale }]}>
+              <Image source={require('../assets/ui/ic_book_listen.png')} style={{ width: 42 * chromeScale, height: 42 * chromeScale }} resizeMode="contain" />
+              <Text style={[styles.modeLabel, { fontSize: 36 * chromeScale }]}>Escuchar</Text>
+            </LinearGradient>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.modeButton} onPress={() => onSelectMode('record')}>
-            <View style={styles.microphoneIcon}>
-              <View style={styles.microphoneHead} />
-              <View style={styles.microphoneStand} />
-            </View>
-            <Text style={styles.modeLabel}>Grabar</Text>
+          <TouchableOpacity style={{ width: modeButtonWidth, height: modeButtonHeight, borderRadius: modeButtonRadius }} onPress={() => onSelectMode('record')}>
+            <LinearGradient colors={['#28D4EB', '#278BEC']} style={[styles.modeButton, { borderRadius: modeButtonRadius, paddingHorizontal: 48 * chromeScale }]}>
+              <View style={[styles.microphoneIcon, { width: 42 * chromeScale, height: 42 * chromeScale }]}>
+                <View style={styles.microphoneHead} />
+                <View style={styles.microphoneStand} />
+              </View>
+              <Text style={[styles.modeLabel, { fontSize: 36 * chromeScale }]}>Grabar</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </View>
@@ -138,12 +151,12 @@ export function BookOpeningIntro({
         ))}
       </View>
 
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.roundButton} onPress={onClose} accessibilityLabel="Biblioteca">
-          <Image source={require('../assets/ui/ic_home.png')} style={styles.topIcon} />
+      <View style={[styles.topBar, { top: 16 * chromeScale, left: -6 * chromeScale, right: 18 * chromeScale }]}>
+        <TouchableOpacity style={[styles.roundButton, { width: roundButtonSize, height: roundButtonSize, borderRadius: roundButtonSize / 2 }]} onPress={onClose} accessibilityLabel="Biblioteca">
+          <Image source={require('../assets/ui/ic_home.png')} style={{ width: 36 * chromeScale, height: 36 * chromeScale }} resizeMode="contain" />
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.roundButton}
+          style={[styles.roundButton, { width: roundButtonSize, height: roundButtonSize, borderRadius: roundButtonSize / 2 }]}
           onPress={onToggleMusic}
           accessibilityLabel={musicEnabled ? 'Silenciar música' : 'Activar música'}
         >
@@ -153,7 +166,8 @@ export function BookOpeningIntro({
                 ? require('../assets/onboarding/ic_music_on.png')
                 : require('../assets/onboarding/ic_music_off.png')
             }
-            style={styles.musicIcon}
+            style={{ width: 30 * chromeScale, height: 30 * chromeScale }}
+            resizeMode="contain"
           />
         </TouchableOpacity>
       </View>
@@ -219,15 +233,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.45)',
   },
   topBar: {
-    position: 'absolute', top: 18, left: 20, right: 20, zIndex: 20,
+    position: 'absolute', zIndex: 20,
     flexDirection: 'row', justifyContent: 'space-between',
   },
   roundButton: {
-    width: 48, height: 48, borderRadius: 24, backgroundColor: '#F6F4E8',
+    backgroundColor: '#F6F4E8',
     justifyContent: 'center', alignItems: 'center', elevation: 4,
   },
-  topIcon: { width: 27, height: 27, resizeMode: 'contain' },
-  musicIcon: { width: 24, height: 24, resizeMode: 'contain' },
   content: {
     flex: 1, alignItems: 'center', justifyContent: 'center',
   },
@@ -280,14 +292,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 22,
   },
   modeButton: {
-    width: 390, minHeight: 88, borderRadius: 44, paddingHorizontal: 48,
+    flex: 1,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 22,
-    backgroundColor: '#238FDD', borderWidth: 2, borderColor: '#25C8EE', elevation: 5,
+    borderWidth: 2, borderColor: '#25C8EE', elevation: 5,
   },
-  modeIcon: { width: 42, height: 42, tintColor: '#FFF', resizeMode: 'contain' },
   microphoneIcon: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   microphoneHead: {
     width: 16, height: 25, borderRadius: 8, borderWidth: 3, borderColor: '#FFF',
@@ -296,5 +306,5 @@ const styles = StyleSheet.create({
     width: 24, height: 15, marginTop: -10, borderBottomWidth: 3,
     borderLeftWidth: 3, borderRightWidth: 3, borderColor: '#FFF', borderRadius: 12,
   },
-  modeLabel: { color: '#FFF', fontSize: 26, fontFamily: 'Montserrat-ExtraBold' },
+  modeLabel: { color: '#FFF', fontFamily: 'Montserrat-ExtraBold' },
 });

@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
+  Image,
   TouchableOpacity,
   StyleSheet,
   Animated,
@@ -110,10 +111,11 @@ export function DownloadButton({ folderName, sizeMB, accentColor, displayScale =
               />
             )}
           </Svg>
-          <Text style={[styles.downloadIcon, {
-            fontSize: 48 * displayScale,
-            lineHeight: 54 * displayScale,
-          }]}>↓</Text>
+          <Image
+            source={require('../assets/ui/ic_download.png')}
+            style={{ width: 46 * displayScale, height: 46 * displayScale }}
+            resizeMode="contain"
+          />
         </View>
         <Text style={[styles.buttonText, {
           fontSize: 32 * displayScale,
@@ -150,10 +152,6 @@ const styles = StyleSheet.create({
   },
   svgCircle: {
     position: 'absolute',
-  },
-  downloadIcon: {
-    color: Colors.textWhite,
-    fontWeight: 'bold',
   },
   buttonText: {
     color: Colors.textWhite,

@@ -3,17 +3,15 @@ import {
   View,
   Image,
   StyleSheet,
-  Dimensions,
   ActivityIndicator,
   Text,
   Pressable,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import PagerView from 'react-native-pager-view';
 import { BookPage } from '../types/book';
 import { Colors } from '../theme/colors';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('screen');
 
 interface PageViewerProps {
   pages: BookPage[];
@@ -41,6 +39,8 @@ export function PageViewer({
   textSize = 14,
 }: PageViewerProps) {
   const pagerRef = useRef<PagerView>(null);
+  const { width, height } = useWindowDimensions();
+  const scale = Math.max(0.65, Math.min(1.15, Math.min(width / 1280, height / 768)));
 
   // PagerView only uses initialPage during mount. Keep its native page in sync
   // when narration or the page index changes currentPage programmatically.
@@ -107,19 +107,20 @@ export function PageViewer({
               />
               {/* Text overlay above bottom bar */}
               {showText && textForPage && (
-                <View style={styles.textOverlay}>
-                  <View style={styles.textPageMark} pointerEvents="none">
-                    <Image
-                      source={require('../assets/ui/ic_page_mark.png')}
-                      style={styles.textPageMarkImage}
-                      resizeMode="stretch"
-                    />
-                    <Text style={styles.textPageNumber}>{page.pageNumber}</Text>
-                  </View>
+                <View
+                  style={[styles.textOverlay, {
+                    left: 92 * scale,
+                    right: 92 * scale,
+                    minHeight: 138 * scale,
+                    maxHeight: height * 0.30,
+                    borderTopLeftRadius: 18 * scale,
+                    borderTopRightRadius: 18 * scale,
+                    paddingHorizontal: 58 * scale,
+                    paddingVertical: 18 * scale,
+                  }]}
+                >
                   <ScrollView showsVerticalScrollIndicator={false}>
-                    <Text style={[styles.pageText, { fontSize: textSize, lineHeight: textSize * 1.5 }]}>
-                      {textForPage}
-                    </Text>
+                    <Text style={[styles.pageText, { fontSize: textSize * scale, lineHeight: textSize * scale * 1.5 }]}>{textForPage}</Text>
                   </ScrollView>
                 </View>
               )}
@@ -128,9 +129,13 @@ export function PageViewer({
         })}
       </PagerView>
 
-      {/* Floating left arrow - vertically centered on the main image area */}
+      {/* Navigation sits against the lower text strip, like the original reader. */}
       <Pressable
-        style={[styles.arrowBtn, styles.leftArrow]}
+        style={[
+          styles.arrowBtn,
+          styles.leftArrow,
+          { bottom: 25 * scale, width: 82 * scale, height: 105 * scale },
+        ]}
         onPress={goPrev}
         accessibilityLabel={currentPage === 0 ? 'Volver al menú' : 'Página anterior'}
       >
@@ -141,14 +146,17 @@ export function PageViewer({
                 ? require('../assets/ui/ic_left_arrow_pressed.png')
                 : require('../assets/ui/ic_left_arrow.png')
             }
-            style={styles.arrowIcon}
+            style={{ width: 44 * scale, height: 62 * scale, resizeMode: 'contain' }}
           />
         )}
       </Pressable>
 
-      {/* Floating right arrow - vertically centered on the main image area */}
       <Pressable
-        style={[styles.arrowBtn, styles.rightArrow]}
+        style={[
+          styles.arrowBtn,
+          styles.rightArrow,
+          { bottom: 25 * scale, width: 82 * scale, height: 105 * scale },
+        ]}
         onPress={goNext}
         accessibilityLabel={currentPage === pages.length - 1 ? 'Terminar cuento' : 'Página siguiente'}
       >
@@ -159,7 +167,7 @@ export function PageViewer({
                 ? require('../assets/ui/ic_right_arrow_pressed.png')
                 : require('../assets/ui/ic_right_arrow.png')
             }
-            style={styles.arrowIcon}
+            style={{ width: 44 * scale, height: 62 * scale, resizeMode: 'contain' }}
           />
         )}
       </Pressable>
@@ -196,14 +204,8 @@ const styles = StyleSheet.create({
   textOverlay: {
     position: 'absolute',
     bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: 'rgba(239, 239, 224, 0.94)',
-    paddingHorizontal: 96,
-    paddingVertical: 14,
-    minHeight: 86,
     justifyContent: 'center',
-    maxHeight: SCREEN_HEIGHT * 0.25,
   },
   pageText: {
     color: Colors.tooltipText,
@@ -212,42 +214,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Montserrat-SemiBold',
   },
-  textPageMark: {
-    position: 'absolute',
-    top: 0,
-    left: 22,
-    width: 42,
-    height: 68,
-    alignItems: 'center',
-    zIndex: 2,
-  },
-  textPageMarkImage: {
-    ...StyleSheet.absoluteFill,
-    width: '100%',
-    height: '100%',
-  },
-  textPageNumber: {
-    color: Colors.bookPagesText,
-    fontSize: 18,
-    fontFamily: 'Montserrat-ExtraBold',
-    marginTop: 8,
-  },
   arrowBtn: {
     position: 'absolute',
-    top: '50%',
-    marginTop: -42,
-    width: 60,
-    height: 84,
     backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 20,
   },
-  leftArrow: { left: 2 },
-  rightArrow: { right: 2 },
-  arrowIcon: {
-    width: 44,
-    height: 62,
-    resizeMode: 'contain',
-  },
+  leftArrow: { left: 3 },
+  rightArrow: { right: 3 },
 });

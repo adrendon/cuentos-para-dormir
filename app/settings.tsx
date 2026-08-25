@@ -1,5 +1,4 @@
 /**
- * Settings route - edit profile and preferences.
- * Portrait orientation.
+ * Parental gate for profile preferences and the protected mail action.
  */
 export { default } from '../src/screens/SettingsScreen';

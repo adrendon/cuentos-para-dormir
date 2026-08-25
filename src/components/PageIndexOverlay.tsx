@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, Image } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { BookPage } from '../types/book';
 import { Colors } from '../theme/colors';
 
@@ -13,54 +13,98 @@ interface PageIndexOverlayProps {
 
 const THUMB_COLUMNS = 2;
 
-export function PageIndexOverlay({
-  visible,
-  pages,
-  currentPage,
-  onSelectPage,
-  onClose,
-}: PageIndexOverlayProps) {
+export function PageIndexOverlay({ visible, pages, currentPage, onSelectPage, onClose }: PageIndexOverlayProps) {
+  const listRef = useRef<FlatList<BookPage>>(null);
+  const { width, height } = useWindowDimensions();
+  const scale = Math.max(0.65, Math.min(1.15, Math.min(width / 1280, height / 768)));
+  const leftInset = 168 * scale;
+  const rightInset = 8 * scale;
+  const columnGap = 34 * scale;
+  const thumbWidth = Math.max(120, (width - leftInset - rightInset - columnGap) / 2);
+  const thumbHeight = thumbWidth / 1.475;
+  const markWidth = 76 * scale;
+  const markHeight = 102 * scale;
+  const rowHeight = thumbHeight + 8 * scale;
+
+  useEffect(() => {
+    if (!visible || pages.length === 0) return;
+    const row = Math.floor(currentPage / THUMB_COLUMNS);
+    const viewport = height - 79 * scale;
+    const offset = Math.max(0, row * rowHeight - (viewport - rowHeight) / 2);
+    const timer = setTimeout(() => listRef.current?.scrollToOffset({ offset, animated: false }), 100);
+    return () => clearTimeout(timer);
+  }, [visible, currentPage, pages.length, height, rowHeight, scale]);
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.backdrop}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={onClose}
-            accessibilityRole="button"
-            accessibilityLabel="Cerrar índice"
-          >
-            <Image
-              source={require('../assets/ui/ic_close.png')}
-              style={styles.closeIcon}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={[
+            styles.closeButton,
+            {
+              top: 16 * scale,
+              left: -6 * scale,
+              width: 76 * scale,
+              height: 76 * scale,
+              borderRadius: 38 * scale,
+            },
+          ]}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar índice"
+        >
+          <Image
+            source={require('../assets/ui/ic_close.png')}
+            style={{ width: 40 * scale, height: 40 * scale }}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
 
         <FlatList
+          ref={listRef}
           data={pages}
           keyExtractor={(item) => `thumb-${item.pageNumber}`}
           numColumns={THUMB_COLUMNS}
-          contentContainerStyle={styles.grid}
+          showsVerticalScrollIndicator={false}
+          columnWrapperStyle={{ gap: columnGap }}
+          contentContainerStyle={{
+            paddingTop: 79 * scale,
+            paddingLeft: leftInset,
+            paddingRight: rightInset,
+            paddingBottom: 30 * scale,
+          }}
           renderItem={({ item, index }) => {
             const isActive = index === currentPage;
             return (
               <TouchableOpacity
-                style={[styles.thumb, isActive && styles.thumbActive]}
+                style={[
+                  styles.thumb,
+                  {
+                    width: thumbWidth,
+                    height: thumbHeight,
+                    marginBottom: 8 * scale,
+                    borderWidth: 4 * scale,
+                  },
+                  isActive && styles.thumbActive,
+                ]}
                 onPress={() => onSelectPage(index)}
                 accessibilityRole="button"
-                accessibilityLabel={`Ir a la página ${index + 1}`}
+                accessibilityLabel={`Ir a la página ${item.pageNumber}`}
               >
                 <Image source={{ uri: item.uri }} style={styles.thumbImage} resizeMode="cover" />
-                {/* The page number is printed over the bookmark on the left. */}
-                <View style={styles.pageNumberWrap} pointerEvents="none">
-                  <Image
-                    source={require('../assets/ui/ic_page_mark.png')}
-                    style={styles.pageMark}
-                    resizeMode="stretch"
-                  />
-                  <Text style={styles.pageNumber}>{index + 1}</Text>
+                <View
+                  style={[
+                    styles.pageNumberWrap,
+                    {
+                      left: 30 * scale,
+                      width: markWidth,
+                      height: markHeight,
+                    },
+                  ]}
+                  pointerEvents="none"
+                >
+                  <Image source={require('../assets/ui/ic_page_mark.png')} style={styles.pageMark} resizeMode="stretch" />
+                  <Text style={[styles.pageNumber, { fontSize: 31 * scale, marginTop: 10 * scale }]}>{item.pageNumber}</Text>
                 </View>
               </TouchableOpacity>
             );
@@ -72,68 +116,19 @@ export function PageIndexOverlay({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.64)',
-    paddingTop: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    marginBottom: 4,
-  },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.62)' },
   closeButton: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    position: 'absolute',
+    zIndex: 10,
     backgroundColor: Colors.tooltipBackground,
     justifyContent: 'center',
     alignItems: 'center',
+    elevation: 7,
   },
-  closeIcon: {
-    width: 30,
-    height: 30,
-    tintColor: Colors.bookPagesText,
-  },
-  grid: {
-    paddingHorizontal: '12%',
-    paddingBottom: 24,
-  },
-  thumb: {
-    flex: 1 / THUMB_COLUMNS,
-    aspectRatio: 1.61,
-    marginHorizontal: 14,
-    marginVertical: 8,
-    borderRadius: 0,
-    overflow: 'hidden',
-    borderWidth: 2.5,
-    borderColor: 'transparent',
-  },
-  thumbActive: {
-    borderColor: Colors.accentYellow,
-  },
-  thumbImage: {
-    width: '100%',
-    height: '100%',
-  },
-  pageNumberWrap: {
-    position: 'absolute',
-    top: 0,
-    left: 18,
-    width: 42,
-    height: 70,
-    alignItems: 'center',
-  },
-  pageMark: {
-    ...StyleSheet.absoluteFill,
-    width: '100%',
-    height: '100%',
-  },
-  pageNumber: {
-    color: Colors.bookPagesText,
-    fontSize: 20,
-    fontFamily: 'Montserrat-ExtraBold',
-    marginTop: 9,
-  },
+  thumb: { overflow: 'hidden', borderColor: 'transparent', backgroundColor: '#B9BAB3' },
+  thumbActive: { borderColor: Colors.textWhite },
+  thumbImage: { width: '100%', height: '100%' },
+  pageNumberWrap: { position: 'absolute', top: 0, alignItems: 'center' },
+  pageMark: { ...StyleSheet.absoluteFill, width: '100%', height: '100%' },
+  pageNumber: { color: Colors.bookPagesText, fontFamily: 'Montserrat-ExtraBold' },
 });

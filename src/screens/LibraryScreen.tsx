@@ -114,7 +114,11 @@ export default function LibraryScreen() {
   }, []);
 
   const handleSettingsPress = () => {
-    router.push('/settings');
+    router.push({ pathname: '/settings', params: { destination: 'profile' } });
+  };
+
+  const handleMailPress = () => {
+    router.push({ pathname: '/settings', params: { destination: 'mail' } });
   };
 
   const handleDownloadComplete = useCallback((bookId: string) => {
@@ -176,7 +180,7 @@ export default function LibraryScreen() {
             width: 100 * layoutScale,
             height: 100 * layoutScale,
             borderRadius: 50 * layoutScale,
-          }]} accessibilityLabel="Novedades">
+          }]} onPress={handleMailPress} accessibilityLabel="Enviar un correo">
             <Image source={require('../assets/ui/ic_mail_to.png')} style={[styles.mailIcon, {
               width: 50 * layoutScale,
               height: 50 * layoutScale,

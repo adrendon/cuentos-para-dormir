@@ -1,144 +1,59 @@
 import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import Slider from '@react-native-community/slider';
-import { Colors } from '../theme/colors';
 
 interface ReaderControlsProps {
-  animatedStyle: object;
-  interactive: boolean;
-  title: string;
-  currentPage: number;
-  totalPages: number;
-  listenMode: boolean;
-  isNarrating: boolean;
-  isNarrationPaused: boolean;
-  narrationVolume: number;
-  musicEnabled: boolean;
-  musicVolume: number;
-  showText: boolean;
-  onHome: () => void;
-  onOpenMenu: () => void;
-  onToggleNarration: () => void;
-  onPauseNarration: () => void;
-  onResumeNarration: () => void;
-  onNarrationVolumeChange: (volume: number) => void;
-  onToggleText: () => void;
-  onToggleMusic: () => void;
-  onMusicVolumeChange: (volume: number) => void;
-  onLock: () => void;
+  animatedStyle: object; interactive: boolean; currentPage: number; totalPages: number;
+  listenMode: boolean; isNarrating: boolean; isNarrationPaused: boolean; narrationVolume: number;
+  musicEnabled: boolean; musicVolume: number; showText: boolean;
+  onHome: () => void; onOpenMenu: () => void; onToggleNarration: () => void;
+  onPauseNarration: () => void; onResumeNarration: () => void;
+  onNarrationVolumeChange: (volume: number) => void; onToggleText: () => void;
+  onToggleMusic: () => void; onMusicVolumeChange: (volume: number) => void;
 }
 
 export function ReaderControls(props: ReaderControlsProps) {
+  const { width, height } = useWindowDimensions();
+  const scale = Math.max(0.68, Math.min(1.15, Math.min(width / 1280, height / 768)));
+  const buttonSize = 66 * scale;
   return (
-    <Animated.View style={[styles.container, props.animatedStyle]} pointerEvents={props.interactive ? 'auto' : 'none'}>
-      <View style={styles.titleGroup}>
-        <View style={styles.homeColumn}>
-          <TouchableOpacity style={styles.homeButton} onPress={props.onHome} accessibilityLabel="Biblioteca">
-            <Image source={require('../assets/ui/ic_home.png')} style={styles.homeIcon} />
-          </TouchableOpacity>
-          <Text style={styles.pageCounter}>{props.currentPage + 1}/{props.totalPages}</Text>
-        </View>
-        <Text style={styles.title} numberOfLines={1}>{props.title}</Text>
+    <Animated.View style={[StyleSheet.absoluteFill, styles.container, props.animatedStyle]} pointerEvents={props.interactive ? 'box-none' : 'none'}>
+      <TouchableOpacity style={[styles.roundButton, styles.homeButton, { width: 78 * scale, height: 78 * scale, borderRadius: 39 * scale, top: 15 * scale, left: -7 * scale }]} onPress={props.onHome} accessibilityLabel="Volver a la biblioteca">
+        <Image source={require('../assets/ui/ic_home.png')} style={{ width: 42 * scale, height: 42 * scale }} resizeMode="contain" />
+      </TouchableOpacity>
+      <View style={[styles.pageCounter, { top: 18 * scale, right: 22 * scale, minWidth: 74 * scale, height: 45 * scale, borderRadius: 23 * scale }]}>
+        <Text style={[styles.pageCounterText, { fontSize: 18 * scale }]}>{props.currentPage + 1}/{props.totalPages}</Text>
       </View>
-
-      {props.listenMode && props.isNarrating && (
-        <View style={styles.voiceBar}>
-          <TouchableOpacity
-            style={styles.voicePauseButton}
-            onPress={props.isNarrationPaused ? props.onResumeNarration : props.onPauseNarration}
-            accessibilityLabel={props.isNarrationPaused ? 'Continuar narración' : 'Pausar narración'}
-          >
-            <Text style={styles.voicePauseIcon}>{props.isNarrationPaused ? '▶' : 'Ⅱ'}</Text>
+      {(props.listenMode || props.isNarrating) && (
+        <View style={[styles.voiceBar, { top: 20 * scale, width: 265 * scale, height: 62 * scale, borderRadius: 31 * scale, marginLeft: -132.5 * scale }]}>
+          <TouchableOpacity style={[styles.voiceButton, { width: 46 * scale, height: 46 * scale, borderRadius: 23 * scale }]} onPress={props.isNarrating ? (props.isNarrationPaused ? props.onResumeNarration : props.onPauseNarration) : props.onToggleNarration} accessibilityLabel={props.isNarrationPaused ? 'Continuar narración' : 'Pausar narración'}>
+            <Image source={props.isNarrationPaused || !props.isNarrating ? require('../assets/ui/ic_play.png') : require('../assets/ui/ic_pause.png')} style={{ width: 21 * scale, height: 21 * scale }} resizeMode="contain" />
           </TouchableOpacity>
-          <Text style={styles.voiceLabel}>Voz</Text>
-          <Slider
-            style={styles.voiceSlider}
-            minimumValue={0}
-            maximumValue={1}
-            value={props.narrationVolume}
-            onValueChange={props.onNarrationVolumeChange}
-            minimumTrackTintColor={Colors.accentTurquoise}
-            maximumTrackTintColor="rgba(255,255,255,0.35)"
-            thumbTintColor={Colors.textWhite}
-            accessibilityLabel="Volumen de la narración"
-          />
+          <Slider style={styles.voiceSlider} minimumValue={0} maximumValue={1} value={props.narrationVolume} onValueChange={props.onNarrationVolumeChange} minimumTrackTintColor="#E9F5FA" maximumTrackTintColor="#78CDF1" thumbTintColor="#F3F4EA" accessibilityLabel="Volumen de la narración" />
+          <Image source={require('../assets/ui/ic_book_listen.png')} style={{ width: 25 * scale, height: 25 * scale, tintColor: '#FFFFFF' }} resizeMode="contain" />
         </View>
       )}
-
-      <View style={styles.rightControls}>
-        <LabeledControl label="Menú" accessibilityLabel="Menú" onPress={props.onOpenMenu} image={require('../assets/ui/ic_content_burger.png')} />
-        <LabeledControl
-          label={props.isNarrating ? 'Detener' : 'Narrar'}
-          accessibilityLabel={props.isNarrating ? 'Detener narración' : 'Escuchar narración'}
-          onPress={props.onToggleNarration}
-          image={require('../assets/ui/ic_book_listen.png')}
-          active={props.isNarrating}
-        />
-        <LabeledControl
-          label={props.showText ? 'Ocultar' : 'Texto'}
-          accessibilityLabel={props.showText ? 'Ocultar texto' : 'Mostrar texto'}
-          onPress={props.onToggleText}
-          content={<Text style={styles.aaIcon}>Aa</Text>}
-        />
-        <LabeledControl
-          label="Música"
-          accessibilityLabel={props.musicEnabled ? 'Silenciar música' : 'Activar música'}
-          onPress={props.onToggleMusic}
-          image={props.musicEnabled ? require('../assets/onboarding/ic_music_on.png') : require('../assets/onboarding/ic_music_off.png')}
-        />
-        {props.musicEnabled && (
-          <View style={styles.musicSliderWrap}>
-            <Slider
-              style={styles.musicSlider}
-              minimumValue={0}
-              maximumValue={1}
-              value={props.musicVolume}
-              onValueChange={props.onMusicVolumeChange}
-              minimumTrackTintColor={Colors.accentYellow}
-              maximumTrackTintColor="rgba(255,255,255,0.25)"
-              thumbTintColor={Colors.accentYellow}
-              accessibilityLabel="Volumen de la música"
-            />
-          </View>
-        )}
-        <LabeledControl label="Bloquear" accessibilityLabel="Bloquear pantalla" onPress={props.onLock} content={<View style={styles.lockShape} />} />
+      <View style={[styles.bottomActions, { right: 18 * scale, bottom: 15 * scale, gap: 12 * scale }]}>
+        <TouchableOpacity style={[styles.roundButton, { width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }]} onPress={props.onToggleMusic} accessibilityLabel={props.musicEnabled ? 'Silenciar música' : 'Activar música'}>
+          <Image source={props.musicEnabled ? require('../assets/ui/ic_music_on.png') : require('../assets/ui/ic_music_off.png')} style={{ width: 34 * scale, height: 34 * scale }} resizeMode="contain" />
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.roundButton, { width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }]} onPress={props.onOpenMenu} accessibilityLabel="Abrir opciones">
+          <Image source={require('../assets/ui/ic_content_burger.png')} style={{ width: 31 * scale, height: 31 * scale, tintColor: '#168FD1' }} resizeMode="contain" />
+        </TouchableOpacity>
       </View>
     </Animated.View>
   );
 }
 
-function LabeledControl({ label, accessibilityLabel, onPress, image, content, active = false }: {
-  label: string; accessibilityLabel: string; onPress: () => void; image?: number; content?: React.ReactNode; active?: boolean;
-}) {
-  return (
-    <TouchableOpacity style={[styles.control, active && styles.controlActive]} onPress={onPress} accessibilityLabel={accessibilityLabel}>
-      {image ? <Image source={image} style={styles.controlIcon} /> : content}
-      <Text style={styles.controlLabel}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: { position: 'absolute', top: 14, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 100 },
-  titleGroup: { maxWidth: '34%', minHeight: 48, flexDirection: 'row', alignItems: 'center', borderRadius: 24, backgroundColor: 'rgba(10, 8, 38, 0.78)', paddingRight: 18 },
-  homeColumn: { alignItems: 'center' },
-  homeButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#F6F4E8', justifyContent: 'center', alignItems: 'center' },
-  homeIcon: { width: 27, height: 27, resizeMode: 'contain' },
-  pageCounter: { color: Colors.textWhite, fontSize: 10, fontFamily: 'Montserrat-ExtraBold', marginTop: 3 },
-  title: { flex: 1, color: Colors.titleGold, fontSize: 15, fontFamily: 'Montserrat-ExtraBold', marginLeft: 12 },
-  rightControls: { flexDirection: 'row', gap: 6 },
-  control: { minWidth: 68, height: 52, paddingHorizontal: 9, borderRadius: 16, backgroundColor: 'rgba(10, 8, 38, 0.78)', justifyContent: 'center', alignItems: 'center', gap: 2 },
-  controlActive: { backgroundColor: Colors.chipOrange },
-  controlIcon: { width: 21, height: 21, tintColor: Colors.textWhite, resizeMode: 'contain' },
-  controlLabel: { color: Colors.textWhite, fontSize: 9, fontFamily: 'Montserrat-SemiBold' },
-  aaIcon: { height: 21, color: Colors.textWhite, fontSize: 16, fontFamily: 'Montserrat-ExtraBold' },
-  voiceBar: { height: 52, width: 210, paddingHorizontal: 8, borderRadius: 16, backgroundColor: 'rgba(10, 8, 38, 0.88)', flexDirection: 'row', alignItems: 'center' },
-  voicePauseButton: { width: 34, height: 34, borderRadius: 17, backgroundColor: Colors.accentTurquoise, justifyContent: 'center', alignItems: 'center' },
-  voicePauseIcon: { color: '#FFF', fontSize: 15, fontFamily: 'Montserrat-ExtraBold' },
-  voiceLabel: { color: '#FFF', fontSize: 10, marginLeft: 8 },
-  voiceSlider: { flex: 1, height: 40 },
-  musicSliderWrap: { width: 100, justifyContent: 'center' },
-  musicSlider: { width: 100, height: 36 },
-  lockShape: { width: 17, height: 15, marginTop: 3, borderRadius: 3, borderWidth: 3, borderColor: Colors.textWhite },
+  container: { zIndex: 100 },
+  roundButton: { position: 'relative', backgroundColor: '#F3F4EA', justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: '#000', shadowOpacity: 0.26, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
+  homeButton: { position: 'absolute' },
+  pageCounter: { position: 'absolute', justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4EA', elevation: 4 },
+  pageCounterText: { color: '#168FD1', fontFamily: 'Montserrat-ExtraBold' },
+  voiceBar: { position: 'absolute', left: '50%', backgroundColor: '#20A9E0', paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', elevation: 6 },
+  voiceButton: { backgroundColor: '#F3F4EA', justifyContent: 'center', alignItems: 'center' },
+  voiceSlider: { flex: 1, height: 44 },
+  bottomActions: { position: 'absolute', flexDirection: 'row', alignItems: 'center' },
 });

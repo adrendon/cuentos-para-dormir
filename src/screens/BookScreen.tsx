@@ -88,7 +88,7 @@ export default function BookScreen() {
   const [stage, setStage] = useState<BookStage>('intro');
   const [showIndex, setShowIndex] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [textSize, setTextSize] = useState(14);
+  const [textSize, setTextSize] = useState(18);
   const [hasOpened, setHasOpened] = useState(!sourceRect);
   const [isClosing, setIsClosing] = useState(false);
   const readerLock = useReaderLock();
@@ -289,15 +289,6 @@ export default function BookScreen() {
     if (book) toggleFavorite(book.id);
   }, [book, toggleFavorite]);
 
-  // Feature 6: Text size controls
-  const handleIncrementTextSize = useCallback(() => {
-    setTextSize(prev => Math.min(24, prev + 2));
-  }, []);
-
-  const handleDecrementTextSize = useCallback(() => {
-    setTextSize(prev => Math.max(10, prev - 2));
-  }, []);
-
   // "Escuchar" mode auto-plays the narration for the current page.
   useEffect(() => {
     if (stage !== 'reading' || mode !== 'listen') return;
@@ -420,7 +411,6 @@ export default function BookScreen() {
         <ReaderControls
           animatedStyle={controlsAnimStyle}
           interactive={showControls}
-          title={title || book.title}
           currentPage={currentPage}
           totalPages={pages.length}
           listenMode={mode === 'listen'}
@@ -439,7 +429,6 @@ export default function BookScreen() {
           onToggleText={() => setShowText(prev => !prev)}
           onToggleMusic={() => { void bookMusic.toggle(); }}
           onMusicVolumeChange={(volume) => { void bookMusic.changeVolume(volume); }}
-          onLock={() => { setShowControls(false); readerLock.lock(); }}
         />
       )}
 
@@ -449,8 +438,12 @@ export default function BookScreen() {
         textSize={textSize}
         onClose={() => setShowMenu(false)}
         onOpenIndex={() => setShowIndex(true)}
-        onIncrementTextSize={handleIncrementTextSize}
-        onDecrementTextSize={handleDecrementTextSize}
+        onLock={() => {
+          setShowMenu(false);
+          setShowControls(false);
+          readerLock.lock();
+        }}
+        onTextSizeChange={setTextSize}
       />
 
       <PageIndexOverlay

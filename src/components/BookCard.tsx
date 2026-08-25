@@ -37,6 +37,7 @@ export function BookCard({
   const isIncluded = book.isEmbedded;
   const displayScale = cardWidth / 361;
   const [showMenu, setShowMenu] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState({ x: 0, y: 0 });
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const pressScale = useRef(new Animated.Value(1)).current;
@@ -171,7 +172,10 @@ export function BookCard({
             width: 24 * displayScale,
             height: 42 * displayScale,
           }]}
-          onPress={() => setShowMenu(true)}
+          onPress={(event) => {
+            setMenuAnchor({ x: event.nativeEvent.pageX, y: event.nativeEvent.pageY });
+            setShowMenu(true);
+          }}
           accessibilityRole="button"
           accessibilityLabel="Más opciones"
         >
@@ -199,6 +203,7 @@ export function BookCard({
       <BookCardMenu
         visible={showMenu}
         book={book}
+        anchor={menuAnchor}
         onToggleFavorite={() => onToggleFavorite(book.id)}
         onDelete={() => onDelete(book.id)}
         onClose={() => setShowMenu(false)}
