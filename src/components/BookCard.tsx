@@ -8,7 +8,7 @@ import {
   Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Book } from '../types/book';
+import { Book, BookCardLayout } from '../types/book';
 import { Colors } from '../theme/colors';
 import { DownloadButton } from './DownloadButton';
 import { BookCardMenu } from './BookCardMenu';
@@ -16,7 +16,7 @@ import { getBookCover } from '../assets/books/coverRegistry';
 
 interface BookCardProps {
   book: Book;
-  onPress: (book: Book) => void;
+  onPress: (book: Book, layout: BookCardLayout) => void;
   onDownloadComplete: (bookId: string) => void;
   onToggleFavorite: (bookId: string) => void;
   onDelete: (bookId: string) => void;
@@ -40,6 +40,7 @@ export function BookCard({
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const pressScale = useRef(new Animated.Value(1)).current;
+  const cardRef = useRef<any>(null);
 
   useEffect(() => {
     Animated.parallel([
@@ -72,7 +73,16 @@ export function BookCard({
           duration: 120,
           useNativeDriver: true,
         }),
-      ]).start(() => onPress(book));
+        Animated.timing(pressScale, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        cardRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+          onPress(book, { x, y, width, height });
+        });
+      });
     }
   };
 
@@ -85,6 +95,7 @@ export function BookCard({
       }}
     >
       <TouchableOpacity
+        ref={cardRef}
         style={[
           styles.container,
           { width: cardWidth, height: cardWidth * (402 / 361), backgroundColor: book.coverColor },

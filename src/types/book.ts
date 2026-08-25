@@ -37,6 +37,13 @@ export interface BookPage {
   uri: string;
 }
 
+export interface BookCardLayout {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export type Gender = 'boy' | 'girl';
 
 export type OnboardingGoal =

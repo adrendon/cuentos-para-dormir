@@ -27,6 +27,7 @@ interface BookOpeningIntroProps {
   onToggleMusic: () => void;
   onClose: () => void;
   onSelectMode: (mode: 'read' | 'listen' | 'record') => void;
+  skipEntranceScale?: boolean;
 }
 
 const STARS = [
@@ -45,19 +46,23 @@ export function BookOpeningIntro({
   onToggleMusic,
   onClose,
   onSelectMode,
+  skipEntranceScale = false,
 }: BookOpeningIntroProps) {
   const { width, height } = useWindowDimensions();
-  const pageWidth = Math.min(width * 0.25, 330);
-  const pageHeight = Math.min(height * 0.57, pageWidth * 0.72);
+  const layoutScale = Math.min(width / 1280, height / 768);
+  const pageWidth = 396 * layoutScale;
+  const pageHeight = 434 * layoutScale;
   const [menuReady, setMenuReady] = useState(false);
   const coverRotation = useSharedValue(0);
-  const bookScale = useSharedValue(0.72);
+  const bookScale = useSharedValue(skipEntranceScale ? 1 : 0.72);
 
   useEffect(() => {
-    bookScale.value = withTiming(1, {
-      duration: 450,
-      easing: Easing.out(Easing.cubic),
-    });
+    if (!skipEntranceScale) {
+      bookScale.value = withTiming(1, {
+        duration: 450,
+        easing: Easing.out(Easing.cubic),
+      });
+    }
     coverRotation.value = withDelay(
       350,
       withTiming(1, { duration: 900, easing: Easing.inOut(Easing.cubic) })
@@ -67,7 +72,10 @@ export function BookOpeningIntro({
   }, [bookScale, coverRotation]);
 
   const bookStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: bookScale.value }],
+    transform: [
+      { translateX: 82 * layoutScale },
+      { scale: bookScale.value },
+    ],
   }));
 
   // Cover starts flat (0deg) and flips open to the left (150deg),
@@ -185,11 +193,14 @@ export function BookOpeningIntro({
               coverStyle,
             ]}
           >
-            {coverSource ? (
-              <Image source={coverSource} style={styles.coverArtwork} resizeMode="cover" />
-            ) : (
-              <Text style={styles.coverTitle} numberOfLines={3}>{title}</Text>
-            )}
+            <View style={styles.coverFront}>
+              {coverSource ? (
+                <Image source={coverSource} style={styles.coverArtwork} resizeMode="cover" />
+              ) : (
+                <Text style={styles.coverTitle} numberOfLines={3}>{title}</Text>
+              )}
+            </View>
+            <View style={[styles.coverBack, { backgroundColor: coverColor }]} />
           </Animated.View>
 
           {/* Spine at center */}
@@ -218,7 +229,7 @@ const styles = StyleSheet.create({
   topIcon: { width: 27, height: 27, resizeMode: 'contain' },
   musicIcon: { width: 24, height: 24, resizeMode: 'contain' },
   content: {
-    flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 30,
+    flex: 1, alignItems: 'center', justifyContent: 'center',
   },
   book: { position: 'relative' },
   storyPage: {
@@ -228,13 +239,25 @@ const styles = StyleSheet.create({
   pageImage: { width: '100%', height: '100%' },
   pageFallback: { flex: 1 },
   cover: {
-    position: 'absolute', top: 0, borderRadius: 10, padding: 20,
+    position: 'absolute', top: 0, borderRadius: 10,
     justifyContent: 'center', alignItems: 'center', borderWidth: 3,
-    borderColor: Colors.accentTurquoise, backfaceVisibility: 'hidden',
+    borderColor: Colors.accentTurquoise,
     transformOrigin: 'right center', elevation: 8,
   },
+  coverFront: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: 7,
+    overflow: 'hidden',
+    backfaceVisibility: 'hidden',
+  },
+  coverBack: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: 7,
+    backfaceVisibility: 'hidden',
+    transform: [{ rotateY: '180deg' }],
+  },
   coverTitle: {
-    color: '#FFF', fontSize: 22, fontWeight: 'bold', fontFamily: 'BalooBhaijaan',
+    flex: 1, padding: 20, color: '#FFF', fontSize: 22, fontWeight: 'bold', fontFamily: 'BalooBhaijaan',
     textAlign: 'center',
     textShadowColor: 'rgba(0,0,0,0.45)', textShadowOffset: { width: 1, height: 2 },
     textShadowRadius: 4,

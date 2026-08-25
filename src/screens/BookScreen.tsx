@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -35,14 +35,29 @@ import { RecordComingSoonPanel } from '../components/RecordComingSoonPanel';
 import { useBookLifecycle } from '../hooks/useBookLifecycle';
 import { ReaderControls } from '../components/ReaderControls';
 import { useBookMusic } from '../hooks/useBookMusic';
+import { SharedBookTransition } from '../components/SharedBookTransition';
+import { BookCardLayout } from '../types/book';
 
 type BookStage = 'intro' | 'narrationPanel' | 'recordPanel' | 'reading';
 type ReadingMode = 'read' | 'listen' | 'record';
 
 export default function BookScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { getBookById, markAsRead, toggleFavorite } = useBooks();
+  const params = useLocalSearchParams<{
+    id: string;
+    sourceX?: string;
+    sourceY?: string;
+    sourceWidth?: string;
+    sourceHeight?: string;
+  }>();
+  const { id } = params;
+  const sourceRect = useMemo(() => parseSourceRect(params), [
+    params.sourceX,
+    params.sourceY,
+    params.sourceWidth,
+    params.sourceHeight,
+  ]);
+  const { getBookById, markAsRead, toggleFavorite, isLoading: areBooksLoading } = useBooks();
   const { profile, updateMusicVolume } = useProfile();
   const book = getBookById(id ?? '');
   const [mode, setMode] = useState<ReadingMode | null>(null);
@@ -74,6 +89,8 @@ export default function BookScreen() {
   const [showIndex, setShowIndex] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [textSize, setTextSize] = useState(14);
+  const [hasOpened, setHasOpened] = useState(!sourceRect);
+  const [isClosing, setIsClosing] = useState(false);
   const readerLock = useReaderLock();
 
   // Reanimated values for book close animation
@@ -132,9 +149,15 @@ export default function BookScreen() {
 
   // Feature 8: Book closing animation
   const handleGoBack = useCallback(async () => {
+    if (isClosing) return;
     // Stop ALL audio immediately
     bookMusic.stop();
     await stopNarration();
+
+    if (sourceRect) {
+      setIsClosing(true);
+      return;
+    }
 
     // Animate scale down + fade out
     screenScale.value = withTiming(0.85, { duration: 400, easing: Easing.inOut(Easing.cubic) });
@@ -144,7 +167,7 @@ export default function BookScreen() {
     setTimeout(() => {
       router.back();
     }, 420);
-  }, [bookMusic.stop, stopNarration, router, screenScale, screenOpacity]);
+  }, [isClosing, sourceRect, bookMusic.stop, stopNarration, router, screenScale, screenOpacity]);
 
   const screenAnimStyle = useAnimatedStyle(() => ({
     transform: [{ scale: screenScale.value }],
@@ -159,6 +182,14 @@ export default function BookScreen() {
   const handleNativeBack = useCallback(() => {
     void handleGoBack();
   }, [handleGoBack]);
+
+  const handleSharedOpenComplete = useCallback(() => {
+    setHasOpened(true);
+  }, []);
+
+  const handleSharedCloseComplete = useCallback(() => {
+    router.back();
+  }, [router]);
 
   useBookLifecycle({
     isLocked: readerLock.isLocked,
@@ -288,12 +319,32 @@ export default function BookScreen() {
   }, [stage, mode, currentPage, pages, playNarration, stopNarration]);
 
   if (!book) {
+    if (areBooksLoading) {
+      return <View style={styles.transitionContainer}><StatusBar hidden /></View>;
+    }
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>Cuento no encontrado</Text>
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.errorLink}>Volver a la biblioteca</Text>
         </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (!hasOpened && sourceRect) {
+    return (
+      <View style={styles.transitionContainer}>
+        <StatusBar hidden />
+        <SharedBookTransition
+          direction="opening"
+          source={sourceRect}
+          coverSource={getBookCover(book.folderName)}
+          firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined}
+          coverColor={book.coverColor}
+          title={title || book.title}
+          onComplete={handleSharedOpenComplete}
+        />
       </View>
     );
   }
@@ -312,6 +363,7 @@ export default function BookScreen() {
           onToggleMusic={bookMusic.toggle}
           onClose={handleGoBack}
           onSelectMode={handleSelectMode}
+          skipEntranceScale={!!sourceRect}
         />
       ) : stage === 'narrationPanel' ? (
         <NarrationPanel
@@ -422,6 +474,18 @@ export default function BookScreen() {
 
         </>
       )}
+
+      {isClosing && sourceRect && (
+        <SharedBookTransition
+          direction="closing"
+          source={sourceRect}
+          coverSource={getBookCover(book.folderName)}
+          firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined}
+          coverColor={book.coverColor}
+          title={title || book.title}
+          onComplete={handleSharedCloseComplete}
+        />
+      )}
     </Animated.View>
   );
 }
@@ -430,6 +494,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.backgroundDark,
+  },
+  transitionContainer: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
   fullscreen: {
     flex: 1,
@@ -451,3 +519,16 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 });
+
+function parseSourceRect(params: {
+  sourceX?: string;
+  sourceY?: string;
+  sourceWidth?: string;
+  sourceHeight?: string;
+}): BookCardLayout | undefined {
+  const values = [params.sourceX, params.sourceY, params.sourceWidth, params.sourceHeight].map(Number);
+  if (values.some((value) => !Number.isFinite(value)) || values[2] <= 0 || values[3] <= 0) {
+    return undefined;
+  }
+  return { x: values[0], y: values[1], width: values[2], height: values[3] };
+}

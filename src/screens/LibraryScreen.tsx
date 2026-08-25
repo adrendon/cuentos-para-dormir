@@ -18,7 +18,7 @@ import { Colors, Gradients } from '../theme/colors';
 import { useBooks } from '../hooks/useBooks';
 import { BookCard } from '../components/BookCard';
 import { FilterModal } from '../components/FilterModal';
-import { Book } from '../types/book';
+import { Book, BookCardLayout } from '../types/book';
 import { setupEmbeddedBooks } from '../services/embeddedBooksService';
 
 const LIBRARY_STARS = [
@@ -77,9 +77,18 @@ export default function LibraryScreen() {
     }).start();
   }, []);
 
-  const handleBookPress = useCallback((book: Book) => {
-    router.push(`/book/${book.id}`);
-  }, []);
+  const handleBookPress = useCallback((book: Book, layout: BookCardLayout) => {
+    router.push({
+      pathname: '/book/[id]',
+      params: {
+        id: book.id,
+        sourceX: String(layout.x),
+        sourceY: String(layout.y),
+        sourceWidth: String(layout.width),
+        sourceHeight: String(layout.height),
+      },
+    });
+  }, [router]);
 
   const handleScroll = useCallback((event: any) => {
     const offsetY = event.nativeEvent.contentOffset.y;
