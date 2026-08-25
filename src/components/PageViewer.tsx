@@ -21,6 +21,9 @@ export function PageViewer({ pages, currentPage, onPageChange, onPageNavigationS
   const textMinHeight = clamp(height * 0.22, 82, 142);
   const arrowWidth = clamp(shortSide * 0.128, 48, 64);
   const arrowHeight = clamp(shortSide * 0.187, 70, 92);
+  // Reference places navigation arrows vertically centered against the text panel,
+  // not touching the physical bottom edge of the screen.
+  const arrowBottom = clamp(height * 0.075, 28, 54);
 
   useEffect(() => { pagerRef.current?.setPageWithoutAnimation(currentPage); }, [currentPage]);
   const handlePageSelected = useCallback((event: any) => onPageChange(event.nativeEvent.position), [onPageChange]);
@@ -49,10 +52,10 @@ export function PageViewer({ pages, currentPage, onPageChange, onPageNavigationS
         })}
       </PagerView>
 
-      <Pressable style={[styles.arrowBtn, styles.leftArrow, { bottom: clamp(height * 0.018, 6, 14), width: arrowWidth, height: arrowHeight }]} onPress={goPrev} accessibilityLabel={currentPage === 0 ? 'Volver al menú' : 'Página anterior'}>
+      <Pressable style={[styles.arrowBtn, styles.leftArrow, { bottom: arrowBottom, width: arrowWidth, height: arrowHeight }]} onPress={goPrev} accessibilityLabel={currentPage === 0 ? 'Volver al menú' : 'Página anterior'}>
         {({ pressed }) => <Image source={pressed ? require('../assets/ui/ic_left_arrow_pressed.png') : require('../assets/ui/ic_left_arrow.png')} style={{ width: arrowWidth * 0.66, height: arrowHeight * 0.64, resizeMode: 'contain' }} />}
       </Pressable>
-      <Pressable style={[styles.arrowBtn, styles.rightArrow, { bottom: clamp(height * 0.018, 6, 14), width: arrowWidth, height: arrowHeight }]} onPress={goNext} accessibilityLabel={currentPage === pages.length - 1 ? 'Terminar cuento' : 'Página siguiente'}>
+      <Pressable style={[styles.arrowBtn, styles.rightArrow, { bottom: arrowBottom, width: arrowWidth, height: arrowHeight }]} onPress={goNext} accessibilityLabel={currentPage === pages.length - 1 ? 'Terminar cuento' : 'Página siguiente'}>
         {({ pressed }) => <Image source={pressed ? require('../assets/ui/ic_right_arrow_pressed.png') : require('../assets/ui/ic_right_arrow.png')} style={{ width: arrowWidth * 0.66, height: arrowHeight * 0.64, resizeMode: 'contain' }} />}
       </Pressable>
     </View>
