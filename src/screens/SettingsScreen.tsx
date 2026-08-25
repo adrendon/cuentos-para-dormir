@@ -25,20 +25,20 @@ const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
 const STARS = Array.from({ length: 34 }, (_, index) => ({
   left: (index * 37) % 97,
   top: (index * 53) % 94,
-  size: 2 + (index % 4),
+  size: 1 + (index % 3),
 }));
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { destination = 'profile' } = useLocalSearchParams<{ destination?: 'profile' | 'mail' }>();
   const { width, height } = useWindowDimensions();
-  const horizontalScale = Math.max(0.72, Math.min(1.45, width / 904));
-  const verticalScale = Math.max(0.72, Math.min(1.35, height / 407));
-  const scale = Math.max(0.72, Math.min(1.28, Math.min(horizontalScale, verticalScale)));
-  const mascotHeight = Math.min(height * 0.86, 470 * verticalScale);
-  const mascotWidth = Math.min(width * 0.285, mascotHeight * 0.72);
-  const formWidth = Math.min(width * 0.48, 500 * horizontalScale);
-  const inputWidth = Math.min(formWidth * 0.82, 430 * horizontalScale);
+  const horizontalScale = Math.max(0.68, Math.min(1.45, width / 904));
+  const verticalScale = Math.max(0.62, Math.min(1.35, height / 407));
+  const scale = Math.max(0.66, Math.min(1.25, Math.min(horizontalScale, verticalScale)));
+  const mascotHeight = Math.min(height * 0.74, 430 * verticalScale);
+  const mascotWidth = Math.min(width * 0.255, mascotHeight * 0.72);
+  const formWidth = Math.min(width * 0.40, 500 * horizontalScale);
+  const inputWidth = Math.min(width * 0.295, 430 * horizontalScale);
   const { profile, toggleMusic, updateLanguage, saveProfile } = useProfile();
   const [view, setView] = useState<SettingsView>('gate');
   const [name, setName] = useState(profile.name);
@@ -100,24 +100,25 @@ export default function SettingsScreen() {
   };
 
   if (view === 'gate') {
+    const gateScale = Math.max(0.66, Math.min(scale, height / 430));
     return (
       <View style={styles.gateBackdrop}>
-        <View style={[styles.gateCard, { width: Math.min(width * 0.58, 520 * horizontalScale), borderRadius: 28 * scale, padding: 24 * scale }]}>
-          <TouchableOpacity style={[styles.gateClose, { width: 56 * scale, height: 56 * scale, borderRadius: 28 * scale }]} onPress={() => router.back()} accessibilityLabel="Cerrar">
-            <Image source={require('../assets/ui/ic_close.png')} style={{ width: 30 * scale, height: 30 * scale }} />
+        <View style={[styles.gateCard, { width: Math.min(width * 0.48, 510 * horizontalScale), borderRadius: 26 * gateScale, paddingHorizontal: 24 * gateScale, paddingVertical: 18 * gateScale }]}>
+          <TouchableOpacity style={[styles.gateClose, { width: 52 * gateScale, height: 52 * gateScale, borderRadius: 26 * gateScale }]} onPress={() => router.back()} accessibilityLabel="Cerrar">
+            <Image source={require('../assets/ui/ic_close.png')} style={{ width: 28 * gateScale, height: 28 * gateScale }} />
           </TouchableOpacity>
-          <Text style={[styles.gateTitle, { fontSize: 30 * scale }]}>Para mamá y papá</Text>
-          <Text style={[styles.gateSubtitle, { fontSize: 19 * scale }]}>Escribe los números:</Text>
-          <Text style={[styles.gateChallenge, { fontSize: 20 * scale }]}>{challenge.map((value) => NUMBER_WORDS[Number(value)]).join(', ')}</Text>
-          <View style={[styles.gateInput, gateError && styles.gateInputError, { height: 50 * scale, borderRadius: 25 * scale }]}>
-            <Text style={[styles.gateInputText, { fontSize: 25 * scale }]}>{'•'.repeat(gateValue.length)}</Text>
+          <Text style={[styles.gateTitle, { fontSize: 28 * gateScale }]}>Para mamá y papá</Text>
+          <Text style={[styles.gateSubtitle, { fontSize: 17 * gateScale }]}>Escribe los números:</Text>
+          <Text style={[styles.gateChallenge, { fontSize: 18 * gateScale }]}>{challenge.map((value) => NUMBER_WORDS[Number(value)]).join(', ')}</Text>
+          <View style={[styles.gateInput, gateError && styles.gateInputError, { height: 46 * gateScale, borderRadius: 23 * gateScale }]}>
+            <Text style={[styles.gateInputText, { fontSize: 23 * gateScale }]}>{'•'.repeat(gateValue.length)}</Text>
           </View>
-          <View style={[styles.keypad, { width: 264 * scale, gap: 10 * scale, marginTop: 16 * scale }]}>
+          <View style={[styles.keypad, { width: 246 * gateScale, gap: 8 * gateScale, marginTop: 12 * gateScale }]}>
             {KEYS.map((key, index) => key ? (
-              <TouchableOpacity key={`${key}-${index}`} style={[styles.key, { width: 78 * scale, height: 58 * scale, borderRadius: 29 * scale }]} onPress={() => handleGateKey(key)} accessibilityLabel={key === '⌫' ? 'Borrar' : key}>
-                <Text style={[styles.keyText, { fontSize: 27 * scale }]}>{key}</Text>
+              <TouchableOpacity key={`${key}-${index}`} style={[styles.key, { width: 72 * gateScale, height: 48 * gateScale, borderRadius: 24 * gateScale }]} onPress={() => handleGateKey(key)} accessibilityLabel={key === '⌫' ? 'Borrar' : key}>
+                <Text style={[styles.keyText, { fontSize: 24 * gateScale }]}>{key}</Text>
               </TouchableOpacity>
-            ) : <View key={`empty-${index}`} style={{ width: 78 * scale, height: 58 * scale }} />)}
+            ) : <View key={`empty-${index}`} style={{ width: 72 * gateScale, height: 48 * gateScale }} />)}
           </View>
         </View>
       </View>
@@ -145,57 +146,62 @@ export default function SettingsScreen() {
   if (view === 'language') {
     return (
       <SettingsBackground>
-        <TouchableOpacity style={[styles.languageClose, { width: 64 * scale, height: 64 * scale, borderRadius: 32 * scale }]} onPress={() => setView('profile')} accessibilityLabel="Cerrar idioma">
-          <Image source={require('../assets/ui/ic_close.png')} style={{ width: 34 * scale, height: 34 * scale }} />
+        <TouchableOpacity style={[styles.languageClose, { width: 58 * scale, height: 58 * scale, borderRadius: 29 * scale }]} onPress={() => setView('profile')} accessibilityLabel="Cerrar idioma">
+          <Image source={require('../assets/ui/ic_close.png')} style={{ width: 31 * scale, height: 31 * scale }} />
         </TouchableOpacity>
-        <Image source={require('../assets/onboarding/ic_globe.webp')} style={[styles.languageGlobe, { width: Math.min(width * 0.3, 310 * horizontalScale), height: Math.min(height * 0.86, 360 * verticalScale) }]} resizeMode="contain" />
-        <Image source={require('../assets/settings/fox.webp')} style={[styles.languageFox, { width: Math.min(width * 0.29, 300 * horizontalScale), height: Math.min(height * 0.9, 390 * verticalScale) }]} resizeMode="contain" />
-        <View style={[styles.languageContent, { width: Math.min(width * 0.44, 430 * horizontalScale) }]}>
-          <Text style={[styles.languageTitle, { fontSize: 38 * scale }]}>Idioma</Text>
+        <Image source={require('../assets/onboarding/ic_globe.webp')} style={[styles.languageGlobe, { width: Math.min(width * 0.25, 280 * horizontalScale), height: Math.min(height * 0.78, 330 * verticalScale) }]} resizeMode="contain" />
+        <Image source={require('../assets/settings/fox.webp')} style={[styles.languageFox, { width: Math.min(width * 0.25, 280 * horizontalScale), height: Math.min(height * 0.78, 350 * verticalScale) }]} resizeMode="contain" />
+        <View style={[styles.languageContent, { width: Math.min(width * 0.40, 410 * horizontalScale) }]}>
+          <Text style={[styles.languageTitle, { fontSize: 36 * scale }]}>Idioma</Text>
           <TouchableOpacity style={styles.languageRow} onPress={() => {}} accessibilityRole="radio" accessibilityState={{ selected: true }}>
-            <View style={[styles.radioSelected, { width: 38 * scale, height: 38 * scale, borderRadius: 19 * scale }]} />
-            <Text style={[styles.languageLabel, { fontSize: 24 * scale }]}>Español</Text>
+            <View style={[styles.radioSelected, { width: 34 * scale, height: 34 * scale, borderRadius: 17 * scale }]} />
+            <Text style={[styles.languageLabel, { fontSize: 22 * scale }]}>Español</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.languageConfirm, { width: 88 * scale, height: 88 * scale, borderRadius: 44 * scale }]} onPress={async () => { await updateLanguage('es'); setView('profile'); }} accessibilityLabel="Confirmar español">
-            <Text style={[styles.checkmark, { fontSize: 52 * scale }]}>✓</Text>
+          <TouchableOpacity style={[styles.languageConfirm, { width: 78 * scale, height: 78 * scale, borderRadius: 39 * scale }]} onPress={async () => { await updateLanguage('es'); setView('profile'); }} accessibilityLabel="Confirmar español">
+            <Text style={[styles.checkmark, { fontSize: 46 * scale }]}>✓</Text>
           </TouchableOpacity>
         </View>
       </SettingsBackground>
     );
   }
 
+  const genderSize = Math.min(height * 0.14, 92 * scale);
   return (
     <SettingsBackground>
       <Image source={require('../assets/settings/bear.webp')} style={[styles.bearImage, { width: mascotWidth, height: mascotHeight }]} resizeMode="contain" />
       <Image source={require('../assets/settings/fox.webp')} style={[styles.foxImage, { width: mascotWidth, height: mascotHeight }]} resizeMode="contain" />
 
-      <TouchableOpacity style={[styles.topButton, styles.topLeft, { top: 20 * verticalScale, left: 20 * horizontalScale, width: 66 * scale, height: 66 * scale, borderRadius: 33 * scale }]} onPress={() => setView('language')} accessibilityLabel="Idioma">
-        <Image source={require('../assets/ui/ic_settings_language.png')} style={{ width: 38 * scale, height: 38 * scale }} resizeMode="contain" />
+      <TouchableOpacity style={[styles.topButton, { top: 20 * verticalScale, left: 20 * horizontalScale, width: 62 * scale, height: 62 * scale, borderRadius: 31 * scale }]} onPress={() => setView('language')} accessibilityLabel="Idioma">
+        <Image source={require('../assets/ui/ic_settings_language.png')} style={{ width: 35 * scale, height: 35 * scale }} resizeMode="contain" />
       </TouchableOpacity>
-      <TouchableOpacity style={[styles.topButton, styles.topRight, { top: 20 * verticalScale, right: 20 * horizontalScale, width: 66 * scale, height: 66 * scale, borderRadius: 33 * scale }]} onPress={handleMusicToggle} accessibilityLabel="Música">
-        <Image source={musicEnabled ? require('../assets/onboarding/ic_music_on.png') : require('../assets/onboarding/ic_music_off.png')} style={{ width: 34 * scale, height: 34 * scale }} resizeMode="contain" />
+      <TouchableOpacity style={[styles.topButton, { top: 20 * verticalScale, right: 20 * horizontalScale, width: 62 * scale, height: 62 * scale, borderRadius: 31 * scale }]} onPress={handleMusicToggle} accessibilityLabel="Música">
+        <Image source={musicEnabled ? require('../assets/onboarding/ic_music_on.png') : require('../assets/onboarding/ic_music_off.png')} style={{ width: 32 * scale, height: 32 * scale }} resizeMode="contain" />
       </TouchableOpacity>
 
-      <View style={[styles.profileForm, { width: formWidth, paddingTop: height * 0.015 }]}>
-        <Text style={[styles.profileTitle, { fontSize: Math.min(42, 37 * scale), marginBottom: 12 * verticalScale }]}>Historias sobre tus hijos</Text>
-        <Text style={[styles.profileLabel, { fontSize: Math.min(26, 23 * scale), marginBottom: 8 * verticalScale }]}>Nombre del niño/niña:</Text>
+      <View style={[styles.profileForm, { width: formWidth }]}>
+        <Text style={[styles.profileTitle, { fontSize: Math.min(45, 36 * scale), marginBottom: 9 * verticalScale }]}>Historias sobre tus hijos</Text>
+        <Text style={[styles.profileLabel, { fontSize: Math.min(25, 21 * scale), marginBottom: 7 * verticalScale }]}>Nombre del niño/niña:</Text>
         <TextInput
-          style={[styles.profileInput, { width: inputWidth, height: Math.min(height * 0.105, 68 * verticalScale), borderRadius: 34 * scale, fontSize: Math.min(25, 22 * scale) }]}
+          style={[styles.profileInput, { width: inputWidth, height: Math.min(height * 0.11, 62 * verticalScale), borderRadius: 31 * scale, fontSize: Math.min(24, 21 * scale) }]}
           value={name}
           onChangeText={setName}
           placeholder="Nombre"
           placeholderTextColor={Colors.inputTextColor}
           maxLength={20}
+          multiline={false}
+          numberOfLines={1}
+          scrollEnabled={false}
           textAlign="center"
+          textAlignVertical="center"
         />
-        <Text style={[styles.profileLabel, { fontSize: Math.min(26, 23 * scale), marginTop: 16 * verticalScale, marginBottom: 4 * verticalScale }]}>Género:</Text>
-        <View style={[styles.genderRow, { gap: Math.min(width * 0.055, 52 * horizontalScale) }]}>
-          <GenderButton gender="girl" selected={gender === 'girl'} size={Math.min(height * 0.17, 104 * scale)} onPress={() => setGender('girl')} />
-          <GenderButton gender="boy" selected={gender === 'boy'} size={Math.min(height * 0.17, 104 * scale)} onPress={() => setGender('boy')} />
+        <Text style={[styles.profileLabel, { fontSize: Math.min(25, 21 * scale), marginTop: 12 * verticalScale, marginBottom: 2 * verticalScale }]}>Género:</Text>
+        <View style={[styles.genderRow, { gap: Math.min(width * 0.045, 46 * horizontalScale) }]}>
+          <GenderButton gender="girl" selected={gender === 'girl'} size={genderSize} onPress={() => setGender('girl')} />
+          <GenderButton gender="boy" selected={gender === 'boy'} size={genderSize} onPress={() => setGender('boy')} />
         </View>
-        <TouchableOpacity style={{ marginTop: 14 * verticalScale }} onPress={() => { void handleContinue(); }} accessibilityLabel="Continuar">
-          <LinearGradient colors={[...Gradients.orange]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.continueButton, { width: Math.min(formWidth * 0.6, 260 * horizontalScale), height: Math.min(height * 0.095, 64 * verticalScale), borderRadius: 32 * scale }]}>
-            <Text style={[styles.continueText, { fontSize: Math.min(24, 22 * scale) }]}>Continuar</Text>
+        <TouchableOpacity style={{ marginTop: 10 * verticalScale }} onPress={() => { void handleContinue(); }} accessibilityLabel="Continuar">
+          <LinearGradient colors={[...Gradients.orange]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.continueButton, { width: Math.min(width * 0.19, 245 * horizontalScale), height: Math.min(height * 0.09, 58 * verticalScale), borderRadius: 29 * scale }]}>
+            <Text style={[styles.continueText, { fontSize: Math.min(23, 20 * scale) }]}>Continuar</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -227,14 +233,14 @@ function GenderButton({ gender, selected, size, onPress }: { gender: Gender; sel
 
 const styles = StyleSheet.create({
   background: { flex: 1, overflow: 'hidden' },
-  star: { position: 'absolute', borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.55)' },
+  star: { position: 'absolute', borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.32)' },
   gateBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.68)', justifyContent: 'center', alignItems: 'center' },
   gateCard: { backgroundColor: '#4451B7', borderWidth: 4, borderColor: '#F2F4DD', alignItems: 'center', elevation: 12 },
-  gateClose: { position: 'absolute', top: -25, right: -25, backgroundColor: '#F2F4DD', justifyContent: 'center', alignItems: 'center', zIndex: 2 },
+  gateClose: { position: 'absolute', top: -23, right: -23, backgroundColor: '#F2F4DD', justifyContent: 'center', alignItems: 'center', zIndex: 2 },
   gateTitle: { color: Colors.textWhite, fontFamily: Fonts.heading, textAlign: 'center' },
   gateSubtitle: { color: Colors.textWhite, fontFamily: Fonts.body, marginTop: 2 },
   gateChallenge: { color: Colors.textWhite, fontFamily: Fonts.body, marginTop: 2 },
-  gateInput: { width: '62%', backgroundColor: Colors.tooltipBackground, marginTop: 16, justifyContent: 'center', alignItems: 'center' },
+  gateInput: { width: '62%', backgroundColor: Colors.tooltipBackground, marginTop: 12, justifyContent: 'center', alignItems: 'center' },
   gateInputError: { borderWidth: 3, borderColor: Colors.error },
   gateInputText: { color: Colors.textFieldColor, fontFamily: Fonts.heading, letterSpacing: 8 },
   keypad: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
@@ -251,21 +257,19 @@ const styles = StyleSheet.create({
   languageGlobe: { position: 'absolute', left: 0, bottom: 0 },
   languageFox: { position: 'absolute', right: 0, bottom: -10 },
   languageContent: { flex: 1, alignSelf: 'center', justifyContent: 'center', alignItems: 'center' },
-  languageTitle: { color: Colors.titleYellow, fontFamily: Fonts.heading, marginBottom: 24 },
-  languageRow: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  radioSelected: { backgroundColor: '#F6B82B', borderWidth: 6, borderColor: '#3242A4' },
+  languageTitle: { color: Colors.titleYellow, fontFamily: Fonts.heading, marginBottom: 22 },
+  languageRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  radioSelected: { backgroundColor: '#F6B82B', borderWidth: 5, borderColor: '#3242A4' },
   languageLabel: { color: Colors.textWhite, fontFamily: Fonts.heading },
-  languageConfirm: { backgroundColor: '#F6A928', justifyContent: 'center', alignItems: 'center', marginTop: 34, elevation: 4 },
+  languageConfirm: { backgroundColor: '#F6A928', justifyContent: 'center', alignItems: 'center', marginTop: 28, elevation: 4 },
   checkmark: { color: Colors.textWhite, fontFamily: Fonts.heading, marginTop: -4 },
   bearImage: { position: 'absolute', left: -8, bottom: -5 },
   foxImage: { position: 'absolute', right: -8, bottom: -5 },
   topButton: { position: 'absolute', backgroundColor: '#187AD1', justifyContent: 'center', alignItems: 'center', zIndex: 5 },
-  topLeft: {},
-  topRight: {},
   profileForm: { flex: 1, alignSelf: 'center', justifyContent: 'center', alignItems: 'center' },
   profileTitle: { color: Colors.titleYellow, fontFamily: Fonts.heading, textAlign: 'center' },
   profileLabel: { color: Colors.textWhite, fontFamily: Fonts.heading, textAlign: 'center' },
-  profileInput: { backgroundColor: Colors.tooltipBackground, color: Colors.textFieldColor, fontFamily: Fonts.body, paddingHorizontal: 24 },
+  profileInput: { backgroundColor: Colors.tooltipBackground, color: Colors.textFieldColor, fontFamily: Fonts.body, paddingHorizontal: 20, paddingVertical: 0, includeFontPadding: false },
   genderRow: { flexDirection: 'row', alignItems: 'center' },
   continueButton: { justifyContent: 'center', alignItems: 'center' },
   continueText: { color: Colors.textWhite, fontFamily: Fonts.heading },
