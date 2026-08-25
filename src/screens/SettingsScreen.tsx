@@ -23,8 +23,8 @@ type SettingsView = 'gate' | 'profile' | 'language' | 'preparing';
 const NUMBER_WORDS = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
 const STARS = Array.from({ length: 34 }, (_, index) => ({
-  left: `${(index * 37) % 97}%`,
-  top: `${(index * 53) % 94}%`,
+  left: (index * 37) % 97,
+  top: (index * 53) % 94,
   size: 2 + (index % 4),
 }));
 
@@ -274,7 +274,7 @@ function SettingsBackground({ children }: { children: React.ReactNode }) {
     <LinearGradient colors={['#2D399E', '#273285']} style={styles.background}>
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         {STARS.map((star, index) => (
-          <View key={index} style={[styles.star, { left: star.left, top: star.top, width: star.size, height: star.size }]} />
+          <View key={index} style={[styles.star, { left: `${star.left}%`, top: `${star.top}%`, width: star.size, height: star.size }]} />
         ))}
       </View>
       {children}
