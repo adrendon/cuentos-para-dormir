@@ -37,6 +37,8 @@ const STARS = [
   [93, 56], [10, 48], [31, 57], [53, 42], [68, 60], [84, 43],
 ];
 
+const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+
 export function BookOpeningIntro({
   coverColor,
   title,
@@ -49,14 +51,16 @@ export function BookOpeningIntro({
   skipEntranceScale = false,
 }: BookOpeningIntroProps) {
   const { width, height } = useWindowDimensions();
-  const layoutScale = Math.max(0.82, Math.min(1.35, Math.min(width / 904, height / 407)));
-  const pageHeight = Math.min(height * 0.82, 296 * layoutScale);
-  const pageWidth = Math.min(width * 0.36, pageHeight * 0.9);
-  const chromeScale = layoutScale;
-  const roundButtonSize = 54 * chromeScale;
-  const modeButtonWidth = Math.min(width * 0.38, 285 * chromeScale);
-  const modeButtonHeight = Math.min(height * 0.155, 62 * chromeScale);
+  // Match the Android reference by scaling from landscape height. Wide phones should
+  // show more artwork rather than making the controls disproportionately large.
+  const uiScale = clamp(height / 407, 0.78, 1.08);
+  const pageHeight = Math.min(height * 0.78, 286 * uiScale);
+  const pageWidth = Math.min(width * 0.31, pageHeight * 0.9);
+  const roundButtonSize = 54 * uiScale;
+  const modeButtonWidth = Math.min(width * 0.265, 270 * uiScale);
+  const modeButtonHeight = 52 * uiScale;
   const modeButtonRadius = modeButtonHeight / 2;
+  const menuLeft = clamp(width * 0.145, 90, 220);
   const [menuReady, setMenuReady] = useState(false);
   const coverRotation = useSharedValue(skipEntranceScale ? 1 : 0);
   const bookScale = useSharedValue(skipEntranceScale ? 1 : 0.88);
@@ -86,19 +90,17 @@ export function BookOpeningIntro({
       ],
     };
   });
-  const shadeStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(menuReveal.value, [0, 1], [0, 1]),
-  }));
+  const shadeStyle = useAnimatedStyle(() => ({ opacity: interpolate(menuReveal.value, [0, 1], [0, 1]) }));
   const menuStyle = useAnimatedStyle(() => ({
     opacity: menuReveal.value,
     transform: [
-      { translateY: interpolate(menuReveal.value, [0, 1], [24 * chromeScale, 0]) },
-      { scale: interpolate(menuReveal.value, [0, 1], [0.96, 1]) },
+      { translateY: interpolate(menuReveal.value, [0, 1], [18 * uiScale, 0]) },
+      { scale: interpolate(menuReveal.value, [0, 1], [0.97, 1]) },
     ],
   }));
   const topChromeStyle = useAnimatedStyle(() => ({
     opacity: menuReveal.value,
-    transform: [{ translateY: interpolate(menuReveal.value, [0, 1], [-12 * chromeScale, 0]) }],
+    transform: [{ translateY: interpolate(menuReveal.value, [0, 1], [-10 * uiScale, 0]) }],
   }));
 
   if (menuReady) {
@@ -106,24 +108,24 @@ export function BookOpeningIntro({
       <View style={styles.container}>
         {firstPageSource && <Image source={firstPageSource} style={styles.modeBackground} resizeMode="cover" />}
         <Animated.View style={[styles.modeShade, shadeStyle]} />
-        <Animated.View style={[styles.topBar, { top: 14 * chromeScale, left: 14 * chromeScale, right: 14 * chromeScale }, topChromeStyle]}>
+        <Animated.View style={[styles.topBar, { top: 14 * uiScale, left: 14 * uiScale, right: 14 * uiScale }, topChromeStyle]}>
           <TouchableOpacity style={[styles.roundButton, { width: roundButtonSize, height: roundButtonSize, borderRadius: roundButtonSize / 2 }]} onPress={onClose} accessibilityLabel="Biblioteca">
-            <Image source={require('../assets/ui/ic_home.png')} style={{ width: 36 * chromeScale, height: 36 * chromeScale }} resizeMode="contain" />
+            <Image source={require('../assets/ui/ic_home.png')} style={{ width: 34 * uiScale, height: 34 * uiScale }} resizeMode="contain" />
           </TouchableOpacity>
           <TouchableOpacity style={[styles.roundButton, { width: roundButtonSize, height: roundButtonSize, borderRadius: roundButtonSize / 2 }]} onPress={onToggleMusic} accessibilityLabel="Música">
-            <Image source={musicEnabled ? require('../assets/onboarding/ic_music_on.png') : require('../assets/onboarding/ic_music_off.png')} style={{ width: 30 * chromeScale, height: 30 * chromeScale }} resizeMode="contain" />
+            <Image source={musicEnabled ? require('../assets/onboarding/ic_music_on.png') : require('../assets/onboarding/ic_music_off.png')} style={{ width: 28 * uiScale, height: 28 * uiScale }} resizeMode="contain" />
           </TouchableOpacity>
         </Animated.View>
-        <Animated.View style={[styles.centeredMenu, { gap: 18 * chromeScale }, menuStyle]}>
-          <ModeButton label="Leer" icon={require('../assets/ui/ic_book_read.png')} width={modeButtonWidth} height={modeButtonHeight} scale={chromeScale} onPress={() => onSelectMode('read')} />
-          <ModeButton label="Escuchar" icon={require('../assets/ui/ic_book_listen.png')} width={modeButtonWidth} height={modeButtonHeight} scale={chromeScale} onPress={() => onSelectMode('listen')} colors={['#F6BD35', '#FF8E3B']} />
+        <Animated.View style={[styles.modeMenu, { left: menuLeft, gap: 14 * uiScale }, menuStyle]}>
+          <ModeButton label="Leer" icon={require('../assets/ui/ic_book_read.png')} width={modeButtonWidth} height={modeButtonHeight} scale={uiScale} onPress={() => onSelectMode('read')} />
+          <ModeButton label="Escuchar" icon={require('../assets/ui/ic_book_listen.png')} width={modeButtonWidth} height={modeButtonHeight} scale={uiScale} onPress={() => onSelectMode('listen')} colors={['#F6BD35', '#FF8E3B']} />
           <TouchableOpacity style={{ width: modeButtonWidth, height: modeButtonHeight, borderRadius: modeButtonRadius }} onPress={() => onSelectMode('record')}>
-            <LinearGradient colors={['#28D4EB', '#278BEC']} style={[styles.modeButton, { borderRadius: modeButtonRadius, paddingHorizontal: 48 * chromeScale }]}>
-              <View style={[styles.microphoneIcon, { width: 42 * chromeScale, height: 42 * chromeScale }]}>
-                <View style={styles.microphoneHead} />
-                <View style={styles.microphoneStand} />
+            <LinearGradient colors={['#28D4EB', '#278BEC']} style={[styles.modeButton, { borderRadius: modeButtonRadius, paddingHorizontal: 30 * uiScale }]}>
+              <View style={[styles.microphoneIcon, { width: 34 * uiScale, height: 34 * uiScale }]}>
+                <View style={[styles.microphoneHead, { width: 14 * uiScale, height: 23 * uiScale, borderRadius: 7 * uiScale, borderWidth: 2.5 * uiScale }]} />
+                <View style={[styles.microphoneStand, { width: 21 * uiScale, height: 13 * uiScale, marginTop: -9 * uiScale, borderBottomWidth: 2.5 * uiScale, borderLeftWidth: 2.5 * uiScale, borderRightWidth: 2.5 * uiScale, borderRadius: 10 * uiScale }]} />
               </View>
-              <Text style={[styles.modeLabel, { fontSize: 24 * chromeScale }]}>Grabar</Text>
+              <Text style={[styles.modeLabel, { fontSize: 20 * uiScale }]}>Grabar</Text>
             </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
@@ -138,8 +140,8 @@ export function BookOpeningIntro({
       </View>
       <View style={styles.content}>
         <Animated.View style={[styles.book, { width: pageWidth * 2, height: pageHeight }, bookStyle]}>
-          <View style={[styles.pageLayerFar, { left: pageWidth + 8 * layoutScale, width: pageWidth, height: pageHeight, borderColor: coverColor }]} />
-          <View style={[styles.pageLayerNear, { left: pageWidth + 4 * layoutScale, width: pageWidth, height: pageHeight, borderColor: coverColor }]} />
+          <View style={[styles.pageLayerFar, { left: pageWidth + 8 * uiScale, width: pageWidth, height: pageHeight, borderColor: coverColor }]} />
+          <View style={[styles.pageLayerNear, { left: pageWidth + 4 * uiScale, width: pageWidth, height: pageHeight, borderColor: coverColor }]} />
           <View style={[styles.storyPage, { left: pageWidth, width: pageWidth, height: pageHeight, borderColor: coverColor }]}>
             {firstPageSource ? <Image source={firstPageSource} style={styles.pageImage} resizeMode="cover" /> : <View style={[styles.pageFallback, { backgroundColor: coverColor }]} />}
           </View>
@@ -149,7 +151,7 @@ export function BookOpeningIntro({
             </View>
             <View style={[styles.coverBack, { backgroundColor: coverColor }]} />
           </Animated.View>
-          <View style={[styles.spineShadow, { left: pageWidth - 9 * layoutScale, width: 18 * layoutScale }]} />
+          <View style={[styles.spineShadow, { left: pageWidth - 9 * uiScale, width: 18 * uiScale }]} />
           <View style={[styles.spine, { left: pageWidth - 2, backgroundColor: coverColor }]} />
         </Animated.View>
       </View>
@@ -161,9 +163,9 @@ function ModeButton({ label, icon, width, height, scale, onPress, colors = ['#28
   const radius = height / 2;
   return (
     <TouchableOpacity style={{ width, height, borderRadius: radius }} onPress={onPress}>
-      <LinearGradient colors={colors} style={[styles.modeButton, { borderRadius: radius, paddingHorizontal: 48 * scale }]}>
-        <Image source={icon} style={{ width: 42 * scale, height: 42 * scale }} resizeMode="contain" />
-        <Text style={[styles.modeLabel, { fontSize: 24 * scale }]}>{label}</Text>
+      <LinearGradient colors={colors} style={[styles.modeButton, { borderRadius: radius, paddingHorizontal: 30 * scale }]}>
+        <Image source={icon} style={{ width: 34 * scale, height: 34 * scale }} resizeMode="contain" />
+        <Text style={[styles.modeLabel, { fontSize: 20 * scale }]}>{label}</Text>
       </LinearGradient>
     </TouchableOpacity>
   );
@@ -172,7 +174,7 @@ function ModeButton({ label, icon, width, height, scale, onPress, colors = ['#28
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.backgroundDark },
   stars: { ...StyleSheet.absoluteFill },
-  star: { position: 'absolute', width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.45)' },
+  star: { position: 'absolute', width: 3, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.35)' },
   topBar: { position: 'absolute', zIndex: 20, flexDirection: 'row', justifyContent: 'space-between' },
   roundButton: { backgroundColor: '#F6F4E8', justifyContent: 'center', alignItems: 'center', elevation: 4 },
   content: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -191,10 +193,10 @@ const styles = StyleSheet.create({
   spineShadow: { position: 'absolute', top: 4, bottom: 4, zIndex: 6, backgroundColor: 'rgba(0,0,0,0.28)', borderRadius: 9 },
   modeBackground: { ...StyleSheet.absoluteFill, width: '100%', height: '100%' },
   modeShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(8, 4, 30, 0.66)' },
-  centeredMenu: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  modeButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 22, borderWidth: 2, borderColor: '#25C8EE', elevation: 5 },
+  modeMenu: { position: 'absolute', top: '50%', transform: [{ translateY: -92 }], alignItems: 'center' },
+  modeButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, borderWidth: 1.5, borderColor: '#25C8EE', elevation: 5 },
   microphoneIcon: { alignItems: 'center', justifyContent: 'center' },
-  microphoneHead: { width: 16, height: 25, borderRadius: 8, borderWidth: 3, borderColor: '#FFF' },
-  microphoneStand: { width: 24, height: 15, marginTop: -10, borderBottomWidth: 3, borderLeftWidth: 3, borderRightWidth: 3, borderColor: '#FFF', borderRadius: 12 },
+  microphoneHead: { borderColor: '#FFF' },
+  microphoneStand: { borderColor: '#FFF' },
   modeLabel: { color: '#FFF', fontFamily: 'Montserrat-ExtraBold' },
 });
