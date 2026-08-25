@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../theme/colors';
 
@@ -20,20 +20,44 @@ export function OnboardingHeader({
   onToggleMusic,
 }: OnboardingHeaderProps) {
   const progress = step / totalSteps;
+  const leftIn = useRef(new Animated.Value(0)).current;
+  const centerIn = useRef(new Animated.Value(0)).current;
+  const rightIn = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    leftIn.setValue(0);
+    centerIn.setValue(0);
+    rightIn.setValue(0);
+    Animated.stagger(70, [
+      Animated.timing(leftIn, { toValue: 1, duration: 260, useNativeDriver: true }),
+      Animated.timing(centerIn, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.timing(rightIn, { toValue: 1, duration: 260, useNativeDriver: true }),
+    ]).start();
+  }, [step, leftIn, centerIn, rightIn]);
+
+  const entrance = (value: Animated.Value, fromX: number, fromY = -10) => ({
+    opacity: value,
+    transform: [
+      { translateX: value.interpolate({ inputRange: [0, 1], outputRange: [fromX, 0] }) },
+      { translateY: value.interpolate({ inputRange: [0, 1], outputRange: [fromY, 0] }) },
+      { scale: value.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }) },
+    ],
+  });
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.iconButton}
-        onPress={onBack}
-        accessibilityRole="button"
-        accessibilityLabel="Regresar"
-      >
-        <Image source={require('../assets/ui/ic_left_arrow.png')} style={styles.backIcon} />
-      </TouchableOpacity>
+      <Animated.View style={entrance(leftIn, -18)}>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={onBack}
+          accessibilityRole="button"
+          accessibilityLabel="Regresar"
+        >
+          <Image source={require('../assets/ui/ic_left_arrow.png')} style={styles.backIcon} />
+        </TouchableOpacity>
+      </Animated.View>
 
-      {/* Single pencil-shaped track, as used by the reference application. */}
-      <View style={styles.progressWrapper}>
+      <Animated.View style={[styles.progressWrapper, entrance(centerIn, 0, -16)]}>
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: `${progress * 100}%` }]}>
             {[0, 1, 2, 3, 4].map((stripe) => (
@@ -42,26 +66,28 @@ export function OnboardingHeader({
           </View>
           <Text style={styles.stepLabel}>{step}/{totalSteps}</Text>
         </View>
-      </View>
+      </Animated.View>
 
-      <TouchableOpacity
-        style={styles.musicButton}
-        onPress={onToggleMusic}
-        accessibilityRole="button"
-        accessibilityLabel={musicEnabled ? 'Silenciar música' : 'Activar música'}
-      >
-        <LinearGradient colors={['#4544A7', '#282776']} style={styles.iconGradient}>
-          <Image
-            source={
-              musicEnabled
-                ? require('../assets/onboarding/ic_music_on.png')
-                : require('../assets/onboarding/ic_music_off.png')
-            }
-            style={styles.musicIcon}
-            resizeMode="contain"
-          />
-        </LinearGradient>
-      </TouchableOpacity>
+      <Animated.View style={entrance(rightIn, 18)}>
+        <TouchableOpacity
+          style={styles.musicButton}
+          onPress={onToggleMusic}
+          accessibilityRole="button"
+          accessibilityLabel={musicEnabled ? 'Silenciar música' : 'Activar música'}
+        >
+          <LinearGradient colors={['#4544A7', '#282776']} style={styles.iconGradient}>
+            <Image
+              source={
+                musicEnabled
+                  ? require('../assets/onboarding/ic_music_on.png')
+                  : require('../assets/onboarding/ic_music_off.png')
+              }
+              style={styles.musicIcon}
+              resizeMode="contain"
+            />
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 }
