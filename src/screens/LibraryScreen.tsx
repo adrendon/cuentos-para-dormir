@@ -27,7 +27,7 @@ const LIBRARY_STARS = [
 ];
 
 export default function LibraryScreen() {
-  const { width: windowWidth } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const router = useRouter();
   const {
     filteredBooks,
@@ -48,13 +48,13 @@ export default function LibraryScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scrollTopAnim = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList>(null);
-  const sideRailWidth = 92;
-  const gridLeftPadding = sideRailWidth + 28;
-  const gridRightPadding = 20;
-  const columnGap = 16;
-  const cardWidth = Math.floor(
-    (windowWidth - gridLeftPadding - gridRightPadding - columnGap * 2) / 3
-  );
+  // The visual reference is a 1280x768 landscape canvas. Scaling from that
+  // canvas preserves its geometry while still supporting other tablet sizes.
+  const layoutScale = Math.min(windowWidth / 1280, windowHeight / 768);
+  const gridLeftPadding = 148 * layoutScale;
+  const columnGap = 30 * layoutScale;
+  const rowGap = 66 * layoutScale;
+  const cardWidth = 361 * layoutScale;
 
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
@@ -142,25 +142,53 @@ export default function LibraryScreen() {
           ))}
         </View>
         {/* Compact side rail, matching the reference landscape layout. */}
-        <View style={styles.sideRail}>
+        <View style={[styles.sideRail, {
+          left: -32 * layoutScale,
+          top: 17 * layoutScale,
+          width: 100 * layoutScale,
+          gap: 30 * layoutScale,
+        }]}>
           <TouchableOpacity
-            style={styles.settingsButton}
+            style={[styles.settingsButton, {
+              width: 100 * layoutScale,
+              height: 100 * layoutScale,
+              borderRadius: 50 * layoutScale,
+            }]}
             onPress={handleSettingsPress}
             accessibilityLabel="Abrir ajustes"
             accessibilityRole="button"
           >
-            <Image source={require('../assets/ui/ic_settings.png')} style={styles.settingsIcon} />
+            <Image source={require('../assets/ui/ic_settings.png')} style={[styles.settingsIcon, {
+              width: 52 * layoutScale,
+              height: 52 * layoutScale,
+            }]} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.mailButton} accessibilityLabel="Novedades">
-            <Image source={require('../assets/ui/ic_mail_to.png')} style={styles.mailIcon} />
+          <TouchableOpacity style={[styles.mailButton, {
+            width: 100 * layoutScale,
+            height: 100 * layoutScale,
+            borderRadius: 50 * layoutScale,
+          }]} accessibilityLabel="Novedades">
+            <Image source={require('../assets/ui/ic_mail_to.png')} style={[styles.mailIcon, {
+              width: 50 * layoutScale,
+              height: 50 * layoutScale,
+            }]} />
           </TouchableOpacity>
         </View>
 
         {/* Search + filter bar */}
-        <View style={styles.searchRow}>
-          <View style={styles.searchBox}>
+        <View style={[styles.searchRow, {
+          top: 17 * layoutScale,
+          left: 112 * layoutScale,
+          right: -20 * layoutScale,
+          gap: 40 * layoutScale,
+        }]}>
+          <View style={[styles.searchBox, {
+            height: 68 * layoutScale,
+            borderRadius: 34 * layoutScale,
+            paddingHorizontal: 32 * layoutScale,
+          }]}>
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { fontSize: 30 * layoutScale }]}
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Escribe el texto que buscas…"
@@ -169,22 +197,34 @@ export default function LibraryScreen() {
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Limpiar búsqueda">
-                <Image source={require('../assets/ui/ic_close.png')} style={styles.clearSearchIcon} />
+                <Image source={require('../assets/ui/ic_close.png')} style={[styles.clearSearchIcon, {
+                  width: 30 * layoutScale,
+                  height: 30 * layoutScale,
+                }]} />
               </TouchableOpacity>
             )}
           </View>
           <TouchableOpacity
-            style={styles.filterButton}
+            style={[styles.filterButton, {
+              width: 190 * layoutScale,
+              height: 68 * layoutScale,
+              borderRadius: 34 * layoutScale,
+              paddingHorizontal: 24 * layoutScale,
+              gap: 12 * layoutScale,
+            }]}
             onPress={() => setFilterModalVisible(true)}
             accessibilityRole="button"
             accessibilityLabel="Filtro"
           >
-            <View style={styles.filterIcon}>
+            <View style={[styles.filterIcon, {
+              width: 30 * layoutScale,
+              height: 24 * layoutScale,
+            }]}>
               <View style={styles.filterLineLong} />
               <View style={styles.filterLineMedium} />
               <View style={styles.filterLineShort} />
             </View>
-            <Text style={styles.filterButtonText}>Filtro</Text>
+            <Text style={[styles.filterButtonText, { fontSize: 29 * layoutScale }]}>Filtro</Text>
             {activeFilterCount > 0 && (
               <View style={styles.filterBadge}>
                 <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
@@ -225,9 +265,14 @@ export default function LibraryScreen() {
             key={`library-grid-${Math.round(windowWidth)}`}
             contentContainerStyle={[
               styles.gridContent,
-              { paddingLeft: gridLeftPadding, paddingRight: gridRightPadding },
+              {
+                paddingTop: 134 * layoutScale,
+                paddingLeft: gridLeftPadding,
+                paddingBottom: 60 * layoutScale,
+                gap: rowGap,
+              },
             ]}
-            columnWrapperStyle={styles.gridRow}
+            columnWrapperStyle={{ gap: columnGap }}
             showsVerticalScrollIndicator={false}
             onScroll={handleScroll}
             scrollEventThrottle={16}
@@ -236,9 +281,19 @@ export default function LibraryScreen() {
 
         {/* Scroll-to-top floating button */}
         {showScrollTop && (
-          <Animated.View style={[styles.scrollTopButton, { opacity: scrollTopAnim }]}>
+          <Animated.View style={[styles.scrollTopButton, {
+            opacity: scrollTopAnim,
+            left: -34 * layoutScale,
+            bottom: 16 * layoutScale,
+            width: 100 * layoutScale,
+            height: 100 * layoutScale,
+            borderRadius: 50 * layoutScale,
+          }]}>
             <TouchableOpacity onPress={scrollToTop} accessibilityLabel="Volver arriba" accessibilityRole="button">
-              <Image source={require('../assets/ui/ic_arrow_up.png')} style={styles.scrollTopIcon} />
+              <Image source={require('../assets/ui/ic_arrow_up.png')} style={[styles.scrollTopIcon, {
+                width: 54 * layoutScale,
+                height: 54 * layoutScale,
+              }]} />
             </TouchableOpacity>
           </Animated.View>
         )}
@@ -266,95 +321,67 @@ const styles = StyleSheet.create({
   },
   sideRail: {
     position: 'absolute',
-    left: 14,
-    top: 18,
-    width: 64,
     alignItems: 'center',
-    gap: 16,
     zIndex: 20,
   },
   settingsButton: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
     backgroundColor: '#0AA36F',
     justifyContent: 'center',
     alignItems: 'center',
   },
   settingsIcon: {
-    width: 31,
-    height: 31,
     tintColor: '#FFFFFF',
     resizeMode: 'contain',
   },
   mailButton: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
     backgroundColor: '#267ECB',
     justifyContent: 'center',
     alignItems: 'center',
   },
   mailIcon: {
-    width: 26,
-    height: 26,
     tintColor: '#FFFFFF',
+    resizeMode: 'contain',
   },
   searchRow: {
+    position: 'absolute',
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 92,
-    paddingTop: 18,
-    paddingRight: 20,
-    paddingBottom: 14,
-    gap: 12,
+    zIndex: 30,
   },
   searchBox: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    height: 54,
-    borderRadius: 27,
     backgroundColor: Colors.tooltipBackground,
-    paddingHorizontal: 16,
     gap: 8,
   },
   searchInput: {
     flex: 1,
     color: Colors.textFieldColor,
-    fontSize: 14,
     fontFamily: 'Montserrat-SemiBold',
     height: '100%',
   },
   clearSearchIcon: {
-    width: 18,
-    height: 18,
     tintColor: Colors.textFieldColor,
     resizeMode: 'contain',
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 54,
-    paddingHorizontal: 24,
-    borderRadius: 27,
     backgroundColor: '#F2F4DD',
-    gap: 6,
+    overflow: 'hidden',
   },
   filterButtonText: {
     color: '#333',
-    fontSize: 14,
     fontFamily: 'Montserrat-SemiBold',
   },
   filterIcon: {
-    width: 20,
-    height: 17,
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  filterLineLong: { width: 20, height: 2, backgroundColor: '#3E3E38' },
-  filterLineMedium: { width: 14, height: 2, backgroundColor: '#3E3E38' },
-  filterLineShort: { width: 7, height: 2, backgroundColor: '#3E3E38' },
+  filterLineLong: { width: '100%', height: 3, backgroundColor: '#3E3E38' },
+  filterLineMedium: { width: '68%', height: 3, backgroundColor: '#3E3E38' },
+  filterLineShort: { width: '36%', height: 3, backgroundColor: '#3E3E38' },
   filterBadge: {
     minWidth: 18,
     height: 18,
@@ -370,11 +397,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   gridContent: {
-    paddingBottom: 24,
-    gap: 12,
-  },
-  gridRow: {
-    gap: 12,
+    flexGrow: 1,
   },
   loadingContainer: {
     flex: 1,
@@ -402,11 +425,6 @@ const styles = StyleSheet.create({
   },
   scrollTopButton: {
     position: 'absolute',
-    bottom: 18,
-    left: -7,
-    width: 66,
-    height: 66,
-    borderRadius: 33,
     backgroundColor: '#34338B',
     justifyContent: 'center',
     alignItems: 'center',
@@ -417,8 +435,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   scrollTopIcon: {
-    width: 34,
-    height: 34,
     tintColor: '#FFFFFF',
     resizeMode: 'contain',
   },

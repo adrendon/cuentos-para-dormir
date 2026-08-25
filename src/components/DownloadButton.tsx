@@ -16,10 +16,11 @@ interface DownloadButtonProps {
   folderName: string;
   sizeMB: number;
   accentColor: string;
+  displayScale?: number;
   onDownloadComplete: () => void;
 }
 
-export function DownloadButton({ folderName, sizeMB, accentColor, onDownloadComplete }: DownloadButtonProps) {
+export function DownloadButton({ folderName, sizeMB, accentColor, displayScale = 1, onDownloadComplete }: DownloadButtonProps) {
   const [progress, setProgress] = useState<DownloadProgress>({
     status: 'idle',
     progress: 0,
@@ -68,21 +69,21 @@ export function DownloadButton({ folderName, sizeMB, accentColor, onDownloadComp
   }
 
   const isActive = isActiveStatus(progress.status);
-  const circleSize = 52;
-  const strokeWidth = 2;
+  const circleSize = 74 * displayScale;
+  const strokeWidth = 4 * displayScale;
   const radius = (circleSize - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
   return (
     <View style={styles.container}>
       <TouchableOpacity
-        style={styles.button}
+        style={[styles.button, { transform: [{ translateY: 45 * displayScale }] }]}
         onPress={handleDownload}
         disabled={isActive}
         accessibilityLabel="Descargar cuento"
         accessibilityRole="button"
       >
-        <View style={styles.circleWrap}>
+        <View style={[styles.circleWrap, { width: circleSize, height: circleSize }]}>
           <Svg width={circleSize} height={circleSize} style={styles.svgCircle}>
             {/* Background circle track */}
             <Circle
@@ -109,9 +110,16 @@ export function DownloadButton({ folderName, sizeMB, accentColor, onDownloadComp
               />
             )}
           </Svg>
-          <Text style={styles.downloadIcon}>↓</Text>
+          <Text style={[styles.downloadIcon, {
+            fontSize: 48 * displayScale,
+            lineHeight: 54 * displayScale,
+          }]}>↓</Text>
         </View>
-        <Text style={styles.buttonText}>
+        <Text style={[styles.buttonText, {
+          fontSize: 32 * displayScale,
+          lineHeight: 38 * displayScale,
+          marginTop: 4 * displayScale,
+        }]}>
           {isActive ? `${Math.round(progress.progress * 100)}%` : `${sizeMB} MB`}
         </Text>
       </TouchableOpacity>
@@ -137,8 +145,6 @@ const styles = StyleSheet.create({
     minHeight: 80,
   },
   circleWrap: {
-    width: 52,
-    height: 52,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -146,17 +152,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   downloadIcon: {
-    fontSize: 24,
     color: Colors.textWhite,
     fontWeight: 'bold',
-    lineHeight: 28,
   },
   buttonText: {
     color: Colors.textWhite,
-    fontSize: 16,
     fontFamily: 'Montserrat-ExtraBold',
     fontWeight: '800',
-    marginTop: 6,
   },
   errorText: {
     color: Colors.error,

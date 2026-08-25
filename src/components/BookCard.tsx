@@ -35,6 +35,7 @@ export function BookCard({
 }: BookCardProps) {
   const isAvailable = book.isDownloaded;
   const isIncluded = book.isEmbedded;
+  const displayScale = cardWidth / 361;
   const [showMenu, setShowMenu] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
@@ -86,7 +87,7 @@ export function BookCard({
       <TouchableOpacity
         style={[
           styles.container,
-          { width: cardWidth, height: cardWidth * 1.12, backgroundColor: book.coverColor },
+          { width: cardWidth, height: cardWidth * (402 / 361), backgroundColor: book.coverColor },
         ]}
         onPress={handlePress}
         activeOpacity={isAvailable || isIncluded ? 0.85 : 1}
@@ -117,9 +118,15 @@ export function BookCard({
         {/* Title bar with gradient at bottom */}
         <LinearGradient
           colors={['transparent', 'rgba(0,0,0,0.75)']}
-          style={styles.titleGradient}
+          style={[styles.titleGradient, {
+            paddingVertical: 18 * displayScale,
+            paddingHorizontal: 16 * displayScale,
+          }]}
         >
-          <Text style={styles.title} numberOfLines={2}>
+          <Text style={[styles.title, {
+            fontSize: 30 * displayScale,
+            lineHeight: 36 * displayScale,
+          }]} numberOfLines={2}>
             {book.title}
           </Text>
         </LinearGradient>
@@ -131,22 +138,36 @@ export function BookCard({
               folderName={book.folderName}
               sizeMB={book.sizeMB}
               accentColor={book.coverColor}
+              displayScale={displayScale}
               onDownloadComplete={() => onDownloadComplete(book.id)}
             />
           </View>
         )}
 
         {/* White ribbon/bookmark at top-right */}
-        <Image source={require('../assets/ui/ic_page_mark.png')} style={styles.ribbon} />
+        <Image source={require('../assets/ui/ic_page_mark.png')} style={[styles.ribbon, {
+          top: -2 * displayScale,
+          right: 32 * displayScale,
+          width: 46 * displayScale,
+          height: 63 * displayScale,
+        }]} />
 
         {/* Three dots menu - white, no background */}
         <TouchableOpacity
-          style={styles.menuButton}
+          style={[styles.menuButton, {
+            top: 5 * displayScale,
+            right: 43 * displayScale,
+            width: 24 * displayScale,
+            height: 42 * displayScale,
+          }]}
           onPress={() => setShowMenu(true)}
           accessibilityRole="button"
           accessibilityLabel="Más opciones"
         >
-          <Text style={styles.menuButtonText}>⋮</Text>
+          <Text style={[styles.menuButtonText, {
+            fontSize: 31 * displayScale,
+            lineHeight: 34 * displayScale,
+          }]}>⋮</Text>
         </TouchableOpacity>
 
         {/* Read indicator */}
@@ -178,7 +199,6 @@ export function BookCard({
 const styles = StyleSheet.create({
   container: {
     borderRadius: 12,
-    marginBottom: 12,
     overflow: 'hidden',
     elevation: 4,
     shadowColor: '#000',
@@ -210,13 +230,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
     justifyContent: 'flex-end',
   },
   title: {
     color: Colors.textWhite,
-    fontSize: 13,
     fontFamily: 'Montserrat-SemiBold',
     fontWeight: '700',
     textAlign: 'center',
@@ -230,26 +247,16 @@ const styles = StyleSheet.create({
   },
   ribbon: {
     position: 'absolute',
-    top: -2,
-    right: 8,
-    width: 18,
-    height: 28,
     tintColor: '#FFFFFF',
   },
   menuButton: {
     position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 24,
-    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
   menuButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
+    color: '#34343A',
     fontWeight: 'bold',
-    lineHeight: 20,
   },
   readBadge: {
     position: 'absolute',

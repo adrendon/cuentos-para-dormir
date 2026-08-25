@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable } from 'react-native';
-import { LibraryFilters } from '../types/book';
-import { Colors, Gradients } from '../theme/colors';
+import React, { useEffect, useState } from 'react';
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { DEFAULT_LIBRARY_FILTERS, LibraryFilters } from '../types/book';
+import { Colors, Gradients } from '../theme/colors';
 
 interface FilterModalProps {
   visible: boolean;
@@ -13,7 +13,6 @@ interface FilterModalProps {
 }
 
 type ChipCategory = 'purple' | 'cyan' | 'orange';
-
 const CHIPS: { key: keyof LibraryFilters; label: string; category: ChipCategory }[] = [
   { key: 'unread', label: 'No leídos aún', category: 'purple' },
   { key: 'favorites', label: 'Predilectos', category: 'purple' },
@@ -22,87 +21,108 @@ const CHIPS: { key: keyof LibraryFilters; label: string; category: ChipCategory 
   { key: 'short', label: 'Cuentos cortos', category: 'orange' },
   { key: 'long', label: 'Cuentos largos', category: 'orange' },
 ];
-
-const CHIP_BORDER_COLORS: Record<ChipCategory, string> = {
+const CHIP_COLORS: Record<ChipCategory, string> = {
   purple: Colors.chipPurple,
   cyan: Colors.chipBlue,
   orange: Colors.chipOrange,
 };
 
 export function FilterModal({ visible, filters, onChange, onClear, onClose }: FilterModalProps) {
-  const toggleChip = (key: keyof LibraryFilters) => {
-    onChange({ ...filters, [key]: !filters[key] });
-  };
+  const { width, height } = useWindowDimensions();
+  const scale = Math.min(width / 1280, height / 768);
+  const [draftFilters, setDraftFilters] = useState(filters);
 
-  const hasActiveFilter = Object.values(filters).some(Boolean);
+  useEffect(() => {
+    if (visible) setDraftFilters(filters);
+  }, [visible, filters]);
+
+  const hasActiveFilter = Object.values(draftFilters).some(Boolean);
+  const handleReset = () => {
+    setDraftFilters(DEFAULT_LIBRARY_FILTERS);
+    onClear();
+  };
+  const handleApply = () => {
+    onChange(draftFilters);
+    onClose();
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-          <View style={styles.header}>
-            <TouchableOpacity
-              onPress={onClear}
-              accessibilityRole="button"
-              accessibilityLabel="Restablecer filtros"
-            >
-              <Text style={styles.resetText}>Restablecer</Text>
+        <Pressable
+          style={[styles.sheet, {
+            top: 17 * scale,
+            bottom: 16 * scale,
+            left: 112 * scale,
+            right: -20 * scale,
+            borderRadius: 24 * scale,
+            paddingTop: 16 * scale,
+            paddingHorizontal: 42 * scale,
+          }]}
+          onPress={(event) => event.stopPropagation()}
+        >
+          <View style={[styles.header, { minHeight: 62 * scale, marginBottom: 23 * scale }]}>
+            <TouchableOpacity onPress={handleReset} accessibilityRole="button" accessibilityLabel="Restablecer filtros">
+              <Text style={[styles.resetText, { fontSize: 30 * scale }]}>Restablecer</Text>
             </TouchableOpacity>
-            <Text style={styles.title}>Filtro</Text>
+            <View style={[styles.titleGroup, { gap: 16 * scale }]}>
+              <FilterIcon scale={scale} />
+              <Text style={[styles.title, { fontSize: 30 * scale }]}>Filtro</Text>
+            </View>
           </View>
 
-          <View style={styles.chipsWrap}>
-            {CHIPS.map(({ key, label, category }) => {
-              const isSelected = filters[key];
-              const borderColor = CHIP_BORDER_COLORS[category];
-              return (
-                <TouchableOpacity
-                  key={key}
-                  style={[
-                    styles.chip,
-                    { borderColor },
-                    isSelected && { backgroundColor: borderColor },
-                  ]}
-                  onPress={() => toggleChip(key)}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: isSelected }}
-                >
-                  <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+          <View style={[styles.chips, { rowGap: 31 * scale }]}>
+            {[0, 2, 4].map((rowStart) => (
+              <View key={rowStart} style={[styles.chipRow, { gap: 18 * scale }]}>
+                {CHIPS.slice(rowStart, rowStart + 2).map(({ key, label, category }) => {
+                  const selected = draftFilters[key];
+                  const color = CHIP_COLORS[category];
+                  return (
+                    <TouchableOpacity
+                      key={key}
+                      style={[styles.chip, {
+                        borderColor: color,
+                        backgroundColor: selected ? color : 'transparent',
+                        minHeight: 66 * scale,
+                        borderRadius: 33 * scale,
+                        paddingHorizontal: 30 * scale,
+                        paddingVertical: 10 * scale,
+                      }]}
+                      onPress={() => setDraftFilters((current) => ({ ...current, [key]: !current[key] }))}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: selected }}
+                    >
+                      <Text style={[styles.chipText, {
+                        color,
+                        fontSize: 29 * scale,
+                        lineHeight: 37 * scale,
+                      }, selected && styles.chipTextSelected]}>
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ))}
           </View>
 
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.clearButton}
-              onPress={onClear}
-              accessibilityRole="button"
-              accessibilityLabel="Anular"
-            >
-              <Text style={styles.clearButtonText}>Anular</Text>
+          <View style={[styles.footer, { height: 138 * scale, gap: 22 * scale }]}>
+            <TouchableOpacity style={[styles.cancelButton, buttonSize(scale)]} onPress={onClose} accessibilityRole="button">
+              <Text style={[styles.buttonText, { fontSize: 30 * scale }]}>Anular</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.applyButtonWrapper}
-              onPress={onClose}
+              style={[styles.applyWrapper, buttonSize(scale)]}
+              onPress={handleApply}
               accessibilityRole="button"
-              accessibilityLabel="Aplicar"
               disabled={!hasActiveFilter}
             >
               {hasActiveFilter ? (
-                <LinearGradient
-                  colors={[...Gradients.blue]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.applyButton}
-                >
-                  <Text style={styles.applyButtonText}>Aplicar</Text>
+                <LinearGradient colors={[...Gradients.blue]} style={[styles.applyButton, buttonSize(scale)]}>
+                  <Text style={[styles.buttonText, { fontSize: 30 * scale }]}>Aplicar</Text>
                 </LinearGradient>
               ) : (
-                <View style={styles.applyButtonDisabled}>
-                  <Text style={styles.applyButtonTextDisabled}>Aplicar</Text>
+                <View style={[styles.applyDisabled, buttonSize(scale)]}>
+                  <Text style={[styles.disabledText, { fontSize: 30 * scale }]}>Aplicar</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -113,100 +133,45 @@ export function FilterModal({ visible, filters, onChange, onClear, onClose }: Fi
   );
 }
 
+function FilterIcon({ scale }: { scale: number }) {
+  return (
+    <View style={[styles.filterIcon, { width: 30 * scale, height: 24 * scale }]}>
+      <View style={styles.filterLineLong} />
+      <View style={styles.filterLineMedium} />
+      <View style={styles.filterLineShort} />
+    </View>
+  );
+}
+
+function buttonSize(scale: number) {
+  return { width: 230 * scale, height: 78 * scale, borderRadius: 39 * scale };
+}
+
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  sheet: {
-    width: '100%',
-    maxWidth: 520,
-    backgroundColor: Colors.tooltipBackground,
-    borderRadius: 24,
-    padding: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  resetText: {
-    color: Colors.chipBlue,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  title: {
-    color: Colors.backgroundDark,
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  chipsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 20,
-  },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 18,
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-  },
-  chipText: {
-    color: Colors.backgroundDark,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  chipTextSelected: {
-    color: Colors.textWhite,
-  },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.55)' },
+  sheet: { position: 'absolute', backgroundColor: Colors.tooltipBackground, overflow: 'hidden' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  resetText: { color: '#96988E', fontFamily: 'Montserrat-SemiBold', fontWeight: '600' },
+  titleGroup: { flexDirection: 'row', alignItems: 'center' },
+  title: { color: '#3E3E38', fontFamily: 'Montserrat-SemiBold', fontWeight: '600' },
+  filterIcon: { justifyContent: 'space-between', alignItems: 'center' },
+  filterLineLong: { width: '100%', height: 3, backgroundColor: '#3E3E38' },
+  filterLineMedium: { width: '68%', height: 3, backgroundColor: '#3E3E38' },
+  filterLineShort: { width: '36%', height: 3, backgroundColor: '#3E3E38' },
+  chips: { alignItems: 'flex-start' },
+  chipRow: { flexDirection: 'row' },
+  chip: { borderWidth: 2, justifyContent: 'center' },
+  chipText: { fontFamily: 'Montserrat-SemiBold', fontWeight: '600' },
+  chipTextSelected: { color: Colors.textWhite },
   footer: {
-    flexDirection: 'row',
-    gap: 12,
+    position: 'absolute', left: 0, right: 0, bottom: 0,
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(96,99,113,0.20)',
   },
-  clearButton: {
-    flex: 1,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#2E80ED',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  clearButtonText: {
-    color: Colors.textWhite,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  applyButtonWrapper: {
-    flex: 1,
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-  applyButton: {
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  applyButtonDisabled: {
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#B0B0B0',
-    borderRadius: 24,
-  },
-  applyButtonText: {
-    color: Colors.textWhite,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  applyButtonTextDisabled: {
-    color: '#E0E0E0',
-    fontSize: 15,
-    fontWeight: '700',
-  },
+  cancelButton: { backgroundColor: '#1AADEB', justifyContent: 'center', alignItems: 'center' },
+  applyWrapper: { overflow: 'hidden' },
+  applyButton: { justifyContent: 'center', alignItems: 'center' },
+  applyDisabled: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#D7D8CA' },
+  buttonText: { color: Colors.textWhite, fontFamily: 'Montserrat-ExtraBold', fontWeight: '800' },
+  disabledText: { color: '#ECEDE3', fontFamily: 'Montserrat-ExtraBold', fontWeight: '800' },
 });
