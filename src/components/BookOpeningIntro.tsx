@@ -51,8 +51,6 @@ export function BookOpeningIntro({
   skipEntranceScale = false,
 }: BookOpeningIntroProps) {
   const { width, height } = useWindowDimensions();
-  // Match the Android reference by scaling from landscape height. Wide phones should
-  // show more artwork rather than making the controls disproportionately large.
   const uiScale = clamp(height / 407, 0.78, 1.08);
   const pageHeight = Math.min(height * 0.78, 286 * uiScale);
   const pageWidth = Math.min(width * 0.31, pageHeight * 0.9);
@@ -113,7 +111,7 @@ export function BookOpeningIntro({
             <Image source={require('../assets/ui/ic_home.png')} style={{ width: 34 * uiScale, height: 34 * uiScale }} resizeMode="contain" />
           </TouchableOpacity>
           <TouchableOpacity style={[styles.roundButton, { width: roundButtonSize, height: roundButtonSize, borderRadius: roundButtonSize / 2 }]} onPress={onToggleMusic} accessibilityLabel="Música">
-            <Image source={musicEnabled ? require('../assets/onboarding/ic_music_on.png') : require('../assets/onboarding/ic_music_off.png')} style={{ width: 28 * uiScale, height: 28 * uiScale }} resizeMode="contain" />
+            <Image source={musicEnabled ? require('../assets/onboarding/ic_music_on.png') : require('../assets/onboarding/ic_music_off.png')} style={{ width: 28 * uiScale, height: 28 * uiScale, tintColor: '#168FD1' }} resizeMode="contain" />
           </TouchableOpacity>
         </Animated.View>
         <Animated.View style={[styles.modeMenu, { left: menuLeft, gap: 14 * uiScale }, menuStyle]}>
