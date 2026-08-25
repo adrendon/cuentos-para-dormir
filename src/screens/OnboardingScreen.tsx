@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Gender, OnboardingGoal, StoryPreference } from '../types/book';
 import { useProfile } from '../hooks/useProfile';
+import { OnboardingStarField } from '../components/OnboardingStarField';
 
 type OnboardingStep =
   | 'language'
@@ -549,13 +550,7 @@ export default function OnboardingScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.backgroundBase} pointerEvents="none" />
-      <Image
-        source={require('../assets/onboarding/stars.webp')}
-        style={styles.starBackground}
-        resizeMode="cover"
-        fadeDuration={0}
-        pointerEvents="none"
-      />
+      <OnboardingStarField />
 
       {step !== 'loading' && (
         <Header
