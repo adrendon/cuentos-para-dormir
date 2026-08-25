@@ -1,32 +1,23 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View,
+  Animated,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Animated,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
   useWindowDimensions,
+  View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
-import ReanimatedAnimated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-  runOnJS,
-} from 'react-native-reanimated';
-import { Colors, Gradients } from '../theme/colors';
 import { Gender, OnboardingGoal, StoryPreference } from '../types/book';
 import { useProfile } from '../hooks/useProfile';
-import { GenderSelector } from '../components/GenderSelector';
-import { OnboardingHeader } from '../components/OnboardingHeader';
+import { OnboardingStarField } from '../components/OnboardingStarField';
 
 type OnboardingStep =
   | 'language'
@@ -51,14 +42,15 @@ const STEP_ORDER: OnboardingStep[] = [
   'preferences',
   'notifications',
 ];
+
 const TOTAL_STEPS = STEP_ORDER.length;
 
 const GOALS: { key: OnboardingGoal; label: (name: string) => string }[] = [
-  { key: 'fallAsleepFaster', label: (n) => `Ayudar a que ${n} se duerma más rápido` },
   { key: 'familyBonding', label: () => 'Generar experiencias familiares' },
   { key: 'goodValues', label: () => 'Inculcar valores' },
-  { key: 'stayEngaged', label: (n) => `Que ${n} aprenda otros idiomas` },
-  { key: 'learnNewWords', label: (n) => `Que ${n} amplíe su vocabulario` },
+  { key: 'stayEngaged', label: (name) => `Que ${name} aprenda otros idiomas` },
+  { key: 'fallAsleepFaster', label: (name) => `Ayudar a que ${name} se duerma más rápido` },
+  { key: 'learnNewWords', label: (name) => `Que ${name} amplíe su vocabulario` },
 ];
 
 const PREFERENCES: {
@@ -87,8 +79,20 @@ const PREFERENCES: {
   },
 ];
 
+const BG = '#292F86';
+const WHITE = '#FFFFFF';
+const MUTED = '#ADB1D5';
+const YELLOW = '#FFC21C';
+const CYAN = '#23BEE9';
+const SELECTED = '#157AAE';
+const ROW = '#343A91';
+const INPUT = '#F1F1DF';
+
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
+  const scale = Math.max(0.82, Math.min(1.24, Math.min(width / 360, height / 800)));
+
   const {
     profile,
     updateName,
@@ -107,41 +111,47 @@ export default function OnboardingScreen() {
   const [goals, setGoals] = useState<OnboardingGoal[]>([]);
   const [preferences, setPreferences] = useState<StoryPreference[]>([]);
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  const bodyOpacity = useRef(new Animated.Value(1)).current;
+  const bodyTranslateX = useRef(new Animated.Value(0)).current;
+  const bodyTranslateY = useRef(new Animated.Value(0)).current;
+  const buttonsOpacity = useRef(new Animated.Value(1)).current;
+  const buttonsTranslateY = useRef(new Animated.Value(0)).current;
   const progressBarWidth = useRef(new Animated.Value(0)).current;
-
-  // Reanimated slide + alpha transition
-  const { width: screenWidth } = useWindowDimensions();
-  const slideTranslateX = useSharedValue(0);
-  const slideOpacity = useSharedValue(1);
-  const [directionRef] = useState({ current: 1 }); // 1 = forward, -1 = back
-
-  const slideAnimStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: slideTranslateX.value }],
-    opacity: slideOpacity.value,
-  }));
+  const transitionLock = useRef(false);
 
   const step = STEP_ORDER[stepIndex] ?? 'loading';
+  const displayName = name.trim() || 'tu hijo';
 
   useEffect(() => {
-    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+    void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
   }, []);
 
-  // No per-step fade needed—reanimated handles it in goToStep.
+  // Always force the first screen visible. This avoids a stale animated value
+  // leaving only the background visible after returning from the splash.
+  useEffect(() => {
+    bodyOpacity.setValue(1);
+    bodyTranslateX.setValue(0);
+    bodyTranslateY.setValue(0);
+    buttonsOpacity.setValue(1);
+    buttonsTranslateY.setValue(0);
+  }, [bodyOpacity, bodyTranslateX, bodyTranslateY, buttonsOpacity, buttonsTranslateY]);
 
-  // Drive the "preparing stories" loading screen, then enter the library.
   useEffect(() => {
     if (step !== 'loading') return;
+
+    progressBarWidth.setValue(0);
+    setLoadingProgress(0);
+
+    const listenerId = progressBarWidth.addListener(({ value }) => {
+      setLoadingProgress(Math.round(value * 100));
+    });
 
     Animated.timing(progressBarWidth, {
       toValue: 1,
       duration: 5000,
       useNativeDriver: false,
     }).start();
-
-    const listenerId = progressBarWidth.addListener(({ value }) => {
-      setLoadingProgress(Math.round(value * 100));
-    });
 
     const finish = setTimeout(async () => {
       await updateGoals(goals);
@@ -155,32 +165,77 @@ export default function OnboardingScreen() {
       progressBarWidth.removeListener(listenerId);
       clearTimeout(finish);
     };
-  }, [step]);
+  }, [completeOnboarding, goals, preferences, progressBarWidth, router, step, updateGoals, updatePreferences]);
 
-  const goToStep = useCallback(
-    (nextIndex: number) => {
-      const direction = nextIndex > stepIndex ? 1 : -1;
-      directionRef.current = direction;
-      // Animate current content out (slide out + fade)
-      slideTranslateX.value = withTiming(-direction * screenWidth * 0.3, {
-        duration: 200,
-        easing: Easing.out(Easing.cubic),
+  const animateStepIn = useCallback((direction: number) => {
+    bodyTranslateX.setValue(direction * width * 0.10);
+    bodyTranslateY.setValue(10 * scale);
+    bodyOpacity.setValue(0);
+    buttonsTranslateY.setValue(16 * scale);
+    buttonsOpacity.setValue(0);
+
+    Animated.parallel([
+      Animated.timing(bodyTranslateX, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bodyTranslateY, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bodyOpacity, {
+        toValue: 1,
+        duration: 230,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(buttonsTranslateY, {
+          toValue: 0,
+          duration: 260,
+          useNativeDriver: true,
+        }),
+        Animated.timing(buttonsOpacity, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        transitionLock.current = false;
       });
-      slideOpacity.value = withTiming(0, { duration: 200 }, (finished) => {
-        if (finished) {
-          // Jump to the opposite side instantly, then animate in
-          slideTranslateX.value = direction * screenWidth * 0.3;
-          runOnJS(setStepIndex)(nextIndex);
-          slideTranslateX.value = withTiming(0, {
-            duration: 250,
-            easing: Easing.out(Easing.cubic),
-          });
-          slideOpacity.value = withTiming(1, { duration: 250 });
-        }
-      });
-    },
-    [stepIndex, screenWidth, slideTranslateX, slideOpacity, directionRef]
-  );
+    }, 90);
+  }, [bodyOpacity, bodyTranslateX, bodyTranslateY, buttonsOpacity, buttonsTranslateY, scale, width]);
+
+  const goToStep = useCallback((nextIndex: number) => {
+    if (transitionLock.current || nextIndex < 0 || nextIndex > STEP_ORDER.length) return;
+    transitionLock.current = true;
+    const direction = nextIndex > stepIndex ? 1 : -1;
+
+    Animated.parallel([
+      Animated.timing(bodyTranslateX, {
+        toValue: -direction * width * 0.08,
+        duration: 160,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bodyOpacity, {
+        toValue: 0,
+        duration: 145,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonsOpacity, {
+        toValue: 0,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setStepIndex(nextIndex);
+      requestAnimationFrame(() => animateStepIn(direction));
+    });
+  }, [animateStepIn, bodyOpacity, bodyTranslateX, buttonsOpacity, stepIndex, width]);
 
   const handleBack = useCallback(() => {
     if (stepIndex === 0) {
@@ -188,40 +243,32 @@ export default function OnboardingScreen() {
       return;
     }
     goToStep(stepIndex - 1);
-  }, [stepIndex, goToStep, router]);
+  }, [goToStep, router, stepIndex]);
 
   const handleNext = useCallback(async () => {
     if (step === 'name') {
-      if (name.trim().length === 0) return;
+      if (!name.trim()) return;
       await updateName(name.trim());
     } else if (step === 'gender') {
       await updateGender(gender);
       await updateAvatar(gender === 'boy' ? 'bear' : 'fox');
     }
 
-    if (stepIndex + 1 < STEP_ORDER.length) {
-      goToStep(stepIndex + 1);
-    } else {
-      // Last onboarding step done -> show preparing-stories loading screen.
-      setStepIndex(STEP_ORDER.length);
-    }
-  }, [step, name, gender, stepIndex, goToStep, updateName, updateGender, updateAvatar]);
+    if (stepIndex + 1 < STEP_ORDER.length) goToStep(stepIndex + 1);
+    else setStepIndex(STEP_ORDER.length);
+  }, [gender, goToStep, name, step, stepIndex, updateAvatar, updateGender, updateName]);
 
   const handleSkip = useCallback(() => {
-    if (stepIndex + 1 < STEP_ORDER.length) {
-      goToStep(stepIndex + 1);
-    } else {
-      setStepIndex(STEP_ORDER.length);
-    }
-  }, [stepIndex, goToStep]);
+    if (stepIndex + 1 < STEP_ORDER.length) goToStep(stepIndex + 1);
+    else setStepIndex(STEP_ORDER.length);
+  }, [goToStep, stepIndex]);
 
   const handleEnableNotifications = useCallback(async () => {
-    // Request actual Android notification permission
     try {
       const { requestPermissionsAsync } = await import('expo-notifications');
       await requestPermissionsAsync();
-    } catch (e) {
-      console.warn('Could not request notification permission:', e);
+    } catch (error) {
+      console.warn('Could not request notification permission:', error);
     }
     await updateNotificationsEnabled(true);
     setStepIndex(STEP_ORDER.length);
@@ -233,233 +280,283 @@ export default function OnboardingScreen() {
   }, [updateNotificationsEnabled]);
 
   const toggleGoal = (goal: OnboardingGoal) => {
-    setGoals((prev) =>
-      prev.includes(goal) ? prev.filter((g) => g !== goal) : [...prev, goal]
-    );
+    setGoals((current) => current.includes(goal)
+      ? current.filter((item) => item !== goal)
+      : [...current, goal]);
   };
 
-  const togglePreference = (pref: StoryPreference) => {
-    setPreferences((prev) =>
-      prev.includes(pref) ? prev.filter((p) => p !== pref) : [...prev, pref]
-    );
+  const togglePreference = (preference: StoryPreference) => {
+    setPreferences((current) => current.includes(preference)
+      ? current.filter((item) => item !== preference)
+      : [...current, preference]);
   };
-
-  const displayName = name.trim() || 'tu hijo';
 
   const renderStep = () => {
     switch (step) {
       case 'language':
         return (
-          <View style={styles.stepContainer}>
+          <StepShell scale={scale}>
             <Image
               source={require('../assets/onboarding/ic_globe.webp')}
-              style={styles.mediumIllustration}
+              style={{ width: 106 * scale, height: 106 * scale, marginBottom: 4 * scale }}
               resizeMode="contain"
+              fadeDuration={0}
             />
-            <Text style={styles.stepTitle}>Elige un idioma</Text>
-            <Text style={styles.stepSubtitle}>
-              Puedes cambiarlo en la configuración cuando quieras.
-            </Text>
-            <View style={styles.languageCapsule}>
-              <Text style={styles.languageCapsuleText}>Español</Text>
+            <Title scale={scale}>Elige un idioma</Title>
+            <Subtitle scale={scale}>Puedes cambiarlo en la configuración cuando quieras.</Subtitle>
+            <View style={[styles.languageCapsule, {
+              height: 44 * scale,
+              borderRadius: 22 * scale,
+              paddingHorizontal: 30 * scale,
+            }]}>
+              <Text style={[styles.languageCapsuleText, { fontSize: 16 * scale }]}>Español</Text>
             </View>
-          </View>
+          </StepShell>
         );
 
       case 'noAi':
         return (
-          <View style={styles.stepContainer}>
+          <StepShell scale={scale}>
             <Image
               source={require('../assets/onboarding/no_ai.webp')}
-              style={styles.largeIllustration}
+              style={{ width: 238 * scale, height: 238 * scale, marginBottom: 8 * scale }}
               resizeMode="contain"
+              fadeDuration={0}
             />
-            <Text style={styles.stepTitle}>Sin inteligencia artificial</Text>
-            <Text style={styles.stepSubtitle}>
-              Los cuentos, las ilustraciones y la música son creados por artistas.
-            </Text>
-          </View>
+            <Title scale={scale}>Sin inteligencia artificial.</Title>
+            <Subtitle scale={scale}>Los cuentos, las ilustraciones y la música son creados por artistas.</Subtitle>
+          </StepShell>
         );
 
       case 'protagonist':
         return (
-          <View style={styles.stepContainer}>
+          <StepShell scale={scale}>
             <Image
               source={require('../assets/onboarding/protagonist.webp')}
-              style={styles.largeIllustration}
+              style={{ width: 238 * scale, height: 238 * scale, marginBottom: 8 * scale }}
               resizeMode="contain"
+              fadeDuration={0}
             />
-            <Text style={styles.stepTitle}>Tus hijos son los protagonistas</Text>
-            <Text style={styles.stepSubtitle}>
-              Lee cuentos sobre tu hijo o sobre tu hija.
-            </Text>
-          </View>
+            <Title scale={scale}>Tus hijos son los protagonistas</Title>
+            <Subtitle scale={scale}>Lee cuentos sobre tu hijo o sobre tu hija.</Subtitle>
+          </StepShell>
         );
 
       case 'name':
         return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Nombre del niño</Text>
-            <Text style={styles.stepSubtitle}>Su nombre será parte del cuento.</Text>
+          <StepShell scale={scale} topBias>
+            <Title scale={scale}>Nombre del niño</Title>
+            <Subtitle scale={scale}>Su nombre será parte del cuento.</Subtitle>
             <TextInput
-              style={styles.input}
+              style={[styles.input, {
+                width: Math.min(width * 0.76, 280 * scale),
+                height: 43 * scale,
+                borderRadius: 22 * scale,
+                fontSize: 16 * scale,
+                marginTop: 12 * scale,
+              }]}
               value={name}
               onChangeText={setName}
               placeholder="Nombre"
-              placeholderTextColor={Colors.subtitleGray}
+              placeholderTextColor="#9699A8"
               autoFocus
               maxLength={20}
               returnKeyType="next"
               onSubmitEditing={handleNext}
             />
-          </View>
+          </StepShell>
         );
 
       case 'gender':
         return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Género</Text>
-            <Text style={styles.stepSubtitle}>
-              El protagonista del cuento tendrá el mismo género que tu hijo
-            </Text>
-            <GenderSelector selected={gender} onSelect={setGender} />
-          </View>
+          <StepShell scale={scale} topBias>
+            <Title scale={scale}>Género</Title>
+            <Subtitle scale={scale}>El protagonista del cuento tendrá el mismo género que tu hijo</Subtitle>
+            <View style={[styles.genderRow, { marginTop: 22 * scale, gap: 52 * scale }]}>
+              <GenderChoice gender="boy" selected={gender === 'boy'} scale={scale} onPress={() => setGender('boy')} />
+              <GenderChoice gender="girl" selected={gender === 'girl'} scale={scale} onPress={() => setGender('girl')} />
+            </View>
+          </StepShell>
         );
 
       case 'preview':
         return (
-          <View style={styles.stepContainer}>
+          <StepShell scale={scale}>
             <Image
               source={require('../assets/onboarding/preview_cat.webp')}
-              style={styles.largeIllustration}
+              style={[styles.previewImage, {
+                width: Math.min(width * 0.82, 292 * scale),
+                height: Math.min(width * 0.82, 292 * scale),
+                borderRadius: 22 * scale,
+              }]}
               resizeMode="contain"
+              fadeDuration={0}
             />
-            <Text style={styles.stepTitle}>
-              ¡A <Text style={styles.highlightYellow}>{displayName}</Text> le va a encantar!
+            <Text style={[styles.previewTitle, {
+              fontSize: 26 * scale,
+              lineHeight: 28 * scale,
+              marginTop: 12 * scale,
+            }]}>
+              ¡A <Text style={styles.yellow}>{displayName}</Text> le va a encantar!
             </Text>
-            <Text style={styles.stepSubtitle}>
-              Va a ser una experiencia inolvidable para tus hijos.
-            </Text>
-          </View>
+            <Subtitle scale={scale}>Va a ser una experiencia inolvidable para tus hijos.</Subtitle>
+          </StepShell>
         );
 
       case 'goals':
         return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>¿Qué es lo que buscas?</Text>
-            <Text style={styles.stepSubtitle}>Puedes elegir varias respuestas.</Text>
-            <View style={styles.optionsList}>
+          <StepShell scale={scale} topBias>
+            <Title scale={scale}>¿Qué es lo que buscas?</Title>
+            <Subtitle scale={scale}>Puedes elegir varias respuestas.</Subtitle>
+            <View style={[styles.optionsList, {
+              width: Math.min(width * 0.88, 316 * scale),
+              gap: 7 * scale,
+            }]}>
               {GOALS.map((goal) => {
-                const isSelected = goals.includes(goal.key);
+                const selected = goals.includes(goal.key);
                 return (
                   <TouchableOpacity
                     key={goal.key}
-                    style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+                    style={[styles.optionRow, selected && styles.optionRowSelected, {
+                      minHeight: 42 * scale,
+                      borderRadius: 14 * scale,
+                      paddingHorizontal: 12 * scale,
+                      paddingVertical: 7 * scale,
+                    }]}
                     onPress={() => toggleGoal(goal.key)}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: isSelected }}
                   >
-                    <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
-                      {isSelected && <View style={styles.checkDot} />}
+                    <View style={[styles.checkCircle, selected && styles.checkCircleSelected, {
+                      width: 17 * scale,
+                      height: 17 * scale,
+                      borderRadius: 9 * scale,
+                    }]}>
+                      {selected && <Text style={[styles.checkMark, { fontSize: 12 * scale }]}>✓</Text>}
                     </View>
-                    <Text style={styles.optionText}>{goal.label(displayName)}</Text>
+                    <Text style={[styles.optionText, { fontSize: 12.5 * scale, lineHeight: 16 * scale }]}>
+                      {goal.label(displayName)}
+                    </Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
-          </View>
+          </StepShell>
         );
 
       case 'preferences':
         return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>¿Qué prefieres?</Text>
-            <Text style={styles.stepSubtitle}>Puedes elegir varias respuestas.</Text>
-            <View style={styles.preferenceCardsRow}>
-              {PREFERENCES.map((pref) => {
-                const isSelected = preferences.includes(pref.key);
+          <StepShell scale={scale} topBias>
+            <Title scale={scale}>¿Qué prefieres?</Title>
+            <Subtitle scale={scale}>Puedes elegir varias respuestas.</Subtitle>
+            <View style={[styles.preferenceList, {
+              width: Math.min(width * 0.88, 316 * scale),
+              gap: 10 * scale,
+            }]}>
+              {PREFERENCES.map((preference) => {
+                const selected = preferences.includes(preference.key);
                 return (
                   <TouchableOpacity
-                    key={pref.key}
-                    style={[styles.preferenceCard, isSelected && styles.preferenceCardSelected]}
-                    onPress={() => togglePreference(pref.key)}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: isSelected }}
+                    key={preference.key}
+                    style={[styles.preferenceCard, selected && styles.preferenceCardSelected, {
+                      height: 73 * scale,
+                      borderRadius: 18 * scale,
+                      paddingHorizontal: 12 * scale,
+                    }]}
+                    onPress={() => togglePreference(preference.key)}
                   >
+                    <View style={[styles.checkCircle, selected && styles.checkCircleSelected, {
+                      width: 17 * scale,
+                      height: 17 * scale,
+                      borderRadius: 9 * scale,
+                    }]}>
+                      {selected && <Text style={[styles.checkMark, { fontSize: 12 * scale }]}>✓</Text>}
+                    </View>
+                    <Text style={[styles.preferenceLabel, { fontSize: 13 * scale }]}>{preference.label}</Text>
                     <Image
-                      source={isSelected ? pref.imageSelected : pref.image}
-                      style={styles.preferenceImage}
+                      source={selected ? preference.imageSelected : preference.image}
+                      style={{ width: 72 * scale, height: 62 * scale, marginLeft: 'auto' }}
                       resizeMode="contain"
+                      fadeDuration={0}
                     />
-                    <Text style={styles.preferenceLabel}>{pref.label}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
-          </View>
+          </StepShell>
         );
 
       case 'notifications':
         return (
-          <View style={styles.stepContainer}>
+          <StepShell scale={scale}>
             <Image
               source={require('../assets/onboarding/notification.webp')}
-              style={styles.largeIllustration}
+              style={{ width: 230 * scale, height: 230 * scale, marginBottom: 8 * scale }}
               resizeMode="contain"
+              fadeDuration={0}
             />
-            <Text style={styles.stepTitle}>Permitir notificaciones</Text>
-            <Text style={styles.stepSubtitle}>
-              Te vamos a avisar si hay un cuento nuevo. Sin spam; lo prometemos.
-            </Text>
-          </View>
+            <Title scale={scale}>Permitir notificaciones</Title>
+            <Subtitle scale={scale}>Te vamos a avisar si hay un cuento nuevo. Sin spam; lo prometemos.</Subtitle>
+          </StepShell>
         );
 
       case 'loading':
         return (
-          <View style={styles.stepContainer}>
+          <View style={[styles.loadingContainer, { paddingHorizontal: 30 * scale }]}>
             <Image
               source={require('../assets/onboarding/loading_mascot.webp')}
-              style={styles.largeIllustration}
+              style={{ width: 190 * scale, height: 190 * scale, marginBottom: 15 * scale }}
               resizeMode="contain"
+              fadeDuration={0}
             />
-            <Text style={styles.stepTitle}>Estamos preparando nuevos cuentos para ti</Text>
-            <Text style={styles.stepSubtitle}>
-              Estamos personalizando las imágenes y los textos…
+            <Text style={[styles.loadingTitle, { fontSize: 27 * scale, lineHeight: 29 * scale }]}>
+              Estamos preparando nuevos cuentos para ti
             </Text>
-            <View style={styles.loadingTrack}>
+            <Text style={[styles.loadingSubtitle, { fontSize: 12.5 * scale, lineHeight: 17 * scale }]}>
+              Estamos personalizando las imágenes y los textos...
+            </Text>
+            <View style={[styles.loadingTrack, {
+              width: Math.min(width * 0.82, 300 * scale),
+              height: 19 * scale,
+              borderRadius: 10 * scale,
+            }]}>
               <Animated.View
-                style={[
-                  styles.loadingFill,
-                  {
-                    width: progressBarWidth.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0%', '100%'],
-                    }),
-                  },
-                ]}
+                style={[styles.loadingFill, {
+                  borderRadius: 10 * scale,
+                  width: progressBarWidth.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+                }]}
               />
+              <Text style={[styles.loadingPercentInside, { fontSize: 10.5 * scale }]}>{loadingProgress}%</Text>
             </View>
-            <Text style={styles.loadingPercent}>{loadingProgress}%</Text>
           </View>
         );
     }
   };
 
   const showSkip = step === 'goals' || step === 'preferences';
-  const isNameStep = step === 'name';
-  const isButtonDisabled = isNameStep && name.trim().length === 0;
+  const nameDisabled = step === 'name' && name.trim().length === 0;
+
+  const bodyStyle = useMemo(() => ({
+    opacity: bodyOpacity,
+    transform: [
+      { translateX: bodyTranslateX },
+      { translateY: bodyTranslateY },
+    ],
+  }), [bodyOpacity, bodyTranslateX, bodyTranslateY]);
+
+  const buttonsStyle = useMemo(() => ({
+    opacity: buttonsOpacity,
+    transform: [{ translateY: buttonsTranslateY }],
+  }), [buttonsOpacity, buttonsTranslateY]);
 
   return (
     <View style={styles.container}>
-      <Image
-        source={require('../assets/onboarding/stars.webp')}
-        style={styles.starBackground}
-        resizeMode="cover"
-      />
+      <View style={styles.backgroundBase} pointerEvents="none" />
+      <OnboardingStarField />
+
       {step !== 'loading' && (
-        <OnboardingHeader
+        <Header
+          scale={scale}
           step={stepIndex + 1}
-          totalSteps={TOTAL_STEPS}
+          total={TOTAL_STEPS}
           onBack={handleBack}
           musicEnabled={profile.musicEnabled}
           onToggleMusic={toggleMusic}
@@ -468,297 +565,432 @@ export default function OnboardingScreen() {
 
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          style={styles.flex}
+          contentContainerStyle={[styles.scrollContent, {
+            paddingHorizontal: 18 * scale,
+            paddingTop: 8 * scale,
+            paddingBottom: 8 * scale,
+          }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <ReanimatedAnimated.View style={slideAnimStyle}>
+          <Animated.View style={[styles.animatedBody, bodyStyle]}>
             {renderStep()}
-          </ReanimatedAnimated.View>
+          </Animated.View>
         </ScrollView>
 
-        {step === 'notifications' ? (
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              onPress={handleSkipNotifications}
-              style={styles.secondaryButtonWrapper}
-              accessibilityRole="button"
-              accessibilityLabel="Quizás más tarde"
-            >
-              <View style={styles.secondaryButton}>
-                <Text style={styles.secondaryButtonText}>Quizás más tarde</Text>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleEnableNotifications}
-              style={styles.buttonWrapper}
-              accessibilityRole="button"
-              accessibilityLabel="Continuar"
-            >
-              <LinearGradient
-                colors={[...Gradients.primaryButton]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.button}
-              >
-                <Text style={styles.buttonText}>Continuar</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        ) : step !== 'loading' ? (
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              onPress={handleNext}
-              disabled={isButtonDisabled}
-              style={styles.buttonWrapper}
-              accessibilityRole="button"
-              accessibilityLabel="Continuar"
-            >
-              <LinearGradient
-                colors={isButtonDisabled ? [...Gradients.darkBlue] : [...Gradients.primaryButton]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.button}
-              >
-                <Text style={styles.buttonText}>Continuar</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-            {showSkip && (
-              <TouchableOpacity
-                onPress={handleSkip}
-                style={styles.skipButton}
-                accessibilityRole="button"
-                accessibilityLabel="Omitir"
-              >
-                <Text style={styles.skipButtonText}>Omitir</Text>
+        {step !== 'loading' && (
+          <Animated.View style={[styles.bottomArea, {
+            paddingHorizontal: 24 * scale,
+            paddingBottom: 22 * scale,
+            gap: 7 * scale,
+          }, buttonsStyle]}>
+            {step === 'notifications' && (
+              <TouchableOpacity onPress={handleSkipNotifications} style={{ width: '100%' }}>
+                <View style={[styles.secondaryButton, { height: 42 * scale, borderRadius: 21 * scale }]}>
+                  <Text style={[styles.secondaryButtonText, { fontSize: 13 * scale }]}>Quizás más tarde</Text>
+                </View>
               </TouchableOpacity>
             )}
-          </View>
-        ) : null}
+
+            <TouchableOpacity
+              onPress={step === 'notifications' ? handleEnableNotifications : handleNext}
+              disabled={nameDisabled}
+              style={{ width: '100%' }}
+            >
+              <LinearGradient
+                colors={nameDisabled ? ['#4A55AE', '#5263C4'] : ['#F7C22A', '#FF9437']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.primaryButton, { height: 42 * scale, borderRadius: 21 * scale }]}
+              >
+                <Text style={[styles.primaryButtonText, { fontSize: 14 * scale }]}>Continuar</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {showSkip && (
+              <TouchableOpacity onPress={handleSkip}>
+                <Text style={[styles.skipText, { fontSize: 11.5 * scale }]}>Omitir</Text>
+              </TouchableOpacity>
+            )}
+          </Animated.View>
+        )}
       </KeyboardAvoidingView>
     </View>
+  );
+}
+
+function Header({
+  scale,
+  step,
+  total,
+  onBack,
+  musicEnabled,
+  onToggleMusic,
+}: {
+  scale: number;
+  step: number;
+  total: number;
+  onBack: () => void;
+  musicEnabled: boolean;
+  onToggleMusic: () => void;
+}) {
+  const progress = Math.max(0, Math.min(1, step / total));
+
+  return (
+    <View style={[styles.header, {
+      height: 70 * scale,
+      paddingHorizontal: 14 * scale,
+      paddingTop: 10 * scale,
+    }]}>
+      <TouchableOpacity
+        style={[styles.headerCircle, {
+          width: 40 * scale,
+          height: 40 * scale,
+          borderRadius: 20 * scale,
+        }]}
+        onPress={onBack}
+      >
+        <Text style={[styles.backChevron, { fontSize: 29 * scale }]}>‹</Text>
+      </TouchableOpacity>
+
+      <View style={[styles.progressWrap, { width: 150 * scale }]}>
+        <View style={[styles.progressTrack, { height: 12 * scale, borderRadius: 6 * scale }]}>
+          <LinearGradient
+            colors={['#FFD52A', '#F7A91E']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.progressFill, { width: `${progress * 100}%`, borderRadius: 6 * scale }]}
+          />
+        </View>
+        <Text style={[styles.stepCount, { fontSize: 13 * scale }]}>{step}/{total}</Text>
+      </View>
+
+      <TouchableOpacity
+        style={[styles.headerCircle, {
+          width: 40 * scale,
+          height: 40 * scale,
+          borderRadius: 20 * scale,
+        }]}
+        onPress={onToggleMusic}
+      >
+        <Image
+          source={musicEnabled
+            ? require('../assets/onboarding/ic_music_on.png')
+            : require('../assets/onboarding/ic_music_off.png')}
+          style={{ width: 23 * scale, height: 23 * scale }}
+          resizeMode="contain"
+          fadeDuration={0}
+        />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function StepShell({
+  children,
+  scale,
+  topBias = false,
+}: {
+  children: React.ReactNode;
+  scale: number;
+  topBias?: boolean;
+}) {
+  return (
+    <View style={[styles.stepContainer, {
+      paddingTop: topBias ? 16 * scale : 0,
+      paddingBottom: 6 * scale,
+    }]}>
+      {children}
+    </View>
+  );
+}
+
+function Title({ children, scale }: { children: React.ReactNode; scale: number }) {
+  return (
+    <Text style={[styles.title, { fontSize: 27 * scale, lineHeight: 30 * scale }]}>
+      {children}
+    </Text>
+  );
+}
+
+function Subtitle({ children, scale }: { children: React.ReactNode; scale: number }) {
+  return (
+    <Text style={[styles.subtitle, { fontSize: 12.5 * scale, lineHeight: 17 * scale }]}>
+      {children}
+    </Text>
+  );
+}
+
+function GenderChoice({
+  gender,
+  selected,
+  scale,
+  onPress,
+}: {
+  gender: Gender;
+  selected: boolean;
+  scale: number;
+  onPress: () => void;
+}) {
+  const source = gender === 'boy'
+    ? (selected
+      ? require('../assets/onboarding/ic_boy_on.png')
+      : require('../assets/onboarding/ic_boy.png'))
+    : (selected
+      ? require('../assets/onboarding/ic_girl_on.png')
+      : require('../assets/onboarding/ic_girl.png'));
+
+  return (
+    <TouchableOpacity
+      style={styles.genderChoice}
+      onPress={onPress}
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+    >
+      <Image
+        source={source}
+        style={{ width: 78 * scale, height: 92 * scale }}
+        resizeMode="contain"
+        fadeDuration={0}
+      />
+      <Text style={[styles.genderLabel, { fontSize: 13 * scale }]}>
+        {gender === 'boy' ? 'Niño' : 'Niña'}
+      </Text>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.backgroundDark,
+    backgroundColor: BG,
+    overflow: 'hidden',
+  },
+  backgroundBase: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: BG,
   },
   starBackground: {
-    ...StyleSheet.absoluteFill,
+    ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
-    opacity: 0.42,
+    opacity: 0.13,
   },
-  flex: {
+  flex: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    zIndex: 20,
+  },
+  headerCircle: {
+    backgroundColor: '#3E459B',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backChevron: {
+    color: WHITE,
+    fontFamily: 'Montserrat-SemiBold',
+    lineHeight: 31,
+    marginTop: -3,
+  },
+  progressWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+  },
+  progressTrack: {
     flex: 1,
+    backgroundColor: '#1D235E',
+    overflow: 'hidden',
+  },
+  progressFill: { height: '100%' },
+  stepCount: {
+    color: WHITE,
+    fontFamily: 'Montserrat-ExtraBold',
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 18,
     justifyContent: 'center',
+  },
+  animatedBody: {
+    width: '100%',
+    minHeight: 1,
   },
   stepContainer: {
     alignItems: 'center',
+    width: '100%',
   },
-  largeIllustration: {
-    width: 220,
-    height: 220,
-    marginBottom: 16,
-  },
-  mediumIllustration: {
-    width: 100,
-    height: 100,
-    marginBottom: 16,
-  },
-  stepTitle: {
-    color: Colors.textWhite,
-    fontSize: 36,
+  title: {
+    color: WHITE,
     fontFamily: 'BalooBhaijaan',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 2,
   },
-  highlightYellow: {
-    color: Colors.accentYellow,
+  previewTitle: {
+    color: WHITE,
+    fontFamily: 'BalooBhaijaan',
+    textAlign: 'center',
   },
-  stepSubtitle: {
-    color: Colors.subtitleGray,
-    fontSize: 17,
+  yellow: { color: YELLOW },
+  subtitle: {
+    color: MUTED,
     fontFamily: 'Montserrat-SemiBold',
     textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 25,
+    marginBottom: 13,
+    maxWidth: '90%',
   },
   languageCapsule: {
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 24,
-    backgroundColor: Colors.capsuleSelected,
-    borderWidth: 2,
-    borderColor: Colors.chipPurple,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: SELECTED,
+    borderWidth: 1,
+    borderColor: CYAN,
   },
   languageCapsuleText: {
-    color: Colors.textWhite,
-    fontSize: 17,
+    color: WHITE,
     fontFamily: 'Montserrat-ExtraBold',
   },
   input: {
-    width: '100%',
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.textFieldBackground,
-    paddingHorizontal: 20,
-    fontSize: 20,
-    color: Colors.textFieldColor,
+    backgroundColor: INPUT,
+    color: '#686A79',
     fontFamily: 'Montserrat-SemiBold',
     textAlign: 'center',
+    paddingHorizontal: 18,
   },
-  optionsList: {
-    width: '100%',
-    gap: 12,
+  genderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
   },
+  genderChoice: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  genderLabel: {
+    color: WHITE,
+    fontFamily: 'Montserrat-SemiBold',
+    marginTop: 4,
+  },
+  previewImage: {
+    borderWidth: 3,
+    borderColor: '#F2F1DF',
+    backgroundColor: '#161A56',
+  },
+  optionsList: { alignItems: 'stretch' },
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    borderRadius: 16,
-    backgroundColor: Colors.backgroundGradientEnd,
+    gap: 10,
+    backgroundColor: ROW,
+    borderWidth: 1,
+    borderColor: '#4E54A3',
   },
   optionRowSelected: {
-    backgroundColor: 'rgba(62, 112, 220, 0.35)',
-    borderWidth: 1,
-    borderColor: Colors.accentCyan,
+    backgroundColor: SELECTED,
+    borderColor: CYAN,
   },
   checkCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderWidth: 1.4,
+    borderColor: '#646AAF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkCircleSelected: {
-    borderColor: Colors.accentCyan,
+    backgroundColor: '#17BDEA',
+    borderColor: '#17BDEA',
   },
-  checkDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: Colors.accentCyan,
+  checkMark: {
+    color: WHITE,
+    fontFamily: 'Montserrat-ExtraBold',
+    marginTop: -1,
   },
   optionText: {
-    color: Colors.textWhite,
-    fontSize: 15,
+    color: WHITE,
     fontFamily: 'Montserrat-SemiBold',
     flex: 1,
   },
-  preferenceCardsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
+  preferenceList: { alignItems: 'stretch' },
   preferenceCard: {
-    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 8,
-    borderRadius: 18,
-    backgroundColor: Colors.backgroundGradientEnd,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    backgroundColor: ROW,
+    borderWidth: 1.4,
+    borderColor: '#4E54A3',
   },
   preferenceCardSelected: {
-    borderColor: Colors.accentCyan,
-    backgroundColor: 'rgba(62, 112, 220, 0.35)',
-  },
-  preferenceImage: {
-    width: 64,
-    height: 64,
-    marginBottom: 10,
+    backgroundColor: SELECTED,
+    borderColor: CYAN,
   },
   preferenceLabel: {
-    color: Colors.textWhite,
-    fontSize: 13,
+    color: WHITE,
     fontFamily: 'Montserrat-ExtraBold',
+    marginLeft: 10,
+  },
+  bottomArea: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  primaryButton: {
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    color: WHITE,
+    fontFamily: 'Montserrat-ExtraBold',
+  },
+  secondaryButton: {
+    width: '100%',
+    backgroundColor: '#4C58B5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    color: WHITE,
+    fontFamily: 'Montserrat-ExtraBold',
+  },
+  skipText: {
+    color: MUTED,
+    fontFamily: 'Montserrat-SemiBold',
+    textDecorationLine: 'underline',
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingTitle: {
+    color: WHITE,
+    fontFamily: 'BalooBhaijaan',
     textAlign: 'center',
+    maxWidth: 310,
+  },
+  loadingSubtitle: {
+    color: MUTED,
+    fontFamily: 'Montserrat-SemiBold',
+    textAlign: 'center',
+    marginTop: 3,
+    marginBottom: 14,
   },
   loadingTrack: {
-    width: '100%',
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.backgroundGradientEnd,
+    backgroundColor: '#364294',
     overflow: 'hidden',
-    marginTop: 8,
+    justifyContent: 'center',
   },
   loadingFill: {
     height: '100%',
-    borderRadius: 5,
-    backgroundColor: Colors.accentYellow,
+    backgroundColor: '#FFB326',
   },
-  loadingPercent: {
-    color: Colors.subtitleGray,
-    fontSize: 13,
-    marginTop: 8,
-    fontFamily: 'Montserrat-SemiBold',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-    paddingTop: 16,
-    gap: 12,
-  },
-  buttonWrapper: {
-    flex: 1,
-    borderRadius: 28,
-    overflow: 'hidden',
-  },
-  button: {
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: Colors.textWhite,
-    fontSize: 18,
-    fontFamily: 'Montserrat-ExtraBold',
-  },
-  secondaryButtonWrapper: {
-    flex: 1,
-    borderRadius: 28,
-    overflow: 'hidden',
-  },
-  secondaryButton: {
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.buttonOrangeEnd,
-  },
-  secondaryButtonText: {
-    color: Colors.textWhite,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  skipButton: {
+  loadingPercentInside: {
     position: 'absolute',
-    bottom: -28,
     alignSelf: 'center',
-  },
-  skipButtonText: {
-    color: Colors.subtitleGray,
-    fontSize: 14,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+    color: WHITE,
+    fontFamily: 'Montserrat-ExtraBold',
   },
 });
