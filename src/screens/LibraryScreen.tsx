@@ -26,6 +26,9 @@ const LIBRARY_STARS = [
   [61, 63], [72, 78], [83, 57], [92, 88],
 ];
 
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(Math.max(value, min), max);
+
 export default function LibraryScreen() {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const router = useRouter();
@@ -48,21 +51,33 @@ export default function LibraryScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scrollTopAnim = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList>(null);
-  // The visual reference is a 1280x768 landscape canvas. Scaling from that
-  // canvas preserves its geometry while still supporting other tablet sizes.
-  const layoutScale = Math.min(windowWidth / 1280, windowHeight / 768);
-  const gridLeftPadding = 148 * layoutScale;
-  const columnGap = 30 * layoutScale;
-  const rowGap = 66 * layoutScale;
-  const cardWidth = 361 * layoutScale;
+
+  // Keep the same three-column composition as the Android reference, but size
+  // each region from the real viewport instead of scaling a fixed 1280x768
+  // canvas. This lets wide phones/tablets use their extra horizontal space.
+  const densityScale = clamp(windowHeight / 768, 0.72, 1.18);
+  const outerPadding = clamp(windowWidth * 0.016, 12, 28);
+  const railSize = clamp(windowHeight * 0.13, 72, 104);
+  const railGap = clamp(windowHeight * 0.038, 22, 34);
+  const railToContentGap = clamp(windowWidth * 0.024, 22, 42);
+  const contentLeft = outerPadding + railSize + railToContentGap;
+  const contentRight = outerPadding;
+  const columnGap = clamp(windowWidth * 0.018, 18, 34);
+  const rowGap = clamp(windowHeight * 0.075, 38, 66);
+  const availableGridWidth = windowWidth - contentLeft - contentRight;
+  const cardWidth = Math.max(180, (availableGridWidth - columnGap * 2) / 3);
+
+  const headerTop = clamp(windowHeight * 0.022, 12, 22);
+  const headerHeight = clamp(windowHeight * 0.09, 58, 72);
+  const headerGap = clamp(windowWidth * 0.024, 24, 42);
+  const filterWidth = clamp(windowWidth * 0.145, 170, 210);
+  const gridTop = headerTop + headerHeight + clamp(windowHeight * 0.055, 34, 54);
 
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
   }, []);
 
   useEffect(() => {
-    // Never download and extract the bundled starter book during onboarding.
-    // Wait until this screen has rendered, then refresh its metadata when done.
     const timer = setTimeout(() => {
       void setupEmbeddedBooks().then(refreshBooks);
     }, 750);
@@ -123,85 +138,81 @@ export default function LibraryScreen() {
 
   const handleDownloadComplete = useCallback((bookId: string) => {
     markBookAsDownloaded(bookId);
-    // Refresh to load the book metadata
     refreshBooks();
   }, [markBookAsDownloaded, refreshBooks]);
 
-  const renderBookItem = ({ item, index }: { item: Book; index: number }) => {
-    return (
-      <BookCard
-        book={item}
-        onPress={handleBookPress}
-        onDownloadComplete={handleDownloadComplete}
-        onToggleFavorite={toggleFavorite}
-        onDelete={deleteBook}
-        index={index}
-        cardWidth={cardWidth}
-      />
-    );
-  };
+  const renderBookItem = ({ item, index }: { item: Book; index: number }) => (
+    <BookCard
+      book={item}
+      onPress={handleBookPress}
+      onDownloadComplete={handleDownloadComplete}
+      onToggleFavorite={toggleFavorite}
+      onDelete={deleteBook}
+      index={index}
+      cardWidth={cardWidth}
+    />
+  );
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <StatusBar hidden />
-
-      <LinearGradient
-        colors={[...Gradients.background]}
-        style={styles.gradient}
-      >
+      <LinearGradient colors={[...Gradients.background]} style={styles.gradient}>
         <View style={styles.stars} pointerEvents="none">
           {LIBRARY_STARS.map(([left, top], index) => (
             <View key={index} style={[styles.star, { left: `${left}%`, top: `${top}%` }]} />
           ))}
         </View>
-        {/* Compact side rail, matching the reference landscape layout. */}
+
         <View style={[styles.sideRail, {
-          left: 10 * layoutScale,
-          top: 17 * layoutScale,
-          width: 100 * layoutScale,
-          gap: 30 * layoutScale,
+          left: outerPadding,
+          top: headerTop,
+          width: railSize,
+          gap: railGap,
         }]}>
           <TouchableOpacity
             style={[styles.settingsButton, {
-              width: 100 * layoutScale,
-              height: 100 * layoutScale,
-              borderRadius: 50 * layoutScale,
+              width: railSize,
+              height: railSize,
+              borderRadius: railSize / 2,
             }]}
             onPress={handleSettingsPress}
             accessibilityLabel="Abrir ajustes"
             accessibilityRole="button"
           >
             <Image source={require('../assets/ui/ic_settings.png')} style={[styles.settingsIcon, {
-              width: 52 * layoutScale,
-              height: 52 * layoutScale,
+              width: railSize * 0.52,
+              height: railSize * 0.52,
             }]} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.mailButton, {
-            width: 100 * layoutScale,
-            height: 100 * layoutScale,
-            borderRadius: 50 * layoutScale,
-          }]} onPress={handleMailPress} accessibilityLabel="Enviar un correo">
+          <TouchableOpacity
+            style={[styles.mailButton, {
+              width: railSize,
+              height: railSize,
+              borderRadius: railSize / 2,
+            }]}
+            onPress={handleMailPress}
+            accessibilityLabel="Enviar un correo"
+          >
             <Image source={require('../assets/ui/ic_mail_to.png')} style={[styles.mailIcon, {
-              width: 50 * layoutScale,
-              height: 50 * layoutScale,
+              width: railSize * 0.5,
+              height: railSize * 0.5,
             }]} />
           </TouchableOpacity>
         </View>
 
-        {/* Search + filter bar */}
         <View style={[styles.searchRow, {
-          top: 17 * layoutScale,
-          left: 150 * layoutScale,
-          right: 12 * layoutScale,
-          gap: 40 * layoutScale,
+          top: headerTop,
+          left: contentLeft,
+          right: contentRight,
+          gap: headerGap,
         }]}>
           <View style={[styles.searchBox, {
-            height: 68 * layoutScale,
-            borderRadius: 34 * layoutScale,
-            paddingHorizontal: 32 * layoutScale,
+            height: headerHeight,
+            borderRadius: headerHeight / 2,
+            paddingHorizontal: clamp(windowWidth * 0.02, 22, 34),
           }]}>
             <TextInput
-              style={[styles.searchInput, { fontSize: 30 * layoutScale }]}
+              style={[styles.searchInput, { fontSize: clamp(30 * densityScale, 22, 31) }]}
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Escribe el texto que buscas…"
@@ -211,33 +222,33 @@ export default function LibraryScreen() {
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Limpiar búsqueda">
                 <Image source={require('../assets/ui/ic_close.png')} style={[styles.clearSearchIcon, {
-                  width: 30 * layoutScale,
-                  height: 30 * layoutScale,
+                  width: clamp(30 * densityScale, 24, 32),
+                  height: clamp(30 * densityScale, 24, 32),
                 }]} />
               </TouchableOpacity>
             )}
           </View>
           <TouchableOpacity
             style={[styles.filterButton, {
-              width: 190 * layoutScale,
-              height: 68 * layoutScale,
-              borderRadius: 34 * layoutScale,
-              paddingHorizontal: 24 * layoutScale,
-              gap: 12 * layoutScale,
+              width: filterWidth,
+              height: headerHeight,
+              borderRadius: headerHeight / 2,
+              paddingHorizontal: clamp(24 * densityScale, 18, 26),
+              gap: clamp(12 * densityScale, 8, 14),
             }]}
             onPress={() => setFilterModalVisible(true)}
             accessibilityRole="button"
             accessibilityLabel="Filtro"
           >
             <View style={[styles.filterIcon, {
-              width: 30 * layoutScale,
-              height: 24 * layoutScale,
+              width: clamp(30 * densityScale, 24, 32),
+              height: clamp(24 * densityScale, 19, 26),
             }]}>
               <View style={styles.filterLineLong} />
               <View style={styles.filterLineMedium} />
               <View style={styles.filterLineShort} />
             </View>
-            <Text style={[styles.filterButtonText, { fontSize: 29 * layoutScale }]}>Filtro</Text>
+            <Text style={[styles.filterButtonText, { fontSize: clamp(29 * densityScale, 22, 30) }]}>Filtro</Text>
             {activeFilterCount > 0 && (
               <View style={styles.filterBadge}>
                 <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
@@ -254,7 +265,6 @@ export default function LibraryScreen() {
           onClose={() => setFilterModalVisible(false)}
         />
 
-        {/* Book grid */}
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Cargando cuentos...</Text>
@@ -279,9 +289,10 @@ export default function LibraryScreen() {
             contentContainerStyle={[
               styles.gridContent,
               {
-                paddingTop: 134 * layoutScale,
-                paddingLeft: gridLeftPadding,
-                paddingBottom: 60 * layoutScale,
+                paddingTop: gridTop,
+                paddingLeft: contentLeft,
+                paddingRight: contentRight,
+                paddingBottom: clamp(windowHeight * 0.075, 40, 64),
                 gap: rowGap,
               },
             ]}
@@ -292,20 +303,19 @@ export default function LibraryScreen() {
           />
         )}
 
-        {/* Scroll-to-top floating button */}
         {showScrollTop && (
           <Animated.View style={[styles.scrollTopButton, {
             opacity: scrollTopAnim,
-            left: 10 * layoutScale,
-            bottom: 16 * layoutScale,
-            width: 100 * layoutScale,
-            height: 100 * layoutScale,
-            borderRadius: 50 * layoutScale,
+            left: outerPadding,
+            bottom: clamp(windowHeight * 0.02, 12, 18),
+            width: railSize,
+            height: railSize,
+            borderRadius: railSize / 2,
           }]}>
             <TouchableOpacity onPress={scrollToTop} accessibilityLabel="Volver arriba" accessibilityRole="button">
               <Image source={require('../assets/ui/ic_arrow_up.png')} style={[styles.scrollTopIcon, {
-                width: 54 * layoutScale,
-                height: 54 * layoutScale,
+                width: railSize * 0.54,
+                height: railSize * 0.54,
               }]} />
             </TouchableOpacity>
           </Animated.View>
@@ -316,15 +326,9 @@ export default function LibraryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  gradient: {
-    flex: 1,
-  },
-  stars: {
-    ...StyleSheet.absoluteFill,
-  },
+  container: { flex: 1 },
+  gradient: { flex: 1 },
+  stars: { ...StyleSheet.absoluteFill },
   star: {
     position: 'absolute',
     width: 3,
@@ -342,19 +346,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  settingsIcon: {
-    tintColor: '#FFFFFF',
-    resizeMode: 'contain',
-  },
+  settingsIcon: { tintColor: '#FFFFFF', resizeMode: 'contain' },
   mailButton: {
     backgroundColor: '#267ECB',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  mailIcon: {
-    tintColor: '#FFFFFF',
-    resizeMode: 'contain',
-  },
+  mailIcon: { tintColor: '#FFFFFF', resizeMode: 'contain' },
   searchRow: {
     position: 'absolute',
     flexDirection: 'row',
@@ -374,24 +372,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat-SemiBold',
     height: '100%',
   },
-  clearSearchIcon: {
-    tintColor: Colors.textFieldColor,
-    resizeMode: 'contain',
-  },
+  clearSearchIcon: { tintColor: Colors.textFieldColor, resizeMode: 'contain' },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F2F4DD',
     overflow: 'hidden',
   },
-  filterButtonText: {
-    color: '#333',
-    fontFamily: 'Montserrat-SemiBold',
-  },
-  filterIcon: {
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+  filterButtonText: { color: '#333', fontFamily: 'Montserrat-SemiBold' },
+  filterIcon: { justifyContent: 'space-between', alignItems: 'center' },
   filterLineLong: { width: '100%', height: 3, backgroundColor: '#3E3E38' },
   filterLineMedium: { width: '68%', height: 3, backgroundColor: '#3E3E38' },
   filterLineShort: { width: '36%', height: 3, backgroundColor: '#3E3E38' },
@@ -409,33 +398,17 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
   },
-  gridContent: {
-    flexGrow: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: Colors.textGrayLight,
-    fontSize: 16,
-  },
+  gridContent: { flexGrow: 1 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { color: Colors.textGrayLight, fontSize: 16 },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
   },
-  emptyEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  emptyText: {
-    color: Colors.textGrayLight,
-    fontSize: 16,
-    textAlign: 'center',
-  },
+  emptyEmoji: { fontSize: 64, marginBottom: 16 },
+  emptyText: { color: Colors.textGrayLight, fontSize: 16, textAlign: 'center' },
   scrollTopButton: {
     position: 'absolute',
     backgroundColor: '#34338B',
@@ -447,8 +420,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
   },
-  scrollTopIcon: {
-    tintColor: '#FFFFFF',
-    resizeMode: 'contain',
-  },
+  scrollTopIcon: { tintColor: '#FFFFFF', resizeMode: 'contain' },
 });
