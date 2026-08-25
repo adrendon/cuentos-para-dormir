@@ -50,46 +50,45 @@ export function BookOpeningIntro({
   skipEntranceScale = false,
 }: BookOpeningIntroProps) {
   const { width, height } = useWindowDimensions();
-  const layoutScale = Math.min(width / 1280, height / 768);
-  const pageWidth = 396 * layoutScale;
-  const pageHeight = 434 * layoutScale;
-  const chromeScale = Math.max(0.72, Math.min(1.15, layoutScale));
-  const roundButtonSize = 72 * chromeScale;
-  const modeButtonWidth = 390 * chromeScale;
-  const modeButtonHeight = 96 * chromeScale;
+  const layoutScale = Math.max(0.82, Math.min(1.35, Math.min(width / 904, height / 407)));
+  const pageHeight = Math.min(height * 0.82, 296 * layoutScale);
+  const pageWidth = Math.min(width * 0.36, pageHeight * 0.9);
+  const chromeScale = layoutScale;
+  const roundButtonSize = 54 * chromeScale;
+  const modeButtonWidth = 285 * chromeScale;
+  const modeButtonHeight = 62 * chromeScale;
   const modeButtonRadius = modeButtonHeight / 2;
   const [menuReady, setMenuReady] = useState(false);
   const coverRotation = useSharedValue(0);
-  const bookScale = useSharedValue(skipEntranceScale ? 1 : 0.72);
+  const bookScale = useSharedValue(skipEntranceScale ? 1 : 0.88);
 
   useEffect(() => {
     if (!skipEntranceScale) {
       bookScale.value = withTiming(1, {
-        duration: 450,
+        duration: 280,
         easing: Easing.out(Easing.cubic),
       });
     }
     coverRotation.value = withDelay(
-      350,
-      withTiming(1, { duration: 900, easing: Easing.inOut(Easing.cubic) })
+      120,
+      withTiming(1, { duration: 780, easing: Easing.inOut(Easing.cubic) })
     );
-    const menuTimer = setTimeout(() => setMenuReady(true), 1350);
+    const menuTimer = setTimeout(() => setMenuReady(true), 980);
     return () => clearTimeout(menuTimer);
   }, [bookScale, coverRotation]);
 
   const bookStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateX: 82 * layoutScale },
       { scale: bookScale.value },
     ],
   }));
 
-  // Cover starts flat (0deg) and flips open to the left (150deg),
-  // hinged on its RIGHT edge (transformOrigin: 'right center').
+  // The closed front cover lies over the right page and opens around the
+  // center spine onto the left side, exactly like a physical book.
   const coverStyle = useAnimatedStyle(() => ({
     transform: [
       { perspective: 1400 },
-      { rotateY: `${interpolate(coverRotation.value, [0, 1], [0, 150])}deg` },
+      { rotateY: `${interpolate(coverRotation.value, [0, 1], [0, -165])}deg` },
     ],
   }));
 
@@ -100,7 +99,7 @@ export function BookOpeningIntro({
           <Image source={firstPageSource} style={styles.modeBackground} resizeMode="cover" />
         )}
         <View style={styles.modeShade} />
-        <View style={[styles.topBar, { top: 16 * chromeScale, left: -6 * chromeScale, right: 18 * chromeScale }]}>
+        <View style={[styles.topBar, { top: 14 * chromeScale, left: 14 * chromeScale, right: 14 * chromeScale }]}>
           <TouchableOpacity style={[styles.roundButton, { width: roundButtonSize, height: roundButtonSize, borderRadius: roundButtonSize / 2 }]} onPress={onClose} accessibilityLabel="Biblioteca">
             <Image source={require('../assets/ui/ic_home.png')} style={{ width: 36 * chromeScale, height: 36 * chromeScale }} resizeMode="contain" />
           </TouchableOpacity>
@@ -116,17 +115,17 @@ export function BookOpeningIntro({
             />
           </TouchableOpacity>
         </View>
-        <View style={[styles.centeredMenu, { gap: 40 * chromeScale, transform: [{ translateX: 82 * chromeScale }] }]}>
+        <View style={[styles.centeredMenu, { gap: 18 * chromeScale }]}>
           <TouchableOpacity style={{ width: modeButtonWidth, height: modeButtonHeight, borderRadius: modeButtonRadius }} onPress={() => onSelectMode('read')}>
             <LinearGradient colors={['#28D4EB', '#278BEC']} style={[styles.modeButton, { borderRadius: modeButtonRadius, paddingHorizontal: 48 * chromeScale }]}>
               <Image source={require('../assets/ui/ic_book_read.png')} style={{ width: 42 * chromeScale, height: 42 * chromeScale }} resizeMode="contain" />
-              <Text style={[styles.modeLabel, { fontSize: 36 * chromeScale }]}>Leer</Text>
+              <Text style={[styles.modeLabel, { fontSize: 24 * chromeScale }]}>Leer</Text>
             </LinearGradient>
           </TouchableOpacity>
           <TouchableOpacity style={{ width: modeButtonWidth, height: modeButtonHeight, borderRadius: modeButtonRadius }} onPress={() => onSelectMode('listen')}>
             <LinearGradient colors={['#28D4EB', '#278BEC']} style={[styles.modeButton, { borderRadius: modeButtonRadius, paddingHorizontal: 48 * chromeScale }]}>
               <Image source={require('../assets/ui/ic_book_listen.png')} style={{ width: 42 * chromeScale, height: 42 * chromeScale }} resizeMode="contain" />
-              <Text style={[styles.modeLabel, { fontSize: 36 * chromeScale }]}>Escuchar</Text>
+              <Text style={[styles.modeLabel, { fontSize: 24 * chromeScale }]}>Escuchar</Text>
             </LinearGradient>
           </TouchableOpacity>
           <TouchableOpacity style={{ width: modeButtonWidth, height: modeButtonHeight, borderRadius: modeButtonRadius }} onPress={() => onSelectMode('record')}>
@@ -135,7 +134,7 @@ export function BookOpeningIntro({
                 <View style={styles.microphoneHead} />
                 <View style={styles.microphoneStand} />
               </View>
-              <Text style={[styles.modeLabel, { fontSize: 36 * chromeScale }]}>Grabar</Text>
+              <Text style={[styles.modeLabel, { fontSize: 24 * chromeScale }]}>Grabar</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -151,7 +150,7 @@ export function BookOpeningIntro({
         ))}
       </View>
 
-      <View style={[styles.topBar, { top: 16 * chromeScale, left: -6 * chromeScale, right: 18 * chromeScale }]}>
+      <View style={[styles.topBar, { top: 14 * chromeScale, left: 14 * chromeScale, right: 14 * chromeScale }]}>
         <TouchableOpacity style={[styles.roundButton, { width: roundButtonSize, height: roundButtonSize, borderRadius: roundButtonSize / 2 }]} onPress={onClose} accessibilityLabel="Biblioteca">
           <Image source={require('../assets/ui/ic_home.png')} style={{ width: 36 * chromeScale, height: 36 * chromeScale }} resizeMode="contain" />
         </TouchableOpacity>
@@ -180,11 +179,13 @@ export function BookOpeningIntro({
             bookStyle,
           ]}
         >
-          {/* First story page — sits on the RIGHT side, revealed as cover flips open */}
+          <View style={[styles.pageLayerFar, { left: pageWidth + 8 * layoutScale, width: pageWidth, height: pageHeight, borderColor: coverColor }]} />
+          <View style={[styles.pageLayerNear, { left: pageWidth + 4 * layoutScale, width: pageWidth, height: pageHeight, borderColor: coverColor }]} />
+          {/* The right page sits below the closed front cover. */}
           <View
             style={[
               styles.storyPage,
-              { left: pageWidth, width: pageWidth, height: pageHeight },
+              { left: pageWidth, width: pageWidth, height: pageHeight, borderColor: coverColor },
             ]}
           >
             {firstPageSource ? (
@@ -194,15 +195,16 @@ export function BookOpeningIntro({
             )}
           </View>
 
-          {/* Cover — starts at LEFT position, hinged on its RIGHT edge, flips open to the left */}
+          {/* Front cover starts over the right page and hinges on the center spine. */}
           <Animated.View
             style={[
               styles.cover,
               {
-                left: 0,
+                left: pageWidth,
                 width: pageWidth,
                 height: pageHeight,
                 backgroundColor: coverColor,
+                borderColor: coverColor,
               },
               coverStyle,
             ]}
@@ -218,7 +220,8 @@ export function BookOpeningIntro({
           </Animated.View>
 
           {/* Spine at center */}
-          <View style={[styles.spine, { left: pageWidth - 2 }]} />
+          <View style={[styles.spineShadow, { left: pageWidth - 9 * layoutScale, width: 18 * layoutScale }]} />
+          <View style={[styles.spine, { left: pageWidth - 2, backgroundColor: coverColor }]} />
         </Animated.View>
       </View>
     </View>
@@ -244,17 +247,26 @@ const styles = StyleSheet.create({
     flex: 1, alignItems: 'center', justifyContent: 'center',
   },
   book: { position: 'relative' },
+  pageLayerFar: {
+    position: 'absolute', top: 7, borderRadius: 10, backgroundColor: '#D8D4C6',
+    borderWidth: 3, opacity: 0.42,
+  },
+  pageLayerNear: {
+    position: 'absolute', top: 3, borderRadius: 10, backgroundColor: '#ECE9DD',
+    borderWidth: 3, opacity: 0.72,
+  },
   storyPage: {
     position: 'absolute', top: 0, overflow: 'hidden', borderRadius: 10,
-    backgroundColor: '#FFF', borderWidth: 3, borderColor: Colors.accentTurquoise,
+    backgroundColor: '#FFF', borderWidth: 3,
   },
   pageImage: { width: '100%', height: '100%' },
   pageFallback: { flex: 1 },
   cover: {
     position: 'absolute', top: 0, borderRadius: 10,
     justifyContent: 'center', alignItems: 'center', borderWidth: 3,
-    borderColor: Colors.accentTurquoise,
-    transformOrigin: 'right center', elevation: 8,
+    shadowColor: '#000', shadowOpacity: 0.55, shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    transformOrigin: 'left center', elevation: 8,
   },
   coverFront: {
     ...StyleSheet.absoluteFill,
@@ -277,7 +289,11 @@ const styles = StyleSheet.create({
   coverArtwork: { width: '100%', height: '100%', borderRadius: 7 },
   spine: {
     position: 'absolute', top: 3, bottom: 3, width: 4,
-    backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 2,
+    borderRadius: 2, opacity: 0.72,
+  },
+  spineShadow: {
+    position: 'absolute', top: 4, bottom: 4, zIndex: 6,
+    backgroundColor: 'rgba(0,0,0,0.28)', borderRadius: 9,
   },
   modeBackground: {
     ...StyleSheet.absoluteFill,

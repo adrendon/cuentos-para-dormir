@@ -15,31 +15,35 @@ interface ReaderControlsProps {
 
 export function ReaderControls(props: ReaderControlsProps) {
   const { width, height } = useWindowDimensions();
-  const scale = Math.max(0.68, Math.min(1.15, Math.min(width / 1280, height / 768)));
-  const buttonSize = 66 * scale;
+  const scale = Math.max(0.82, Math.min(1.25, Math.min(width / 904, height / 407)));
+  const buttonSize = 50 * scale;
   return (
     <Animated.View style={[StyleSheet.absoluteFill, styles.container, props.animatedStyle]} pointerEvents={props.interactive ? 'box-none' : 'none'}>
-      <TouchableOpacity style={[styles.roundButton, styles.homeButton, { width: 78 * scale, height: 78 * scale, borderRadius: 39 * scale, top: 15 * scale, left: -7 * scale }]} onPress={props.onHome} accessibilityLabel="Volver a la biblioteca">
-        <Image source={require('../assets/ui/ic_home.png')} style={{ width: 42 * scale, height: 42 * scale }} resizeMode="contain" />
+      <TouchableOpacity style={[styles.roundButton, styles.homeButton, { width: 54 * scale, height: 54 * scale, borderRadius: 27 * scale, top: 12 * scale, left: 12 * scale }]} onPress={props.onHome} accessibilityLabel="Volver a la biblioteca">
+        <Image source={require('../assets/ui/ic_home.png')} style={{ width: 31 * scale, height: 31 * scale }} resizeMode="contain" />
       </TouchableOpacity>
-      <View style={[styles.pageCounter, { top: 18 * scale, right: 22 * scale, minWidth: 74 * scale, height: 45 * scale, borderRadius: 23 * scale }]}>
-        <Text style={[styles.pageCounterText, { fontSize: 18 * scale }]}>{props.currentPage + 1}/{props.totalPages}</Text>
+      <View style={[styles.pageCounter, { top: 13 * scale, right: 13 * scale, minWidth: 62 * scale, height: 35 * scale, borderRadius: 18 * scale }]}>
+        <Text style={[styles.pageCounterText, { fontSize: 15 * scale }]}>{props.currentPage + 1}/{props.totalPages}</Text>
       </View>
       {(props.listenMode || props.isNarrating) && (
-        <View style={[styles.voiceBar, { top: 20 * scale, width: 265 * scale, height: 62 * scale, borderRadius: 31 * scale, marginLeft: -132.5 * scale }]}>
-          <TouchableOpacity style={[styles.voiceButton, { width: 46 * scale, height: 46 * scale, borderRadius: 23 * scale }]} onPress={props.isNarrating ? (props.isNarrationPaused ? props.onResumeNarration : props.onPauseNarration) : props.onToggleNarration} accessibilityLabel={props.isNarrationPaused ? 'Continuar narración' : 'Pausar narración'}>
-            <Image source={props.isNarrationPaused || !props.isNarrating ? require('../assets/ui/ic_play.png') : require('../assets/ui/ic_pause.png')} style={{ width: 21 * scale, height: 21 * scale }} resizeMode="contain" />
+        <View style={[styles.voiceBar, { top: 13 * scale, width: 180 * scale, height: 45 * scale, borderRadius: 23 * scale, marginLeft: -90 * scale }]}>
+          <TouchableOpacity style={[styles.voiceButton, { width: 34 * scale, height: 34 * scale, borderRadius: 17 * scale }]} onPress={props.isNarrating ? (props.isNarrationPaused ? props.onResumeNarration : props.onPauseNarration) : props.onToggleNarration} accessibilityLabel={props.isNarrationPaused ? 'Continuar narración' : 'Pausar narración'}>
+            <Image source={props.isNarrationPaused || !props.isNarrating ? require('../assets/ui/ic_play.png') : require('../assets/ui/ic_pause.png')} style={{ width: 16 * scale, height: 16 * scale }} resizeMode="contain" />
           </TouchableOpacity>
           <Slider style={styles.voiceSlider} minimumValue={0} maximumValue={1} value={props.narrationVolume} onValueChange={props.onNarrationVolumeChange} minimumTrackTintColor="#E9F5FA" maximumTrackTintColor="#78CDF1" thumbTintColor="#F3F4EA" accessibilityLabel="Volumen de la narración" />
-          <Image source={require('../assets/ui/ic_book_listen.png')} style={{ width: 25 * scale, height: 25 * scale, tintColor: '#FFFFFF' }} resizeMode="contain" />
+          <Image source={require('../assets/ui/ic_book_listen.png')} style={{ width: 20 * scale, height: 20 * scale, tintColor: '#FFFFFF' }} resizeMode="contain" />
         </View>
       )}
-      <View style={[styles.bottomActions, { right: 18 * scale, bottom: 15 * scale, gap: 12 * scale }]}>
+      <View style={[styles.bottomActions, { right: 12 * scale, bottom: 12 * scale, gap: 9 * scale }]}>
         <TouchableOpacity style={[styles.roundButton, { width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }]} onPress={props.onToggleMusic} accessibilityLabel={props.musicEnabled ? 'Silenciar música' : 'Activar música'}>
-          <Image source={props.musicEnabled ? require('../assets/ui/ic_music_on.png') : require('../assets/ui/ic_music_off.png')} style={{ width: 34 * scale, height: 34 * scale }} resizeMode="contain" />
+          <Image source={props.musicEnabled ? require('../assets/ui/ic_music_on.png') : require('../assets/ui/ic_music_off.png')} style={{ width: 27 * scale, height: 27 * scale, tintColor: '#168FD1' }} resizeMode="contain" />
         </TouchableOpacity>
         <TouchableOpacity style={[styles.roundButton, { width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }]} onPress={props.onOpenMenu} accessibilityLabel="Abrir opciones">
-          <Image source={require('../assets/ui/ic_content_burger.png')} style={{ width: 31 * scale, height: 31 * scale, tintColor: '#168FD1' }} resizeMode="contain" />
+          <View style={[styles.hamburger, { width: 25 * scale, height: 20 * scale }]}>
+            <View style={styles.hamburgerLine} />
+            <View style={styles.hamburgerLine} />
+            <View style={styles.hamburgerLine} />
+          </View>
         </TouchableOpacity>
       </View>
     </Animated.View>
@@ -56,4 +60,6 @@ const styles = StyleSheet.create({
   voiceButton: { backgroundColor: '#F3F4EA', justifyContent: 'center', alignItems: 'center' },
   voiceSlider: { flex: 1, height: 44 },
   bottomActions: { position: 'absolute', flexDirection: 'row', alignItems: 'center' },
+  hamburger: { justifyContent: 'space-between', paddingVertical: 2 },
+  hamburgerLine: { width: '100%', height: 3, borderRadius: 2, backgroundColor: '#168FD1' },
 });

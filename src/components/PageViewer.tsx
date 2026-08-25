@@ -40,7 +40,7 @@ export function PageViewer({
 }: PageViewerProps) {
   const pagerRef = useRef<PagerView>(null);
   const { width, height } = useWindowDimensions();
-  const scale = Math.max(0.65, Math.min(1.15, Math.min(width / 1280, height / 768)));
+  const scale = Math.max(0.82, Math.min(1.25, Math.min(width / 904, height / 407)));
 
   // PagerView only uses initialPage during mount. Keep its native page in sync
   // when narration or the page index changes currentPage programmatically.
@@ -109,14 +109,14 @@ export function PageViewer({
               {showText && textForPage && (
                 <View
                   style={[styles.textOverlay, {
-                    left: 92 * scale,
-                    right: 92 * scale,
-                    minHeight: 138 * scale,
+                    left: 58 * scale,
+                    right: 58 * scale,
+                    minHeight: 90 * scale,
                     maxHeight: height * 0.30,
-                    borderTopLeftRadius: 18 * scale,
-                    borderTopRightRadius: 18 * scale,
-                    paddingHorizontal: 58 * scale,
-                    paddingVertical: 18 * scale,
+                    borderTopLeftRadius: 12 * scale,
+                    borderTopRightRadius: 12 * scale,
+                    paddingHorizontal: 38 * scale,
+                    paddingVertical: 12 * scale,
                   }]}
                 >
                   <ScrollView showsVerticalScrollIndicator={false}>
@@ -134,7 +134,7 @@ export function PageViewer({
         style={[
           styles.arrowBtn,
           styles.leftArrow,
-          { bottom: 25 * scale, width: 82 * scale, height: 105 * scale },
+          { bottom: 10 * scale, width: 52 * scale, height: 76 * scale },
         ]}
         onPress={goPrev}
         accessibilityLabel={currentPage === 0 ? 'Volver al menú' : 'Página anterior'}
@@ -146,7 +146,7 @@ export function PageViewer({
                 ? require('../assets/ui/ic_left_arrow_pressed.png')
                 : require('../assets/ui/ic_left_arrow.png')
             }
-            style={{ width: 44 * scale, height: 62 * scale, resizeMode: 'contain' }}
+            style={{ width: 34 * scale, height: 48 * scale, resizeMode: 'contain' }}
           />
         )}
       </Pressable>
@@ -155,7 +155,7 @@ export function PageViewer({
         style={[
           styles.arrowBtn,
           styles.rightArrow,
-          { bottom: 25 * scale, width: 82 * scale, height: 105 * scale },
+          { bottom: 10 * scale, width: 52 * scale, height: 76 * scale },
         ]}
         onPress={goNext}
         accessibilityLabel={currentPage === pages.length - 1 ? 'Terminar cuento' : 'Página siguiente'}
@@ -167,7 +167,7 @@ export function PageViewer({
                 ? require('../assets/ui/ic_right_arrow_pressed.png')
                 : require('../assets/ui/ic_right_arrow.png')
             }
-            style={{ width: 44 * scale, height: 62 * scale, resizeMode: 'contain' }}
+            style={{ width: 34 * scale, height: 48 * scale, resizeMode: 'contain' }}
           />
         )}
       </Pressable>

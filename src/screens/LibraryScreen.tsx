@@ -156,7 +156,7 @@ export default function LibraryScreen() {
         </View>
         {/* Compact side rail, matching the reference landscape layout. */}
         <View style={[styles.sideRail, {
-          left: -32 * layoutScale,
+          left: 10 * layoutScale,
           top: 17 * layoutScale,
           width: 100 * layoutScale,
           gap: 30 * layoutScale,
@@ -191,8 +191,8 @@ export default function LibraryScreen() {
         {/* Search + filter bar */}
         <View style={[styles.searchRow, {
           top: 17 * layoutScale,
-          left: 112 * layoutScale,
-          right: -20 * layoutScale,
+          left: 150 * layoutScale,
+          right: 12 * layoutScale,
           gap: 40 * layoutScale,
         }]}>
           <View style={[styles.searchBox, {
@@ -296,7 +296,7 @@ export default function LibraryScreen() {
         {showScrollTop && (
           <Animated.View style={[styles.scrollTopButton, {
             opacity: scrollTopAnim,
-            left: -34 * layoutScale,
+            left: 10 * layoutScale,
             bottom: 16 * layoutScale,
             width: 100 * layoutScale,
             height: 100 * layoutScale,

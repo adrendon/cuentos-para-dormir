@@ -473,7 +473,7 @@ export default function BookScreen() {
           direction="closing"
           source={sourceRect}
           coverSource={getBookCover(book.folderName)}
-          firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined}
+          firstPageSource={pages[currentPage] ? { uri: pages[currentPage].uri } : undefined}
           coverColor={book.coverColor}
           title={title || book.title}
           onComplete={handleSharedCloseComplete}

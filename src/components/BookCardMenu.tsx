@@ -13,7 +13,7 @@ interface BookCardMenuProps {
 
 export function BookCardMenu({ visible, book, anchor, onToggleFavorite, onDelete, onClose }: BookCardMenuProps) {
   const { width, height } = useWindowDimensions();
-  const scale = Math.max(0.72, Math.min(1.12, Math.min(width / 1280, height / 768)));
+  const scale = Math.max(0.82, Math.min(1.25, Math.min(width / 904, height / 407)));
   const menuWidth = 285 * scale;
   const canDelete = book.isDownloaded && !book.isEmbedded;
   const left = Math.max(12, Math.min(width - menuWidth - 12, anchor.x - menuWidth + 34 * scale));

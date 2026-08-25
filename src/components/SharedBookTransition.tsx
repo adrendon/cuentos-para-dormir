@@ -32,11 +32,13 @@ export function SharedBookTransition({
   onComplete,
 }: SharedBookTransitionProps) {
   const { width, height } = useWindowDimensions();
-  const scale = Math.min(width / 1280, height / 768);
-  const pageWidth = 396 * scale;
-  const pageHeight = 434 * scale;
+  const scale = Math.min(width / 904, height / 407);
+  const pageHeight = Math.min(height * 0.82, 296 * scale);
+  const pageWidth = Math.min(width * 0.36, pageHeight * 0.9);
+  const bookLeft = (width - pageWidth * 2) / 2;
   const target: BookCardLayout = {
-    x: (width - pageWidth * 2) / 2 + 82 * scale,
+    // A closed front cover occupies the right-hand page and hinges at the spine.
+    x: bookLeft + pageWidth,
     y: (height - pageHeight) / 2,
     width: pageWidth,
     height: pageHeight,
@@ -45,7 +47,7 @@ export function SharedBookTransition({
 
   useEffect(() => {
     progress.value = withTiming(1, {
-      duration: direction === 'opening' ? 520 : 800,
+      duration: direction === 'opening' ? 460 : 1180,
       easing: Easing.inOut(Easing.cubic),
     }, (finished) => {
       if (finished) runOnJS(onComplete)();
@@ -55,18 +57,18 @@ export function SharedBookTransition({
   const backgroundStyle = useAnimatedStyle(() => ({
     opacity: direction === 'opening'
       ? progress.value
-      : interpolate(progress.value, [0, 0.45, 1], [1, 1, 0]),
+      : interpolate(progress.value, [0, 0.18, 0.72, 1], [0, 1, 1, 0]),
   }));
 
   const coverStyle = useAnimatedStyle(() => {
     const geometryProgress = direction === 'opening'
       ? progress.value
-      : interpolate(progress.value, [0, 0.45, 1], [0, 0, 1]);
+      : interpolate(progress.value, [0, 0.64, 1], [0, 0, 1]);
     const from = direction === 'opening' ? source : target;
     const to = direction === 'opening' ? target : source;
     const rotation = direction === 'opening'
       ? 0
-      : interpolate(progress.value, [0, 0.45, 1], [150, 0, 0]);
+      : interpolate(progress.value, [0, 0.22, 0.64, 1], [-165, -165, 0, 0]);
     return {
       left: interpolate(geometryProgress, [0, 1], [from.x, to.x]),
       top: interpolate(geometryProgress, [0, 1], [from.y, to.y]),
@@ -79,6 +81,21 @@ export function SharedBookTransition({
         { perspective: 1400 },
         { rotateY: `${rotation}deg` },
       ],
+      opacity: direction === 'closing'
+        ? interpolate(progress.value, [0, 0.18, 0.24], [0, 0, 1])
+        : 1,
+    };
+  });
+
+  const storyFrameStyle = useAnimatedStyle(() => {
+    if (direction === 'opening') return {};
+    const settle = Math.min(1, progress.value / 0.22);
+    return {
+      left: interpolate(settle, [0, 1], [0, target.x]),
+      top: interpolate(settle, [0, 1], [0, target.y]),
+      width: interpolate(settle, [0, 1], [width, target.width]),
+      height: interpolate(settle, [0, 1], [height, target.height]),
+      borderRadius: interpolate(settle, [0, 1], [0, 10 * scale]),
     };
   });
 
@@ -98,20 +115,15 @@ export function SharedBookTransition({
     <View style={styles.root} pointerEvents="auto">
       <Animated.View style={[styles.background, backgroundStyle]} />
       {firstPageSource && (
-        <Animated.View style={[
-          styles.storyPage,
-          {
-            left: target.x + target.width,
-            top: target.y,
-            width: target.width,
-            height: target.height,
-          },
-          pageStyle,
-        ]}>
-          <Image source={firstPageSource} style={styles.artwork} resizeMode="cover" />
+        <Animated.View style={[styles.pageGroup, pageStyle]}>
+          <View style={[styles.pageLayerFar, { left: target.x + 8 * scale, top: target.y + 7 * scale, width: target.width, height: target.height, borderColor: coverColor }]} />
+          <View style={[styles.pageLayerNear, { left: target.x + 4 * scale, top: target.y + 3 * scale, width: target.width, height: target.height, borderColor: coverColor }]} />
+          <Animated.View style={[styles.storyPage, { left: target.x, top: target.y, width: target.width, height: target.height, borderColor: coverColor }, storyFrameStyle]}>
+            <Image source={firstPageSource} style={styles.artwork} resizeMode="cover" />
+          </Animated.View>
         </Animated.View>
       )}
-      <Animated.View style={[styles.cover, { backgroundColor: coverColor }, coverStyle]}>
+      <Animated.View style={[styles.cover, { backgroundColor: coverColor, borderColor: coverColor }, coverStyle]}>
         <View style={styles.coverFront}>
           {coverSource ? (
             <Image source={coverSource} style={styles.artwork} resizeMode="cover" />
@@ -154,11 +166,11 @@ export function SharedBookTransition({
 const styles = StyleSheet.create({
   root: { ...StyleSheet.absoluteFill, zIndex: 1000 },
   background: { ...StyleSheet.absoluteFill, backgroundColor: Colors.backgroundDark },
+  pageGroup: { ...StyleSheet.absoluteFill },
   cover: {
     position: 'absolute',
-    transformOrigin: 'right center',
+    transformOrigin: 'left center',
     borderWidth: 3,
-    borderColor: Colors.accentTurquoise,
     elevation: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
@@ -171,8 +183,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#FFF',
     borderWidth: 3,
-    borderColor: Colors.accentTurquoise,
   },
+  pageLayerFar: { position: 'absolute', borderRadius: 10, backgroundColor: '#D8D4C6', borderWidth: 3, opacity: 0.42 },
+  pageLayerNear: { position: 'absolute', borderRadius: 10, backgroundColor: '#ECE9DD', borderWidth: 3, opacity: 0.72 },
   coverFront: {
     ...StyleSheet.absoluteFill,
     overflow: 'hidden',

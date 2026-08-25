@@ -16,14 +16,14 @@ const THUMB_COLUMNS = 2;
 export function PageIndexOverlay({ visible, pages, currentPage, onSelectPage, onClose }: PageIndexOverlayProps) {
   const listRef = useRef<FlatList<BookPage>>(null);
   const { width, height } = useWindowDimensions();
-  const scale = Math.max(0.65, Math.min(1.15, Math.min(width / 1280, height / 768)));
-  const leftInset = 168 * scale;
-  const rightInset = 8 * scale;
-  const columnGap = 34 * scale;
+  const scale = Math.max(0.82, Math.min(1.25, Math.min(width / 904, height / 407)));
+  const leftInset = 72 * scale;
+  const rightInset = 18 * scale;
+  const columnGap = 16 * scale;
   const thumbWidth = Math.max(120, (width - leftInset - rightInset - columnGap) / 2);
   const thumbHeight = thumbWidth / 1.475;
-  const markWidth = 76 * scale;
-  const markHeight = 102 * scale;
+  const markWidth = 48 * scale;
+  const markHeight = 64 * scale;
   const rowHeight = thumbHeight + 8 * scale;
 
   useEffect(() => {
@@ -41,13 +41,7 @@ export function PageIndexOverlay({ visible, pages, currentPage, onSelectPage, on
         <TouchableOpacity
           style={[
             styles.closeButton,
-            {
-              top: 16 * scale,
-              left: -6 * scale,
-              width: 76 * scale,
-              height: 76 * scale,
-              borderRadius: 38 * scale,
-            },
+            { top: 12 * scale, left: 12 * scale, width: 52 * scale, height: 52 * scale, borderRadius: 26 * scale },
           ]}
           onPress={onClose}
           accessibilityRole="button"
@@ -55,7 +49,7 @@ export function PageIndexOverlay({ visible, pages, currentPage, onSelectPage, on
         >
           <Image
             source={require('../assets/ui/ic_close.png')}
-            style={{ width: 40 * scale, height: 40 * scale }}
+            style={{ width: 29 * scale, height: 29 * scale }}
             resizeMode="contain"
           />
         </TouchableOpacity>
@@ -68,7 +62,7 @@ export function PageIndexOverlay({ visible, pages, currentPage, onSelectPage, on
           showsVerticalScrollIndicator={false}
           columnWrapperStyle={{ gap: columnGap }}
           contentContainerStyle={{
-            paddingTop: 79 * scale,
+            paddingTop: 72 * scale,
             paddingLeft: leftInset,
             paddingRight: rightInset,
             paddingBottom: 30 * scale,
@@ -96,7 +90,7 @@ export function PageIndexOverlay({ visible, pages, currentPage, onSelectPage, on
                   style={[
                     styles.pageNumberWrap,
                     {
-                      left: 30 * scale,
+                      left: 16 * scale,
                       width: markWidth,
                       height: markHeight,
                     },
@@ -104,7 +98,7 @@ export function PageIndexOverlay({ visible, pages, currentPage, onSelectPage, on
                   pointerEvents="none"
                 >
                   <Image source={require('../assets/ui/ic_page_mark.png')} style={styles.pageMark} resizeMode="stretch" />
-                  <Text style={[styles.pageNumber, { fontSize: 31 * scale, marginTop: 10 * scale }]}>{item.pageNumber}</Text>
+                  <Text style={[styles.pageNumber, { fontSize: 19 * scale, marginTop: 7 * scale }]}>{item.pageNumber}</Text>
                 </View>
               </TouchableOpacity>
             );
