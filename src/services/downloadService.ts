@@ -1,5 +1,5 @@
 import * as FileSystem from 'expo-file-system/legacy';
-import { unzip } from 'fflate';
+import { getUncompressedSize, subscribe, unzip } from 'react-native-zip-archive';
 
 /**
  * Download service for fetching book ZIP files from GitHub,
@@ -17,7 +17,14 @@ const GITHUB_BOOKS_BASE_URL =
 
 export const BOOKS_LOCAL_DIR = `${FileSystem.documentDirectory}books/`;
 
-export type DownloadStatus = 'idle' | 'downloading' | 'extracting' | 'done' | 'error';
+export type DownloadStatus =
+  | 'idle'
+  | 'downloading'
+  | 'extracting'
+  | 'validating'
+  | 'installing'
+  | 'done'
+  | 'error';
 
 export interface DownloadProgress {
   status: DownloadStatus;
@@ -28,6 +35,7 @@ export interface DownloadProgress {
 }
 
 type ProgressCallback = (progress: DownloadProgress) => void;
+let extractionQueue: Promise<void> = Promise.resolve();
 
 /**
  * Check if a book is already downloaded locally.
@@ -35,6 +43,7 @@ type ProgressCallback = (progress: DownloadProgress) => void;
 export async function isBookDownloaded(folderName: string): Promise<boolean> {
   try {
     const bookDir = `${BOOKS_LOCAL_DIR}${folderName}`;
+    await recoverInterruptedInstall(`${bookDir}/`);
     const info = await FileSystem.getInfoAsync(bookDir);
     if (!info.exists) return false;
 
@@ -83,6 +92,7 @@ export async function downloadBook(
   const zipUrl = `${GITHUB_BOOKS_BASE_URL}/${folderName}.zip`;
   const zipLocalPath = `${FileSystem.cacheDirectory}${folderName}.zip`;
   const bookDestDir = `${BOOKS_LOCAL_DIR}${folderName}/`;
+  const installTempDir = `${BOOKS_LOCAL_DIR}.installing-${folderName}/`;
 
   try {
     // Ensure books directory exists
@@ -90,6 +100,8 @@ export async function downloadBook(
     if (!booksDir.exists) {
       await FileSystem.makeDirectoryAsync(BOOKS_LOCAL_DIR, { intermediates: true });
     }
+    await recoverInterruptedInstall(bookDestDir);
+    await FileSystem.deleteAsync(installTempDir, { idempotent: true });
 
     // Report start
     onProgress({
@@ -127,80 +139,54 @@ export async function downloadBook(
       }
     }
 
-    // Extract phase
+    const nativeZipPath = toNativePath(zipLocalPath);
+    const nativeTempPath = toNativePath(installTempDir);
+    const [uncompressedBytes, freeDiskBytes] = await Promise.all([
+      getUncompressedSize(nativeZipPath),
+      FileSystem.getFreeDiskStorageAsync(),
+    ]);
+    const requiredFreeBytes = uncompressedBytes + Math.ceil(uncompressedBytes * 0.15);
+    if (freeDiskBytes < requiredFreeBytes) {
+      throw new Error('No hay suficiente espacio libre para instalar este cuento');
+    }
+
+    await FileSystem.makeDirectoryAsync(installTempDir, { intermediates: true });
+
+    // Native file-to-file extraction keeps compressed and expanded data out of
+    // the JavaScript heap. Extract into a temporary directory so an interrupted
+    // operation can never leave a book marked as installed.
     onProgress({
       status: 'extracting',
-      progress: 0.75,
+      progress: 0.7,
       bytesDownloaded: 0,
       totalBytes: 0,
     });
-
-    // Read ZIP as base64 and decode
-    const zipBase64 = await FileSystem.readAsStringAsync(zipLocalPath, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-
-    // Decode base64 to Uint8Array
-    const zipBytes = base64ToUint8Array(zipBase64);
-
-    // Use fflate's asynchronous API so large books do not monopolize the JS
-    // thread and trigger Android's "application is not responding" dialog.
-    const unzipped = await new Promise<Record<string, Uint8Array>>((resolve, reject) => {
-      unzip(zipBytes, (error, files) => {
-        if (error) reject(error);
-        else resolve(files);
-      });
-    });
-
-    // Ensure dest directory
-    const destInfo = await FileSystem.getInfoAsync(bookDestDir);
-    if (!destInfo.exists) {
-      await FileSystem.makeDirectoryAsync(bookDestDir, { intermediates: true });
-    }
-
-    // Write extracted files
-    const fileNames = Object.keys(unzipped);
-    let filesWritten = 0;
-
-    for (const rawName of fileNames) {
-      const fileData = unzipped[rawName];
-
-      // Strip the leading folder (e.g., "ADayInReverse/file.txt" → "file.txt")
-      const cleanName = stripLeadingFolder(rawName);
-      if (!cleanName || cleanName === '') continue;
-
-      const filePath = `${bookDestDir}${cleanName}`;
-
-      if (rawName.endsWith('/')) {
-        // Directory
-        await FileSystem.makeDirectoryAsync(filePath, { intermediates: true });
-      } else {
-        // File - ensure parent dir exists
-        const parentDir = filePath.substring(0, filePath.lastIndexOf('/'));
-        const parentInfo = await FileSystem.getInfoAsync(parentDir);
-        if (!parentInfo.exists) {
-          await FileSystem.makeDirectoryAsync(parentDir, { intermediates: true });
-        }
-
-        // Write file as base64
-        const fileBase64 = uint8ArrayToBase64(fileData);
-        await FileSystem.writeAsStringAsync(filePath, fileBase64, {
-          encoding: FileSystem.EncodingType.Base64,
+    await runExtractionExclusive(async () => {
+      const progressSubscription = subscribe(({ progress }) => {
+        onProgress({
+          status: 'extracting',
+          progress: 0.7 + Math.min(progress, 1) * 0.2,
+          bytesDownloaded: 0,
+          totalBytes: 0,
         });
-      }
-
-      filesWritten++;
-      const extractProgress = 0.75 + (filesWritten / fileNames.length) * 0.25;
-      onProgress({
-        status: 'extracting',
-        progress: Math.min(extractProgress, 0.99),
-        bytesDownloaded: 0,
-        totalBytes: 0,
       });
-    }
+      try {
+        await unzip(nativeZipPath, nativeTempPath, 'UTF-8');
+      } finally {
+        progressSubscription.remove();
+      }
+    });
 
-    // Clean up zip
+    onProgress({ status: 'validating', progress: 0.92, bytesDownloaded: 0, totalBytes: 0 });
+    const extractedBookDir = await findExtractedBookRoot(installTempDir);
+    await validateExtractedBook(extractedBookDir);
+
+    onProgress({ status: 'installing', progress: 0.97, bytesDownloaded: 0, totalBytes: 0 });
+    await installBookAtomically(extractedBookDir, bookDestDir);
+
+    // Clean up ZIP and any empty wrapper directory left by the archive.
     await FileSystem.deleteAsync(zipLocalPath, { idempotent: true });
+    await FileSystem.deleteAsync(installTempDir, { idempotent: true });
 
     onProgress({
       status: 'done',
@@ -222,7 +208,7 @@ export async function downloadBook(
 
     // Clean up
     await FileSystem.deleteAsync(zipLocalPath, { idempotent: true });
-    await FileSystem.deleteAsync(bookDestDir, { idempotent: true });
+    await FileSystem.deleteAsync(installTempDir, { idempotent: true });
 
     return false;
   }
@@ -240,31 +226,82 @@ export async function deleteDownloadedBook(folderName: string): Promise<void> {
   }
 }
 
-// --- Utilities ---
-
-function stripLeadingFolder(name: string): string {
-  const firstSlash = name.indexOf('/');
-  if (firstSlash === -1) return name;
-  return name.substring(firstSlash + 1);
+function toNativePath(uri: string): string {
+  return decodeURI(uri.replace(/^file:\/\//, ''));
 }
 
-function base64ToUint8Array(base64: string): Uint8Array {
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
+async function findExtractedBookRoot(tempDir: string): Promise<string> {
+  const rootTexts = await FileSystem.getInfoAsync(`${tempDir}Texts.csv`);
+  if (rootTexts.exists) return tempDir;
+
+  const children = await FileSystem.readDirectoryAsync(tempDir);
+  for (const child of children) {
+    const candidate = `${tempDir}${child}/`;
+    const candidateTexts = await FileSystem.getInfoAsync(`${candidate}Texts.csv`);
+    if (candidateTexts.exists) return candidate;
   }
-  return bytes;
+  throw new Error('El ZIP no contiene una estructura de cuento válida');
 }
 
-function uint8ArrayToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  const chunkSize = 8192;
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-    for (let j = 0; j < chunk.length; j++) {
-      binary += String.fromCharCode(chunk[j]);
+async function validateExtractedBook(bookDir: string): Promise<void> {
+  const [textsInfo, additionalInfo] = await Promise.all([
+    FileSystem.getInfoAsync(`${bookDir}Texts.csv`),
+    FileSystem.getInfoAsync(`${bookDir}AdditionalInfo.json`),
+  ]);
+  if (!textsInfo.exists || !additionalInfo.exists) {
+    throw new Error('El cuento descargado está incompleto');
+  }
+
+  const rawAdditionalInfo = await FileSystem.readAsStringAsync(`${bookDir}AdditionalInfo.json`);
+  const parsed = JSON.parse(rawAdditionalInfo) as { numberOfPages?: number };
+  if (!Number.isInteger(parsed.numberOfPages) || (parsed.numberOfPages ?? 0) <= 0) {
+    throw new Error('Los metadatos del cuento no son válidos');
+  }
+}
+
+async function installBookAtomically(sourceDir: string, destinationDir: string): Promise<void> {
+  const backupDir = `${destinationDir.replace(/\/$/, '')}.backup/`;
+  const destinationInfo = await FileSystem.getInfoAsync(destinationDir);
+  await FileSystem.deleteAsync(backupDir, { idempotent: true });
+
+  if (destinationInfo.exists) {
+    await FileSystem.moveAsync({ from: destinationDir, to: backupDir });
+  }
+
+  try {
+    await FileSystem.moveAsync({ from: sourceDir, to: destinationDir });
+    await FileSystem.deleteAsync(backupDir, { idempotent: true });
+  } catch (error) {
+    const backupInfo = await FileSystem.getInfoAsync(backupDir);
+    const failedDestinationInfo = await FileSystem.getInfoAsync(destinationDir);
+    if (backupInfo.exists && !failedDestinationInfo.exists) {
+      await FileSystem.moveAsync({ from: backupDir, to: destinationDir });
     }
+    throw error;
   }
-  return btoa(binary);
+}
+
+async function recoverInterruptedInstall(destinationDir: string): Promise<void> {
+  const backupDir = `${destinationDir.replace(/\/$/, '')}.backup/`;
+  const [destinationInfo, backupInfo] = await Promise.all([
+    FileSystem.getInfoAsync(destinationDir),
+    FileSystem.getInfoAsync(backupDir),
+  ]);
+  if (!destinationInfo.exists && backupInfo.exists) {
+    await FileSystem.moveAsync({ from: backupDir, to: destinationDir });
+  } else if (destinationInfo.exists && backupInfo.exists) {
+    await FileSystem.deleteAsync(backupDir, { idempotent: true });
+  }
+}
+
+async function runExtractionExclusive<T>(task: () => Promise<T>): Promise<T> {
+  const previousExtraction = extractionQueue;
+  let releaseQueue!: () => void;
+  extractionQueue = new Promise<void>((resolve) => { releaseQueue = resolve; });
+  await previousExtraction;
+  try {
+    return await task();
+  } finally {
+    releaseQueue();
+  }
 }

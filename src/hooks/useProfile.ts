@@ -9,6 +9,7 @@ const DEFAULT_PROFILE: UserProfile = {
   gender: 'boy',
   avatar: 'bear',
   musicEnabled: true,
+  musicVolume: 0.35,
   hasCompletedOnboarding: false,
   language: 'es',
   goals: [],
@@ -32,8 +33,8 @@ export function useProfile() {
     try {
       const stored = await AsyncStorage.getItem(PROFILE_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored) as UserProfile;
-        setProfile(parsed);
+        const parsed = JSON.parse(stored) as Partial<UserProfile>;
+        setProfile({ ...DEFAULT_PROFILE, ...parsed });
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -79,6 +80,14 @@ export function useProfile() {
     const updated = { ...profile, musicEnabled: !profile.musicEnabled };
     await saveProfile(updated);
   }, [profile, saveProfile]);
+
+  const updateMusicVolume = useCallback(
+    async (musicVolume: number) => {
+      const normalizedVolume = Math.max(0, Math.min(1, musicVolume));
+      await saveProfile({ ...profile, musicVolume: normalizedVolume });
+    },
+    [profile, saveProfile]
+  );
 
   const updateLanguage = useCallback(
     async (language: string) => {
@@ -133,6 +142,7 @@ export function useProfile() {
     updateGender,
     updateAvatar,
     toggleMusic,
+    updateMusicVolume,
     updateLanguage,
     updateGoals,
     updatePreferences,

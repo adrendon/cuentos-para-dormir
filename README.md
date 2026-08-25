@@ -120,7 +120,7 @@ Biblioteca (landscape, grid 3 columnas)
 | expo-navigation-bar | 57.x | Immersive mode |
 | expo-screen-orientation | 57.x | Portrait/Landscape per-screen |
 | expo-keep-awake | 57.x | Pantalla activa |
-| fflate | 0.8.2 | Unzip |
+| react-native-zip-archive | 8.x | Extracción ZIP nativa sin cargar el archivo en memoria JS |
 | react-native-reanimated | 4.5.1 | Animaciones 60fps |
 | react-native-pager-view | 8.0.2 | Swipe páginas |
 | react-native-svg | latest | Progreso circular descarga |
@@ -148,6 +148,7 @@ src/
   components/
     BookCard.tsx              # Card tipo libro con spine + ribbon + MB
     BookCardMenu.tsx          # Menú 3 puntos (favorito/eliminar)
+    BookEndScreen.tsx         # Pantalla final y acciones del cuento
     BookOpeningIntro.tsx      # Animación 3D flip + selector modo
     DownloadButton.tsx        # Progreso circular SVG
     FilterModal.tsx           # Modal filtros con chips coloreados
@@ -158,7 +159,11 @@ src/
     PageIndexOverlay.tsx      # Grid 2-col thumbnails + ribbon
     PageViewer.tsx            # Pager fullscreen + arrows pressed
     ReaderMenu.tsx            # Hamburguesa: texto, índice, reportar
+    ReaderControls.tsx        # Controles flotantes, sliders y contador
+    RecordComingSoonPanel.tsx # Panel aislado del modo grabar
   hooks/
+    useBookLifecycle.ts       # Background, orientación, keep-awake y back nativo
+    useBookMusic.ts           # Música, volumen persistente y mute
     useBookPages.ts           # Carga páginas boy/girl/common
     useBooks.ts               # Catálogo + descarga + filtros + búsqueda
     useBookTexts.ts           # Texto personalizado {NAME}
@@ -170,11 +175,11 @@ src/
     SplashScreen.tsx          # Video + fade + orientación
     OnboardingScreen.tsx      # 9 pasos + loading (712 líneas)
     LibraryScreen.tsx         # Grid 3-col + búsqueda + filtros
-    BookScreen.tsx            # Reader completo (559 líneas)
+    BookScreen.tsx            # Orquestador del reader
     SettingsScreen.tsx        # Config con oso+zorro
   services/
     audioService.ts           # expo-audio: play/stop/fade/duck/loop
-    downloadService.ts        # GitHub ZIP + fflate unzip
+    downloadService.ts        # Descarga + extracción nativa + instalación validada
     embeddedBooksService.ts   # Primer libro al arranque
     notificationService.ts    # FCM placeholder
   theme/colors.ts             # Paleta de colores
@@ -189,7 +194,9 @@ Los libros se descargan como ZIP desde GitHub:
 https://github.com/adrendon/cuentos-para-dormir/raw/main/books-zip/{FolderName}.zip
 ```
 
-9 libros disponibles: ADayInReverse (embebido), AFunWalk, AGoodIdea, AGreatFriendship, ALittleAntsBigJob, AllIsNotLost, APerfectHome, Belka, BirdsChoir.
+El catálogo contiene **92 libros**: `ADayInReverse` se distribuye embebido y los otros 91 se instalan bajo demanda. Cada entrada debe tener un ZIP en `books-zip/` y una portada registrada; `npm run validate:catalog` comprueba esa correspondencia.
+
+La extracción se ejecuta de forma nativa, directamente entre el ZIP y una carpeta temporal. Antes de publicar el cuento, la app comprueba espacio libre, `Texts.csv` y `AdditionalInfo.json`, y después realiza una instalación con respaldo. Al incluir código nativo, hace falta un development build o un APK/AAB nuevo; Expo Go no puede ejecutar las descargas.
 
 ## Comandos
 
@@ -197,6 +204,7 @@ https://github.com/adrendon/cuentos-para-dormir/raw/main/books-zip/{FolderName}.
 npm install --legacy-peer-deps    # Instalar dependencias
 npx expo-doctor                   # Verificar salud (21/21)
 npx tsc --noEmit                  # TypeScript check
+npm run check                     # Catálogo + TypeScript
 npm run build:eas                 # Build APK en la nube (EAS)
 npm run deploy:apk                # Build local + subir al servidor Oracle
 ```

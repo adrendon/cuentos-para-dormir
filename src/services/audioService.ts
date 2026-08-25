@@ -10,6 +10,12 @@ import * as FileSystem from 'expo-file-system/legacy';
 let player: AudioPlayer | null = null;
 let isSetup = false;
 let musicGeneration = 0;
+let preferredVolume = 0.35;
+let isDucked = false;
+
+function getEffectiveVolume(): number {
+  return isDucked ? Math.min(preferredVolume, 0.08) : preferredVolume;
+}
 
 /**
  * Initialize audio mode.
@@ -56,7 +62,7 @@ export async function playBookMusic(
       return false;
     }
     player = nextPlayer;
-    player.volume = 0.35;
+    player.volume = getEffectiveVolume();
     player.loop = true; // Loop background music
     player.play();
     return true;
@@ -97,6 +103,7 @@ export async function resumeMusic(): Promise<void> {
  */
 export async function stopMusic(): Promise<void> {
   musicGeneration++;
+  isDucked = false;
   try {
     if (player) {
       const p = player;
@@ -117,8 +124,9 @@ export async function stopMusic(): Promise<void> {
  */
 export async function setVolume(volume: number): Promise<void> {
   try {
+    preferredVolume = Math.max(0, Math.min(1, volume));
     if (player) {
-      player.volume = Math.max(0, Math.min(1, volume));
+      player.volume = getEffectiveVolume();
     }
   } catch (error) {
     console.error('Error setting volume:', error);
@@ -129,28 +137,23 @@ export async function setVolume(volume: number): Promise<void> {
  * Get current volume.
  */
 export async function getVolume(): Promise<number> {
-  try {
-    if (player) {
-      return player.volume;
-    }
-    return 1.0;
-  } catch {
-    return 1.0;
-  }
+  return preferredVolume;
 }
 
 /**
  * Duck volume for narration overlay.
  */
 export async function duckVolume(): Promise<void> {
-  await setVolume(0.08);
+  isDucked = true;
+  if (player) player.volume = getEffectiveVolume();
 }
 
 /**
  * Restore volume after ducking.
  */
 export async function restoreVolume(): Promise<void> {
-  await setVolume(0.35);
+  isDucked = false;
+  if (player) player.volume = preferredVolume;
 }
 
 /**

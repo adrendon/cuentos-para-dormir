@@ -114,18 +114,10 @@ export default function LibraryScreen() {
     refreshBooks();
   }, [markBookAsDownloaded, refreshBooks]);
 
-  const getCoverUri = (book: Book): string | undefined => {
-    // Use bundled cover image from covers/ folder
-    // These are bundled as assets in the app
-    return undefined; // Will use Asset.fromModule in production
-    // For now, covers show the placeholder with coverColor
-  };
-
   const renderBookItem = ({ item, index }: { item: Book; index: number }) => {
     return (
       <BookCard
         book={item}
-        coverUri={getCoverUri(item)}
         onPress={handleBookPress}
         onDownloadComplete={handleDownloadComplete}
         onToggleFavorite={toggleFavorite}

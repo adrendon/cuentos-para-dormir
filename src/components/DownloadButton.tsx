@@ -37,7 +37,7 @@ export function DownloadButton({ folderName, sizeMB, accentColor, onDownloadComp
   }, [progress.progress]);
 
   const handleDownload = useCallback(async () => {
-    if (progress.status === 'downloading' || progress.status === 'extracting') return;
+    if (isActiveStatus(progress.status)) return;
 
     const success = await downloadBook(folderName, (p) => {
       setProgress(p);
@@ -67,7 +67,7 @@ export function DownloadButton({ folderName, sizeMB, accentColor, onDownloadComp
     );
   }
 
-  const isActive = progress.status === 'downloading' || progress.status === 'extracting';
+  const isActive = isActiveStatus(progress.status);
   const circleSize = 52;
   const strokeWidth = 2;
   const radius = (circleSize - strokeWidth) / 2;
@@ -117,6 +117,10 @@ export function DownloadButton({ folderName, sizeMB, accentColor, onDownloadComp
       </TouchableOpacity>
     </View>
   );
+}
+
+function isActiveStatus(status: DownloadProgress['status']): boolean {
+  return ['downloading', 'extracting', 'validating', 'installing'].includes(status);
 }
 
 const styles = StyleSheet.create({

@@ -16,7 +16,6 @@ import { getBookCover } from '../assets/books/coverRegistry';
 
 interface BookCardProps {
   book: Book;
-  coverUri?: string;
   onPress: (book: Book) => void;
   onDownloadComplete: (bookId: string) => void;
   onToggleFavorite: (bookId: string) => void;
@@ -27,7 +26,6 @@ interface BookCardProps {
 
 export function BookCard({
   book,
-  coverUri,
   onPress,
   onDownloadComplete,
   onToggleFavorite,

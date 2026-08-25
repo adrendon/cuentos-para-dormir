@@ -49,7 +49,7 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
    * Play narration for a specific page number.
    */
   const playNarration = useCallback(async (pageNumber: number) => {
-    if (!folderName) return;
+    if (!folderName) return false;
 
     try {
       // Invalidate and release synchronously before the asynchronous file
@@ -61,7 +61,7 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
       const voiceFile = `${BOOKS_LOCAL_DIR}${folderName}/voicework_es/voice${pageNumber}.mp3`;
       const fileInfo = await FileSystem.getInfoAsync(voiceFile);
 
-      if (!fileInfo.exists || playbackGeneration !== playbackGenerationRef.current) return;
+      if (!fileInfo.exists || playbackGeneration !== playbackGenerationRef.current) return false;
 
       const narrationPlayer = createAudioPlayer({ uri: voiceFile });
       narrationPlayer.volume = narrationVolumeRef.current;
@@ -85,9 +85,11 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
       setIsNarrating(true);
       setIsNarrationPaused(false);
       setCurrentNarrationPage(pageNumber);
+      return true;
     } catch (error) {
       console.error('Error playing narration:', error);
       setIsNarrating(false);
+      return false;
     }
   }, [folderName, releaseCurrentPlayer]);
 
@@ -108,8 +110,9 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
   const toggleNarration = useCallback(async (pageNumber: number) => {
     if (isNarrating && currentNarrationPage === pageNumber) {
       await stopNarration();
+      return false;
     } else {
-      await playNarration(pageNumber);
+      return playNarration(pageNumber);
     }
   }, [isNarrating, currentNarrationPage, playNarration, stopNarration]);
 

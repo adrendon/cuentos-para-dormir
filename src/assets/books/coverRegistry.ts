@@ -3,7 +3,7 @@
  * React Native/Metro can only include assets referenced through static paths.
  */
 
-const covers: Record<string, number> = {
+export const BOOK_COVERS: Record<string, number> = {
   ADayInReverse: require('./covers/ADayInReverse.webp'),
   AFunWalk: require('./covers/AFunWalk.webp'),
   AGoodIdea: require('./covers/AGoodIdea.webp'),
@@ -103,5 +103,5 @@ const covers: Record<string, number> = {
  * Returns a require() result usable in <Image source={...} />
  */
 export function getBookCover(folderName: string): number | undefined {
-  return covers[folderName];
+  return BOOK_COVERS[folderName];
 }

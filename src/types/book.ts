@@ -53,6 +53,7 @@ export interface UserProfile {
   gender: Gender;
   avatar: string;
   musicEnabled: boolean;
+  musicVolume: number;
   hasCompletedOnboarding: boolean;
   language: string;
   goals: OnboardingGoal[];
