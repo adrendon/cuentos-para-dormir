@@ -51,7 +51,7 @@ export function DownloadButton({ folderName, sizeMB, accentColor, displayScale =
 
   const isActive = isActiveStatus(progress.status);
   const circleSize = 58 * displayScale;
-  const arrowSize = 34 * displayScale;
+  const arrowSize = 58 * displayScale;
   const progressWidth = 190 * displayScale;
   const progressHeight = 8 * displayScale;
   const percent = Math.round(progress.progress * 100);
@@ -76,7 +76,7 @@ export function DownloadButton({ folderName, sizeMB, accentColor, displayScale =
         </View>
       ) : (
         <TouchableOpacity style={styles.button} onPress={handleDownload} accessibilityLabel="Descargar cuento" accessibilityRole="button">
-          <View style={[styles.circleWrap, { width: circleSize, height: circleSize, borderRadius: circleSize / 2, borderWidth: 3 * displayScale }]}>
+          <View style={[styles.circleWrap, { width: circleSize, height: circleSize, borderRadius: circleSize / 2 }]}>
             <Image source={require('../assets/ui/ic_download.png')} style={{ width: arrowSize, height: arrowSize, tintColor: '#FFFFFF' }} resizeMode="contain" />
           </View>
           <Text style={[styles.buttonText, { fontSize: 22 * displayScale, lineHeight: 27 * displayScale, marginTop: 7 * displayScale }]}>{sizeMB} MB</Text>
@@ -102,7 +102,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   circleWrap: {
-    borderColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
