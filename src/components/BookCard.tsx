@@ -25,6 +25,8 @@ export function BookCard({ book, onPress, onDownloadComplete, onToggleFavorite, 
   const displayScale = cardWidth / 361;
   const uiScale = clamp(displayScale, 0.72, 1.16);
   const titleSize = clamp(cardWidth * 0.078, 20, 31);
+  const edgeWidth = 12 * uiScale;
+  const cardHeight = cardWidth * (402 / 361);
   const [showMenu, setShowMenu] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState({ x: 0, y: 0 });
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -50,72 +52,167 @@ export function BookCard({ book, onPress, onDownloadComplete, onToggleFavorite, 
     });
   };
 
+  const coverSource = getBookCover(book.folderName);
+
   return (
-    <Animated.View style={{ width: cardWidth, opacity: fadeAnim, transform: [{ scale: Animated.multiply(scaleAnim, pressScale) }] }}>
+    <Animated.View
+      style={[
+        styles.cardShadow,
+        {
+          width: cardWidth,
+          height: cardHeight,
+          borderRadius: 12 * uiScale,
+          opacity: fadeAnim,
+          transform: [{ scale: Animated.multiply(scaleAnim, pressScale) }],
+        },
+      ]}
+    >
       <TouchableOpacity
         ref={cardRef}
-        style={[styles.container, { width: cardWidth, height: cardWidth * (402 / 361), borderRadius: 12 * uiScale, backgroundColor: book.coverColor }]}
+        style={[styles.container, { width: cardWidth, height: cardHeight, borderRadius: 12 * uiScale, backgroundColor: book.coverColor }]}
         onPress={handlePress}
         activeOpacity={isAvailable || isIncluded ? 0.85 : 1}
         accessibilityRole="button"
         accessibilityLabel={`${isIncluded ? 'Cuento incluido' : isAvailable ? 'Abrir' : 'Descargar'}: ${book.title}`}
       >
-        <View style={styles.imageContainer}>
-          {(() => {
-            const coverSource = getBookCover(book.folderName);
-            return coverSource
-              ? <Image source={coverSource} style={styles.coverImage} resizeMode="cover" />
-              : <View style={[styles.placeholder, { backgroundColor: book.coverColor }]}><Text style={styles.placeholderEmoji}>📖</Text></View>;
-          })()}
+        <View style={[styles.coverSurface, { right: edgeWidth }]}> 
+          {coverSource
+            ? <Image source={coverSource} style={styles.coverImage} resizeMode="cover" />
+            : <View style={[styles.placeholder, { backgroundColor: book.coverColor }]}><Text style={styles.placeholderEmoji}>📖</Text></View>}
+
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.84)']}
+            locations={[0.35, 1]}
+            style={[styles.titleGradient, { minHeight: cardWidth * 0.31, paddingBottom: 15 * uiScale, paddingHorizontal: 13 * uiScale }]}
+          >
+            <Text
+              style={[
+                styles.title,
+                {
+                  fontSize: titleSize,
+                  lineHeight: titleSize * 1.12,
+                  textShadowRadius: 4 * uiScale,
+                },
+              ]}
+              numberOfLines={2}
+              adjustsFontSizeToFit
+              minimumFontScale={0.82}
+            >
+              {book.title}
+            </Text>
+          </LinearGradient>
+
+          {!isAvailable && !book.isEmbedded && (
+            <View style={styles.downloadContainer} pointerEvents="box-none">
+              <DownloadButton folderName={book.folderName} sizeMB={book.sizeMB} accentColor={book.coverColor} displayScale={uiScale} onDownloadComplete={() => onDownloadComplete(book.id)} />
+            </View>
+          )}
         </View>
 
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.82)']}
-          locations={[0, 0.68]}
-          style={[styles.titleGradient, { minHeight: cardWidth * 0.30, paddingBottom: 16 * uiScale, paddingHorizontal: 14 * uiScale }]}
-        >
-          <Text style={[styles.title, { fontSize: titleSize, lineHeight: titleSize * 1.12 }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.82}>
-            {book.title}
-          </Text>
-        </LinearGradient>
+        <View style={[styles.bookEdge, { width: edgeWidth, backgroundColor: book.coverColor }]}> 
+          <View style={styles.edgeHighlightStrong} />
+          <View style={styles.edgeHighlightSoft} />
+          <View style={styles.edgeShadow} />
+        </View>
 
-        {!isAvailable && !book.isEmbedded && (
-          <View style={styles.downloadContainer} pointerEvents="box-none">
-            <DownloadButton folderName={book.folderName} sizeMB={book.sizeMB} accentColor={book.coverColor} displayScale={uiScale} onDownloadComplete={() => onDownloadComplete(book.id)} />
-          </View>
-        )}
-
-        <Image source={require('../assets/ui/ic_page_mark.png')} style={[styles.ribbon, { top: -2 * uiScale, right: 28 * uiScale, width: 46 * uiScale, height: 63 * uiScale }]} />
+        <Image
+          source={require('../assets/ui/ic_page_mark.png')}
+          style={[styles.ribbon, { top: -2 * uiScale, right: 18 * uiScale, width: 45 * uiScale, height: 62 * uiScale }]}
+          resizeMode="stretch"
+        />
         <TouchableOpacity
-          style={[styles.menuButton, { top: 4 * uiScale, right: 39 * uiScale, width: 24 * uiScale, height: 42 * uiScale }]}
-          onPress={(event) => { setMenuAnchor({ x: event.nativeEvent.pageX, y: event.nativeEvent.pageY }); setShowMenu(true); }}
+          style={[styles.menuButton, { top: 4 * uiScale, right: 29 * uiScale, width: 24 * uiScale, height: 42 * uiScale }]}
+          onPress={(event) => {
+            event.stopPropagation?.();
+            setMenuAnchor({ x: event.nativeEvent.pageX, y: event.nativeEvent.pageY });
+            setShowMenu(true);
+          }}
           accessibilityRole="button"
           accessibilityLabel="Más opciones"
         >
-          <Text style={[styles.menuButtonText, { fontSize: 30 * uiScale, lineHeight: 33 * uiScale }]}>⋮</Text>
+          <Text style={[styles.menuButtonText, { fontSize: 28 * uiScale, lineHeight: 31 * uiScale }]}>⋮</Text>
         </TouchableOpacity>
 
         {isAvailable && book.isRead && <View style={[styles.readBadge, { bottom: 10 * uiScale, left: 8 * uiScale }]}><Text style={styles.readBadgeText}>✓</Text></View>}
         {book.isFavorite && <View style={[styles.favoriteBadge, { top: 7 * uiScale, left: 8 * uiScale }]}><Text style={styles.favoriteText}>★</Text></View>}
       </TouchableOpacity>
 
-      <BookCardMenu visible={showMenu} book={book} anchor={menuAnchor} onToggleFavorite={() => onToggleFavorite(book.id)} onDelete={() => onDelete(book.id)} onClose={() => setShowMenu(false)} />
+      <BookCardMenu
+        visible={showMenu}
+        book={book}
+        anchor={menuAnchor}
+        onToggleFavorite={() => onToggleFavorite(book.id)}
+        onDelete={() => onDelete(book.id)}
+        onClose={() => setShowMenu(false)}
+      />
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { overflow: 'hidden', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 },
-  imageContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  cardShadow: {
+    elevation: 9,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.36,
+    shadowRadius: 8,
+  },
+  container: {
+    overflow: 'hidden',
+  },
+  coverSurface: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    overflow: 'hidden',
+  },
   coverImage: { width: '100%', height: '100%' },
   placeholder: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   placeholderEmoji: { fontSize: 48 },
   titleGradient: { position: 'absolute', bottom: 0, left: 0, right: 0, justifyContent: 'flex-end' },
-  title: { color: Colors.textWhite, fontFamily: 'Montserrat-SemiBold', fontWeight: '700', textAlign: 'center' },
+  title: {
+    color: Colors.textWhite,
+    fontFamily: 'Montserrat-ExtraBold',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.65)',
+    textShadowOffset: { width: 0, height: 2 },
+  },
   downloadContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  bookEdge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+  },
+  edgeHighlightStrong: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 1,
+    width: 3,
+    backgroundColor: 'rgba(255,255,255,0.48)',
+  },
+  edgeHighlightSoft: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 5,
+    width: 2,
+    backgroundColor: 'rgba(255,255,255,0.24)',
+  },
+  edgeShadow: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    right: 0,
+    width: 3,
+    backgroundColor: 'rgba(0,0,0,0.22)',
+  },
   ribbon: { position: 'absolute', tintColor: '#FFFFFF' },
   menuButton: { position: 'absolute', justifyContent: 'center', alignItems: 'center' },
-  menuButtonText: { color: '#34343A', fontWeight: 'bold' },
+  menuButtonText: { color: '#4F5364', fontWeight: 'bold' },
   readBadge: { position: 'absolute', width: 22, height: 22, borderRadius: 11, backgroundColor: Colors.success, justifyContent: 'center', alignItems: 'center' },
   readBadgeText: { color: Colors.textWhite, fontSize: 12, fontWeight: 'bold' },
   favoriteBadge: { position: 'absolute', width: 22, height: 22, borderRadius: 11, backgroundColor: Colors.chipOrange, justifyContent: 'center', alignItems: 'center' },
