@@ -46,7 +46,7 @@ export function SharedBookTransition({
 
   useEffect(() => {
     progress.value = withTiming(1, {
-      duration: direction === 'opening' ? 1040 : 1120,
+      duration: direction === 'opening' ? 1180 : 1180,
       easing: Easing.inOut(Easing.cubic),
     }, (finished) => {
       if (finished) runOnJS(onComplete)();
@@ -55,38 +55,37 @@ export function SharedBookTransition({
 
   const backgroundStyle = useAnimatedStyle(() => ({
     opacity: direction === 'opening'
-      ? interpolate(progress.value, [0, 0.28, 1], [0, 0.65, 1])
-      : interpolate(progress.value, [0, 0.22, 0.78, 1], [1, 1, 0.55, 0]),
+      ? interpolate(progress.value, [0, 0.24, 1], [0, 0.7, 1])
+      : interpolate(progress.value, [0, 0.72, 1], [1, 0.55, 0]),
   }));
 
   const coverStyle = useAnimatedStyle(() => {
     const geometryProgress = direction === 'opening'
-      ? interpolate(progress.value, [0, 0.46, 1], [0, 1, 1])
-      : interpolate(progress.value, [0, 0.56, 1], [0, 0, 1]);
+      ? interpolate(progress.value, [0, 0.42, 1], [0, 1, 1])
+      : interpolate(progress.value, [0, 0.58, 1], [0, 0, 1]);
     const from = direction === 'opening' ? source : target;
     const to = direction === 'opening' ? target : source;
+    const currentWidth = interpolate(geometryProgress, [0, 1], [from.width, to.width]);
     const rotation = direction === 'opening'
-      ? interpolate(progress.value, [0, 0.34, 0.82, 1], [0, 0, -168, -168])
-      : interpolate(progress.value, [0, 0.48, 0.72, 1], [-168, -168, 0, 0]);
-    const hingeShift = direction === 'opening'
-      ? interpolate(progress.value, [0.34, 0.82], [0, -pageWidth * 0.03])
-      : interpolate(progress.value, [0.48, 0.72], [-pageWidth * 0.03, 0]);
+      ? interpolate(progress.value, [0, 0.38, 0.88, 1], [0, 0, -168, -168])
+      : interpolate(progress.value, [0, 0.46, 0.88, 1], [-168, -168, 0, 0]);
+
     return {
-      left: interpolate(geometryProgress, [0, 1], [from.x, to.x]) + hingeShift,
+      left: interpolate(geometryProgress, [0, 1], [from.x, to.x]),
       top: interpolate(geometryProgress, [0, 1], [from.y, to.y]),
-      width: interpolate(geometryProgress, [0, 1], [from.width, to.width]),
+      width: currentWidth,
       height: interpolate(geometryProgress, [0, 1], [from.height, to.height]),
       borderRadius: direction === 'opening'
         ? interpolate(geometryProgress, [0, 1], [12 * scale, 10 * scale])
         : interpolate(geometryProgress, [0, 1], [10 * scale, 12 * scale]),
       transform: [
         { perspective: 1600 },
+        { translateX: -currentWidth / 2 },
         { rotateY: `${rotation}deg` },
-        { scale: interpolate(progress.value, [0, 0.44, 0.78, 1], [1, 1.035, 1.01, 1]) },
+        { translateX: currentWidth / 2 },
+        { scale: interpolate(progress.value, [0, 0.4, 0.82, 1], [1, 1.035, 1.01, 1]) },
       ],
-      opacity: direction === 'closing'
-        ? interpolate(progress.value, [0, 0.08, 1], [1, 1, 1])
-        : 1,
+      opacity: 1,
     };
   });
 
@@ -95,11 +94,11 @@ export function SharedBookTransition({
       return {
         transform: [
           { perspective: 1600 },
-          { rotateY: `${interpolate(progress.value, [0.28, 0.64, 1], [7, 2, 0])}deg` },
+          { rotateY: `${interpolate(progress.value, [0.26, 0.68, 1], [7, 2, 0])}deg` },
         ],
       };
     }
-    const settle = Math.min(1, progress.value / 0.28);
+    const settle = Math.min(1, progress.value / 0.34);
     return {
       left: interpolate(settle, [0, 1], [0, target.x]),
       top: interpolate(settle, [0, 1], [0, target.y]),
@@ -111,16 +110,16 @@ export function SharedBookTransition({
 
   const pageStyle = useAnimatedStyle(() => ({
     opacity: direction === 'opening'
-      ? interpolate(progress.value, [0, 0.28, 0.62, 1], [0, 0, 0.9, 1])
-      : interpolate(progress.value, [0, 0.46, 0.62], [1, 1, 0]),
+      ? interpolate(progress.value, [0, 0.3, 0.62, 1], [0, 0, 0.92, 1])
+      : interpolate(progress.value, [0, 0.48, 0.72], [1, 1, 0]),
     transform: [{ scale: direction === 'opening'
       ? interpolate(progress.value, [0.28, 0.7, 1], [0.96, 1.015, 1])
-      : interpolate(progress.value, [0, 0.5, 1], [1, 0.98, 0.96]) }],
+      : interpolate(progress.value, [0, 0.55, 1], [1, 0.985, 0.96]) }],
   }));
 
   const cardChromeStyle = useAnimatedStyle(() => ({
     opacity: direction === 'opening'
-      ? interpolate(progress.value, [0, 0.28, 0.4], [1, 1, 0])
+      ? interpolate(progress.value, [0, 0.3, 0.44], [1, 1, 0])
       : interpolate(progress.value, [0, 0.76, 1], [0, 0, 1]),
   }));
 
@@ -128,7 +127,6 @@ export function SharedBookTransition({
     opacity: direction === 'opening'
       ? interpolate(progress.value, [0.24, 0.48, 1], [0, 1, 1])
       : interpolate(progress.value, [0, 0.68, 0.9], [1, 1, 0]),
-    transform: [{ scaleY: interpolate(progress.value, [0, 1], [0.96, 1]) }],
   }));
 
   return (
@@ -176,7 +174,7 @@ const styles = StyleSheet.create({
   background: { ...StyleSheet.absoluteFill, backgroundColor: Colors.backgroundDark },
   pageGroup: { ...StyleSheet.absoluteFill },
   cover: {
-    position: 'absolute', transformOrigin: 'left center', borderWidth: 3, elevation: 14,
+    position: 'absolute', borderWidth: 3, elevation: 14,
     shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.45, shadowRadius: 12,
   },
   storyPage: { position: 'absolute', overflow: 'hidden', borderRadius: 10, backgroundColor: '#FFF', borderWidth: 3 },
