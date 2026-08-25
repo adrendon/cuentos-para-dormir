@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Descargar repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           sparse-checkout: |
             /*
@@ -36,19 +36,19 @@ jobs:
           sparse-checkout-cone-mode: false
 
       - name: Configurar Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
 
       - name: Configurar Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
 
       - name: Configurar Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Instalar dependencias
         run: npm ci --legacy-peer-deps
@@ -57,7 +57,7 @@ jobs:
         run: npx expo prebuild --platform android --no-install
 
       - name: Configurar caché de Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Compilar APK release
         working-directory: android
@@ -77,7 +77,7 @@ jobs:
           ls -lh cuentos-para-dormir.apk
 
       - name: Publicar APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: cuentos-para-dormir-apk
           path: cuentos-para-dormir.apk
