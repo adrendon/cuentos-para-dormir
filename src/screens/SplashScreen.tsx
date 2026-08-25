@@ -1,13 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View,
   StyleSheet,
   Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import * as ScreenOrientation from 'expo-screen-orientation';
-import { Colors } from '../theme/colors';
 import { useProfile } from '../hooks/useProfile';
 
 const logoVideo = require('../assets/logo_video.mp4');
@@ -17,6 +15,7 @@ export default function SplashScreen() {
   const { profile, isLoading } = useProfile();
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const hasNavigated = useRef(false);
+  const [videoFinished, setVideoFinished] = useState(false);
 
   const player = useVideoPlayer(logoVideo, (p) => {
     p.loop = false;
@@ -24,11 +23,11 @@ export default function SplashScreen() {
   });
 
   useEffect(() => {
-    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+    void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
   }, []);
 
-  const goNext = () => {
-    if (hasNavigated.current || isLoading) return;
+  const goNext = useCallback(() => {
+    if (hasNavigated.current || isLoading || !videoFinished) return;
     hasNavigated.current = true;
 
     Animated.timing(fadeAnim, {
@@ -43,18 +42,20 @@ export default function SplashScreen() {
         router.replace('/onboarding');
       }
     });
-  };
+  }, [fadeAnim, isLoading, profile.hasCompletedOnboarding, router, videoFinished]);
 
   useEffect(() => {
-    const subscription = player.addListener('playToEnd', goNext);
-    // Safety net in case the video fails to fire playToEnd.
-    const fallbackTimer = setTimeout(goNext, 4500);
+    const subscription = player.addListener('playToEnd', () => {
+      // The MP4 itself is the source of truth for splash duration. Do not cut it
+      // with a fixed timer: wait until the final frame has actually played.
+      setVideoFinished(true);
+    });
+    return () => subscription.remove();
+  }, [player]);
 
-    return () => {
-      subscription.remove();
-      clearTimeout(fallbackTimer);
-    };
-  }, [isLoading, profile.hasCompletedOnboarding]);
+  useEffect(() => {
+    goNext();
+  }, [goNext]);
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
