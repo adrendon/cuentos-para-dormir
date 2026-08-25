@@ -64,23 +64,28 @@ export function BookOpeningIntro({
 
   useEffect(() => {
     if (!skipEntranceScale) {
-      bookScale.value = withTiming(1, { duration: 280, easing: Easing.out(Easing.cubic) });
-      coverRotation.value = withDelay(100, withTiming(1, { duration: 760, easing: Easing.inOut(Easing.cubic) }));
+      bookScale.value = withTiming(1, { duration: 320, easing: Easing.out(Easing.cubic) });
+      coverRotation.value = withDelay(120, withTiming(1, { duration: 900, easing: Easing.inOut(Easing.cubic) }));
     }
     const menuTimer = setTimeout(() => {
       setMenuReady(true);
       menuReveal.value = withTiming(1, { duration: 430, easing: Easing.out(Easing.cubic) });
-    }, skipEntranceScale ? 100 : 900);
+    }, skipEntranceScale ? 100 : 1060);
     return () => clearTimeout(menuTimer);
   }, [bookScale, coverRotation, menuReveal, skipEntranceScale]);
 
   const bookStyle = useAnimatedStyle(() => ({ transform: [{ scale: bookScale.value }] }));
-  const coverStyle = useAnimatedStyle(() => ({
-    transform: [
-      { perspective: 1400 },
-      { rotateY: `${interpolate(coverRotation.value, [0, 1], [0, -165])}deg` },
-    ],
-  }));
+  const coverStyle = useAnimatedStyle(() => {
+    const rotation = interpolate(coverRotation.value, [0, 1], [0, -168]);
+    return {
+      transform: [
+        { perspective: 1400 },
+        { translateX: -pageWidth / 2 },
+        { rotateY: `${rotation}deg` },
+        { translateX: pageWidth / 2 },
+      ],
+    };
+  });
   const shadeStyle = useAnimatedStyle(() => ({
     opacity: interpolate(menuReveal.value, [0, 1], [0, 1]),
   }));
@@ -131,7 +136,7 @@ export function BookOpeningIntro({
       <View style={styles.stars} pointerEvents="none">
         {STARS.map(([left, top], index) => <View key={index} style={[styles.star, { left: `${left}%`, top: `${top}%` }]} />)}
       </View>
-      <View style={[styles.content]}>
+      <View style={styles.content}>
         <Animated.View style={[styles.book, { width: pageWidth * 2, height: pageHeight }, bookStyle]}>
           <View style={[styles.pageLayerFar, { left: pageWidth + 8 * layoutScale, width: pageWidth, height: pageHeight, borderColor: coverColor }]} />
           <View style={[styles.pageLayerNear, { left: pageWidth + 4 * layoutScale, width: pageWidth, height: pageHeight, borderColor: coverColor }]} />
@@ -177,7 +182,7 @@ const styles = StyleSheet.create({
   storyPage: { position: 'absolute', top: 0, overflow: 'hidden', borderRadius: 10, backgroundColor: '#FFF', borderWidth: 3 },
   pageImage: { width: '100%', height: '100%' },
   pageFallback: { flex: 1 },
-  cover: { position: 'absolute', top: 0, borderRadius: 10, justifyContent: 'center', alignItems: 'center', borderWidth: 3, shadowColor: '#000', shadowOpacity: 0.55, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, transformOrigin: 'left center', elevation: 8 },
+  cover: { position: 'absolute', top: 0, borderRadius: 10, justifyContent: 'center', alignItems: 'center', borderWidth: 3, shadowColor: '#000', shadowOpacity: 0.55, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
   coverFront: { ...StyleSheet.absoluteFill, borderRadius: 7, overflow: 'hidden', backfaceVisibility: 'hidden' },
   coverBack: { ...StyleSheet.absoluteFill, borderRadius: 7, backfaceVisibility: 'hidden', transform: [{ rotateY: '180deg' }] },
   coverTitle: { flex: 1, padding: 20, color: '#FFF', fontSize: 22, fontWeight: 'bold', fontFamily: 'BalooBhaijaan', textAlign: 'center', textShadowColor: 'rgba(0,0,0,0.45)', textShadowOffset: { width: 1, height: 2 }, textShadowRadius: 4 },
