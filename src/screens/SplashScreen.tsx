@@ -1,33 +1,23 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  StyleSheet,
-  Animated,
-} from 'react-native';
+import { Animated, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useVideoPlayer, VideoView } from 'expo-video';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useProfile } from '../hooks/useProfile';
-
-const logoVideo = require('../assets/logo_video.mp4');
+import LumioSplash from '../components/LumioSplash';
 
 export default function SplashScreen() {
   const router = useRouter();
   const { profile, isLoading } = useProfile();
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const hasNavigated = useRef(false);
-  const [videoFinished, setVideoFinished] = useState(false);
-
-  const player = useVideoPlayer(logoVideo, (p) => {
-    p.loop = false;
-    p.play();
-  });
+  const [animationFinished, setAnimationFinished] = useState(false);
 
   useEffect(() => {
     void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
   }, []);
 
   const goNext = useCallback(() => {
-    if (hasNavigated.current || isLoading || !videoFinished) return;
+    if (hasNavigated.current || isLoading || !animationFinished) return;
     hasNavigated.current = true;
 
     Animated.timing(fadeAnim, {
@@ -42,16 +32,7 @@ export default function SplashScreen() {
         router.replace('/onboarding');
       }
     });
-  }, [fadeAnim, isLoading, profile.hasCompletedOnboarding, router, videoFinished]);
-
-  useEffect(() => {
-    const subscription = player.addListener('playToEnd', () => {
-      // The MP4 itself is the source of truth for splash duration. Do not cut it
-      // with a fixed timer: wait until the final frame has actually played.
-      setVideoFinished(true);
-    });
-    return () => subscription.remove();
-  }, [player]);
+  }, [animationFinished, fadeAnim, isLoading, profile.hasCompletedOnboarding, router]);
 
   useEffect(() => {
     goNext();
@@ -59,12 +40,7 @@ export default function SplashScreen() {
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      <VideoView
-        style={styles.video}
-        player={player}
-        contentFit="contain"
-        nativeControls={false}
-      />
+      <LumioSplash onComplete={() => setAnimationFinished(true)} />
     </Animated.View>
   );
 }
@@ -72,12 +48,6 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#004B80',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  video: {
-    width: '100%',
-    height: '100%',
+    backgroundColor: '#004B82',
   },
 });
