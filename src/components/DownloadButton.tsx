@@ -1,17 +1,13 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   Image,
   TouchableOpacity,
   StyleSheet,
-  Animated,
 } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
 import { Colors } from '../theme/colors';
 import { downloadBook, DownloadProgress } from '../services/downloadService';
-
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface DownloadButtonProps {
   folderName: string;
@@ -28,103 +24,64 @@ export function DownloadButton({ folderName, sizeMB, accentColor, displayScale =
     bytesDownloaded: 0,
     totalBytes: 0,
   });
-  const progressAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(progressAnim, {
-      toValue: progress.progress,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  }, [progress.progress]);
 
   const handleDownload = useCallback(async () => {
     if (isActiveStatus(progress.status)) return;
 
-    const success = await downloadBook(folderName, (p) => {
-      setProgress(p);
-    });
-
-    if (success) {
-      onDownloadComplete();
-    }
+    const success = await downloadBook(folderName, setProgress);
+    if (success) onDownloadComplete();
   }, [folderName, progress.status, onDownloadComplete]);
 
   const handleRetry = useCallback(() => {
     setProgress({ status: 'idle', progress: 0, bytesDownloaded: 0, totalBytes: 0 });
   }, []);
 
-  if (progress.status === 'done') {
-    return null;
-  }
+  if (progress.status === 'done') return null;
 
   if (progress.status === 'error') {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>{progress.error || 'Error al descargar'}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
-          <Text style={styles.retryText}>Reintentar</Text>
+        <Text style={[styles.errorText, { fontSize: 12 * displayScale }]}>{progress.error || 'Error al descargar'}</Text>
+        <TouchableOpacity style={[styles.retryButton, { borderRadius: 14 * displayScale }]} onPress={handleRetry}>
+          <Text style={[styles.retryText, { fontSize: 12 * displayScale }]}>Reintentar</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   const isActive = isActiveStatus(progress.status);
-  const circleSize = 74 * displayScale;
-  const strokeWidth = 4 * displayScale;
-  const radius = (circleSize - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
+  const circleSize = 58 * displayScale;
+  const arrowSize = 34 * displayScale;
+  const progressWidth = 190 * displayScale;
+  const progressHeight = 8 * displayScale;
+  const percent = Math.round(progress.progress * 100);
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={[styles.button, { transform: [{ translateY: 45 * displayScale }] }]}
-        onPress={handleDownload}
-        disabled={isActive}
-        accessibilityLabel="Descargar cuento"
-        accessibilityRole="button"
-      >
-        <View style={[styles.circleWrap, { width: circleSize, height: circleSize }]}>
-          <Svg width={circleSize} height={circleSize} style={styles.svgCircle}>
-            {/* Background circle track */}
-            <Circle
-              cx={circleSize / 2}
-              cy={circleSize / 2}
-              r={radius}
-              stroke="rgba(255,255,255,0.3)"
-              strokeWidth={strokeWidth}
-              fill="none"
+      {isActive ? (
+        <View style={styles.progressWrap}>
+          <Text style={[styles.progressPercent, { fontSize: 26 * displayScale, lineHeight: 30 * displayScale }]}>{percent}%</Text>
+          <View style={[styles.progressTrack, { width: progressWidth, height: progressHeight, borderRadius: progressHeight / 2 }]}>
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width: `${Math.max(0, Math.min(100, percent))}%`,
+                  borderRadius: progressHeight / 2,
+                  backgroundColor: accentColor || '#F3F4EA',
+                },
+              ]}
             />
-            {/* Progress circle */}
-            {isActive && (
-              <Circle
-                cx={circleSize / 2}
-                cy={circleSize / 2}
-                r={radius}
-                stroke="#FFFFFF"
-                strokeWidth={strokeWidth}
-                fill="none"
-                strokeDasharray={`${circumference}`}
-                strokeDashoffset={circumference * (1 - progress.progress)}
-                strokeLinecap="round"
-                transform={`rotate(-90 ${circleSize / 2} ${circleSize / 2})`}
-              />
-            )}
-          </Svg>
-          <Image
-            source={require('../assets/ui/ic_download.png')}
-            style={{ width: 46 * displayScale, height: 46 * displayScale }}
-            resizeMode="contain"
-          />
+          </View>
         </View>
-        <Text style={[styles.buttonText, {
-          fontSize: 32 * displayScale,
-          lineHeight: 38 * displayScale,
-          marginTop: 4 * displayScale,
-        }]}>
-          {isActive ? `${Math.round(progress.progress * 100)}%` : `${sizeMB} MB`}
-        </Text>
-      </TouchableOpacity>
+      ) : (
+        <TouchableOpacity style={styles.button} onPress={handleDownload} accessibilityLabel="Descargar cuento" accessibilityRole="button">
+          <View style={[styles.circleWrap, { width: circleSize, height: circleSize, borderRadius: circleSize / 2, borderWidth: 3 * displayScale }]}>
+            <Image source={require('../assets/ui/ic_download.png')} style={{ width: arrowSize, height: arrowSize, tintColor: '#FFFFFF' }} resizeMode="contain" />
+          </View>
+          <Text style={[styles.buttonText, { fontSize: 22 * displayScale, lineHeight: 27 * displayScale, marginTop: 7 * displayScale }]}>{sizeMB} MB</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -136,43 +93,52 @@ function isActiveStatus(status: DownloadProgress['status']): boolean {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.42)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   button: {
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 90,
-    minHeight: 80,
   },
   circleWrap: {
+    borderColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  svgCircle: {
-    position: 'absolute',
   },
   buttonText: {
     color: Colors.textWhite,
     fontFamily: 'Montserrat-ExtraBold',
-    fontWeight: '800',
+  },
+  progressWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  progressPercent: {
+    color: '#FFFFFF',
+    fontFamily: 'Montserrat-ExtraBold',
+    marginBottom: 8,
+  },
+  progressTrack: {
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.62)',
+  },
+  progressFill: {
+    height: '100%',
   },
   errorText: {
-    color: Colors.error,
-    fontSize: 10,
+    color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
+    fontFamily: 'Montserrat-SemiBold',
   },
   retryButton: {
     backgroundColor: Colors.chipOrange,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
   },
   retryText: {
     color: Colors.textWhite,
-    fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
