@@ -7,7 +7,7 @@ type Props = { onComplete?: () => void };
 
 export default function LumioSplash({ onComplete }: Props) {
   const onCompleteRef = useRef(onComplete);
-  const player = useVideoPlayer(require('../../assets/splash/lumio-splash.mp4'), (videoPlayer) => {
+  const player = useVideoPlayer(require('../../assets/lumio-splash.mp4'), (videoPlayer) => {
     videoPlayer.loop = false;
     videoPlayer.muted = true;
     videoPlayer.play();
