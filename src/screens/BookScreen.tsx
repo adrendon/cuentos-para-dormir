@@ -142,10 +142,23 @@ export default function BookScreen() {
   }, [readerLock.lock]);
 
   const handleSelectProfessionalNarration = useCallback(() => { setStage('reading'); setShowControls(false); readerLock.lock(); }, [readerLock.lock]);
+
+  const handleReturnToModeMenu = useCallback(async () => {
+    await stopNarration();
+    await restoreVolume();
+    readerLock.unlock();
+    setShowMenu(false);
+    setShowIndex(false);
+    setShowEndScreen(false);
+    setShowControls(true);
+    setMode(null);
+    setStage('intro');
+  }, [stopNarration, readerLock.unlock]);
+
   const handleClosePanels = useCallback(() => { setMode(null); setStage('intro'); }, []);
   const handleReadAgain = useCallback(() => { setCurrentPage(0); setShowEndScreen(false); setShowControls(false); readerLock.lock(); }, [setCurrentPage, readerLock.lock]);
 
-  const handleShare = useCallback(async () => { try { await Share.share({ message: `¡Te recomiendo el cuento "${title || book?.title}"!` }); } catch (error) { console.error('Error sharing:', error); } }, [title, book?.title]);
+  const handleShare = useCallback(async () => { try { await Share.share({ message: `¡Te recomiendo el cuento \"${title || book?.title}\"!` }); } catch (error) { console.error('Error sharing:', error); } }, [title, book?.title]);
   const handleToggleFavoriteFromEndScreen = useCallback(() => { if (book) toggleFavorite(book.id); }, [book, toggleFavorite]);
 
   useEffect(() => {
@@ -171,7 +184,7 @@ export default function BookScreen() {
       {stage === 'intro' ? (
         <BookOpeningIntro coverColor={book.coverColor} title={title || book.title} firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined} coverSource={getBookCover(book.folderName)} musicEnabled={bookMusic.isPlaying} onToggleMusic={bookMusic.toggle} onClose={handleGoBack} onSelectMode={handleSelectMode} skipEntranceScale={false} />
       ) : stage === 'narrationPanel' ? (
-        <NarrationPanel narratorName={voiceworkProfile?.narrator ?? ''} childName={voiceworkProfile?.name || profile.name} coverColor={book.coverColor} firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined} musicEnabled={bookMusic.isPlaying} onToggleMusic={() => { void bookMusic.toggle(); }} onHome={handleGoBack} onSelectProfessional={handleSelectProfessionalNarration} onClose={handleClosePanels} />
+        <NarrationPanel narratorName={voiceworkProfile?.narrator ?? ''} childName={voiceworkProfile?.name || profile.name} coverColor={book.coverColor} firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined} musicEnabled={bookMusic.isPlaying} onToggleMusic={() => { void bookMusic.toggle(); }} onHome={() => { void handleReturnToModeMenu(); }} onSelectProfessional={handleSelectProfessionalNarration} onClose={handleClosePanels} />
       ) : stage === 'recordPanel' ? (
         <RecordComingSoonPanel firstPageUri={pages[0]?.uri} onClose={handleClosePanels} />
       ) : (
@@ -184,7 +197,7 @@ export default function BookScreen() {
             <BookEndScreen color={book.coverColor} title={title || book.title} author={author || book.author} illustrator={book.illustrator} isFavorite={book.isFavorite} onReadAgain={handleReadAgain} onToggleFavorite={handleToggleFavoriteFromEndScreen} onShare={handleShare} onClose={handleGoBack} />
           )}
           {!showEndScreen && !readerLock.isLocked && (
-            <ReaderControls animatedStyle={controlsAnimStyle} interactive={showControls} currentPage={currentPage} totalPages={pages.length} listenMode={mode === 'listen'} isNarrating={isNarrating} isNarrationPaused={isNarrationPaused} narrationVolume={narrationVolume} musicEnabled={bookMusic.isPlaying} musicVolume={bookMusic.musicVolume} showText={showText} onHome={handleGoBack} onOpenMenu={() => { setShowControls(false); setShowMenu(true); }} onToggleNarration={() => { void handleToggleNarration(); }} onPauseNarration={pauseNarration} onResumeNarration={resumeNarration} onNarrationVolumeChange={setNarrationVolume} onToggleText={() => setShowText(prev => !prev)} onToggleMusic={() => { void bookMusic.toggle(); }} onMusicVolumeChange={(volume) => { void bookMusic.changeVolume(volume); }} />
+            <ReaderControls animatedStyle={controlsAnimStyle} interactive={showControls} currentPage={currentPage} totalPages={pages.length} listenMode={mode === 'listen'} isNarrating={isNarrating} isNarrationPaused={isNarrationPaused} narrationVolume={narrationVolume} musicEnabled={bookMusic.isPlaying} musicVolume={bookMusic.musicVolume} showText={showText} onHome={() => { void handleReturnToModeMenu(); }} onOpenMenu={() => { setShowControls(false); setShowMenu(true); }} onToggleNarration={() => { void handleToggleNarration(); }} onPauseNarration={pauseNarration} onResumeNarration={resumeNarration} onNarrationVolumeChange={setNarrationVolume} onToggleText={() => setShowText(prev => !prev)} onToggleMusic={() => { void bookMusic.toggle(); }} onMusicVolumeChange={(volume) => { void bookMusic.changeVolume(volume); }} />
           )}
           <ReaderMenu visible={showMenu} textSize={textSize} onClose={() => setShowMenu(false)} onOpenIndex={() => setShowIndex(true)} onLock={() => { setShowMenu(false); setShowControls(false); readerLock.lock(); }} onTextSizeChange={setTextSize} />
           <PageIndexOverlay visible={showIndex} pages={pages} currentPage={currentPage} onSelectPage={handleSelectIndexPage} onClose={() => setShowIndex(false)} />
