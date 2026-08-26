@@ -9,7 +9,7 @@ import wordmarkPaths from '../assets/branding/lumioWordmark';
 
 const BLUE = '#004B82';
 const WHITE = '#FFFFFF';
-const SPLASH_DURATION = 6200;
+const SPLASH_DURATION = 9001;
 
 type Props = {
   onComplete?: () => void;
@@ -56,6 +56,11 @@ export default function LumioSplash({ onComplete }: Props) {
   const face = useRef(new Animated.Value(0)).current;
   const stars = useRef(new Animated.Value(0)).current;
   const wordmark = useRef(new Animated.Value(0)).current;
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     orbit.setValue(0);
@@ -101,13 +106,13 @@ export default function LumioSplash({ onComplete }: Props) {
     ]);
 
     reveal.start();
-    const timer = setTimeout(() => onComplete?.(), SPLASH_DURATION);
+    const timer = setTimeout(() => onCompleteRef.current?.(), SPLASH_DURATION);
 
     return () => {
       reveal.stop();
       clearTimeout(timer);
     };
-  }, [astronaut, face, onComplete, orbit, stars, wordmark]);
+  }, [astronaut, face, orbit, stars, wordmark]);
 
   return (
     <View style={styles.root}>
