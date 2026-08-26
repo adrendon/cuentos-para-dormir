@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Pressable, Image } from 'react-native';
 import { Colors } from '../theme/colors';
 
 interface LockOverlayProps {
@@ -62,18 +62,15 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
     <View style={styles.container} pointerEvents="box-none">
       <Pressable style={StyleSheet.absoluteFillObject} onPress={onRequestPrompt} />
 
-      <Animated.View
-        style={[
-          styles.hint,
-          {
-            opacity: promptAnim,
-            transform: [{ translateY: promptAnim.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }],
-          },
-        ]}
-        pointerEvents="none"
+      <TouchableOpacity
+        style={styles.lockBadge}
+        onPress={onRequestPrompt}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel="Mostrar opción para desbloquear"
       >
-        <View style={styles.closedLockIcon} />
-      </Animated.View>
+        <Image source={require('../assets/ui/ic_lock.png')} style={styles.lockBadgeIcon} resizeMode="contain" />
+      </TouchableOpacity>
 
       <Animated.View
         pointerEvents={showPrompt ? 'auto' : 'none'}
@@ -105,7 +102,7 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
               },
             ]}
           />
-          <View pointerEvents="none" style={styles.openLockIcon} />
+          <Image source={require('../assets/ui/ic_lock.png')} style={styles.unlockIcon} resizeMode="contain" />
         </TouchableOpacity>
         <Text style={styles.unlockLabel}>
           {isHolding ? 'Mantén presionado…' : 'Mantén presionado para desbloquear'}
@@ -125,15 +122,22 @@ const styles = StyleSheet.create({
     zIndex: 200,
     elevation: 200,
   },
-  hint: {
+  lockBadge: {
     position: 'absolute',
-    top: 24,
+    top: 18,
     alignSelf: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    padding: 9,
-    borderRadius: 16,
-    alignItems: 'center',
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: 'rgba(0,0,0,0.58)',
     justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+  },
+  lockBadgeIcon: {
+    width: 24,
+    height: 24,
+    tintColor: Colors.accentYellow,
   },
   unlockWrapper: {
     position: 'absolute',
@@ -145,7 +149,7 @@ const styles = StyleSheet.create({
     width: UNLOCK_BUTTON_SIZE,
     height: UNLOCK_BUTTON_SIZE,
     borderRadius: UNLOCK_BUTTON_SIZE / 2,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: 'rgba(0, 0, 0, 0.62)',
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -157,27 +161,17 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: Colors.accentYellow,
   },
-  closedLockIcon: {
-    width: 16,
-    height: 15,
-    borderWidth: 3,
-    borderColor: Colors.accentYellow,
-    borderRadius: 3,
-  },
-  openLockIcon: {
-    width: 24,
-    height: 22,
-    borderWidth: 4,
-    borderColor: Colors.textWhite,
-    borderRadius: 5,
-    borderTopColor: 'transparent',
+  unlockIcon: {
+    width: 30,
+    height: 30,
+    tintColor: Colors.textWhite,
   },
   unlockLabel: {
     color: Colors.textWhite,
     fontSize: 12,
     fontWeight: '600',
     marginTop: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.46)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
