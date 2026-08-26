@@ -57,54 +57,63 @@ export function SearchOverlay({ visible, value, onSubmit, onClose }: SearchOverl
       onRequestClose={close}
     >
       <Pressable style={styles.modalRoot} onPress={close}>
-        <Animated.View
+        <Pressable
           style={[
-            styles.sheet,
+            styles.sheetHitArea,
             {
               left: clamp(width * 0.045, 34, 72),
               right: clamp(width * 0.055, 40, 86),
-              opacity: entrance,
-              transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [-10, 0] }) }],
             },
           ]}
-          onStartShouldSetResponder={() => true}
+          onPress={(event) => event.stopPropagation()}
         >
-          <View style={[styles.searchArea, { paddingTop: 12 * scale, paddingHorizontal: 8 * scale }]}>
-            <TextInput
-              ref={inputRef}
-              value={draft}
-              onChangeText={setDraft}
-              placeholder="Escribe el texto que buscas..."
-              placeholderTextColor="rgba(255,255,255,0.58)"
-              style={[styles.input, { fontSize: 21 * scale, paddingRight: 150 * scale }]}
-              returnKeyType="search"
-              onSubmitEditing={submit}
-              autoCorrect={false}
-              autoCapitalize="sentences"
-              selectTextOnFocus={false}
-            />
+          <Animated.View
+            style={[
+              StyleSheet.absoluteFillObject,
+              styles.sheet,
+              {
+                opacity: entrance,
+                transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [-10, 0] }) }],
+              },
+            ]}
+          >
+            <View style={[styles.searchArea, { paddingTop: 12 * scale, paddingHorizontal: 8 * scale }]}>
+              <TextInput
+                ref={inputRef}
+                value={draft}
+                onChangeText={setDraft}
+                placeholder="Escribe el texto que buscas..."
+                placeholderTextColor="rgba(255,255,255,0.58)"
+                style={[styles.input, { fontSize: 22 * scale, paddingRight: 150 * scale }]}
+                returnKeyType="search"
+                onSubmitEditing={submit}
+                autoCorrect={false}
+                autoCapitalize="sentences"
+                selectTextOnFocus={false}
+              />
 
-            <TouchableOpacity
-              style={[
-                styles.searchButton,
-                {
-                  right: 18 * scale,
-                  top: 86 * scale,
-                  paddingHorizontal: 18 * scale,
-                  height: 42 * scale,
-                  borderRadius: 2 * scale,
-                },
-              ]}
-              onPress={submit}
-              accessibilityRole="button"
-              accessibilityLabel="Buscar"
-            >
-              <Text style={[styles.searchButtonText, { fontSize: 15 * scale }]}>BUSCAR</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.searchButton,
+                  {
+                    right: 18 * scale,
+                    top: 122 * scale,
+                    paddingHorizontal: 19 * scale,
+                    height: 54 * scale,
+                    borderRadius: 2 * scale,
+                  },
+                ]}
+                onPress={submit}
+                accessibilityRole="button"
+                accessibilityLabel="Buscar"
+              >
+                <Text style={[styles.searchButtonText, { fontSize: 17 * scale }]}>BUSCAR</Text>
+              </TouchableOpacity>
 
-            <View style={[styles.underline, { left: 8 * scale, right: 160 * scale, bottom: 10 * scale }]} />
-          </View>
-        </Animated.View>
+              <View style={[styles.underline, { left: 8 * scale, right: 160 * scale, bottom: 10 * scale }]} />
+            </View>
+          </Animated.View>
+        </Pressable>
       </Pressable>
     </Modal>
   );
@@ -115,19 +124,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  sheet: {
+  sheetHitArea: {
     position: 'absolute',
     top: 0,
     bottom: 0,
+  },
+  sheet: {
     backgroundColor: '#170D0E',
   },
   searchArea: {
     flex: 1,
   },
   input: {
-    height: 58,
+    height: 60,
     color: 'rgba(255,255,255,0.74)',
-    fontFamily: 'Montserrat-Regular',
+    fontFamily: 'Montserrat-SemiBold',
+    fontWeight: '400',
     paddingVertical: 0,
   },
   searchButton: {
@@ -138,7 +150,8 @@ const styles = StyleSheet.create({
   },
   searchButtonText: {
     color: '#FFFFFF',
-    fontFamily: 'Montserrat-Medium',
+    fontFamily: 'Montserrat-SemiBold',
+    fontWeight: '500',
   },
   underline: {
     position: 'absolute',
