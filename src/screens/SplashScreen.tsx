@@ -3,6 +3,7 @@ import { Animated, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import * as ExpoSplashScreen from 'expo-splash-screen';
 import { useProfile } from '../hooks/useProfile';
 
 const logoVideo = require('../../assets/lumio-splash.mp4');
@@ -12,13 +13,13 @@ export default function SplashScreen() {
   const { profile, isLoading } = useProfile();
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const hasNavigated = useRef(false);
+  const hasStartedVideo = useRef(false);
   const [videoFinished, setVideoFinished] = useState(false);
 
   const player = useVideoPlayer(logoVideo, (p) => {
     p.loop = false;
     p.muted = true;
     p.currentTime = 0;
-    p.play();
   });
 
   useEffect(() => {
@@ -26,18 +27,22 @@ export default function SplashScreen() {
   }, []);
 
   useEffect(() => {
-    // Android release builds can create the native video surface one frame after
-    // the player itself. Re-issuing play after mount avoids remaining on the
-    // blue backing view when the initial play() happens too early.
-    const timer = setTimeout(() => {
-      try {
-        player.currentTime = 0;
-        player.play();
-      } catch {
-        // The playToEnd/fallback path below will still let the app continue.
-      }
-    }, 120);
-    return () => clearTimeout(timer);
+    let cancelled = false;
+
+    const revealAndPlay = async () => {
+      // Never let the native Expo splash cover the MP4 while it is already
+      // playing. Hide native splash first, then start the video from frame 0.
+      await ExpoSplashScreen.hideAsync().catch(() => undefined);
+      if (cancelled || hasStartedVideo.current) return;
+      hasStartedVideo.current = true;
+      player.currentTime = 0;
+      player.play();
+    };
+
+    void revealAndPlay();
+    return () => {
+      cancelled = true;
+    };
   }, [player]);
 
   const goNext = useCallback(() => {
