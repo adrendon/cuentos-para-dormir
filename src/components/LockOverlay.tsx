@@ -82,7 +82,6 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
         pointerEvents="none"
       >
         <View style={styles.closedLockIcon} />
-        <Text style={styles.hintText}>Bloqueado para niños</Text>
       </Animated.View>
 
       <Animated.View
@@ -141,17 +140,10 @@ const styles = StyleSheet.create({
     top: 24,
     alignSelf: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    padding: 9,
     borderRadius: 16,
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
-  },
-  hintText: {
-    color: Colors.textWhite,
-    fontSize: 13,
-    fontWeight: '700',
+    justifyContent: 'center',
   },
   unlockWrapper: {
     alignItems: 'center',
