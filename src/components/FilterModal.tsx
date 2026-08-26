@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, Modal, Pressable, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { DEFAULT_LIBRARY_FILTERS, LibraryFilters } from '../types/book';
 import { Colors, Gradients } from '../theme/colors';
@@ -31,10 +31,21 @@ export function FilterModal({ visible, filters, onChange, onClear, onClose }: Fi
   const { width, height } = useWindowDimensions();
   const scale = Math.min(width / 1280, height / 768);
   const [draftFilters, setDraftFilters] = useState(filters);
+  const entrance = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (visible) setDraftFilters(filters);
-  }, [visible, filters]);
+    if (!visible) {
+      entrance.setValue(0);
+      return;
+    }
+    setDraftFilters(filters);
+    entrance.setValue(0);
+    Animated.timing(entrance, { toValue: 1, duration: 320, useNativeDriver: true }).start();
+  }, [visible, filters, entrance]);
+
+  const closeAnimated = useCallback(() => {
+    Animated.timing(entrance, { toValue: 0, duration: 220, useNativeDriver: true }).start(onClose);
+  }, [entrance, onClose]);
 
   const hasActiveFilter = Object.values(draftFilters).some(Boolean);
   const handleReset = () => {
@@ -43,23 +54,31 @@ export function FilterModal({ visible, filters, onChange, onClear, onClose }: Fi
   };
   const handleApply = () => {
     onChange(draftFilters);
-    onClose();
+    closeAnimated();
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable
-          style={[styles.sheet, {
-            top: 17 * scale,
-            bottom: 16 * scale,
-            left: 112 * scale,
-            right: -20 * scale,
-            borderRadius: 24 * scale,
-            paddingTop: 16 * scale,
-            paddingHorizontal: 42 * scale,
-          }]}
-          onPress={(event) => event.stopPropagation()}
+    <Modal visible={visible} transparent animationType="none" onRequestClose={closeAnimated} statusBarTranslucent>
+      <Animated.View style={[styles.backdrop, { opacity: entrance }]}>
+        <Pressable style={StyleSheet.absoluteFillObject} onPress={closeAnimated} />
+        <Animated.View
+          style={[
+            styles.sheet,
+            {
+              top: 17 * scale,
+              bottom: 16 * scale,
+              left: 112 * scale,
+              right: -20 * scale,
+              borderRadius: 24 * scale,
+              paddingTop: 16 * scale,
+              paddingHorizontal: 42 * scale,
+              opacity: entrance.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0, 0.7, 1] }),
+              transform: [
+                { translateX: entrance.interpolate({ inputRange: [0, 1], outputRange: [width * 0.34, 0] }) },
+                { scale: entrance.interpolate({ inputRange: [0, 1], outputRange: [0.985, 1] }) },
+              ],
+            },
+          ]}
         >
           <View style={[styles.header, { minHeight: 62 * scale, marginBottom: 23 * scale }]}>
             <TouchableOpacity onPress={handleReset} accessibilityRole="button" accessibilityLabel="Restablecer filtros">
@@ -107,7 +126,7 @@ export function FilterModal({ visible, filters, onChange, onClear, onClose }: Fi
           </View>
 
           <View style={[styles.footer, { height: 138 * scale, gap: 22 * scale }]}>
-            <TouchableOpacity style={[styles.cancelButton, buttonSize(scale)]} onPress={onClose} accessibilityRole="button">
+            <TouchableOpacity style={[styles.cancelButton, buttonSize(scale)]} onPress={closeAnimated} accessibilityRole="button">
               <Text style={[styles.buttonText, { fontSize: 30 * scale }]}>Anular</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -127,8 +146,8 @@ export function FilterModal({ visible, filters, onChange, onClear, onClose }: Fi
               )}
             </TouchableOpacity>
           </View>
-        </Pressable>
-      </Pressable>
+        </Animated.View>
+      </Animated.View>
     </Modal>
   );
 }
