@@ -113,7 +113,11 @@ export default function BookScreen() {
     else { setMode(selectedMode); setStage('reading'); setShowControls(true); }
   }, [readerLock.unlock]);
 
-  const handleSelectProfessionalNarration = useCallback(() => { readerLock.unlock(); setStage('reading'); setShowControls(true); }, [readerLock.unlock]);
+  const handleSelectProfessionalNarration = useCallback(() => {
+    setStage('reading');
+    setShowControls(false);
+    readerLock.lock();
+  }, [readerLock.lock]);
   const handleReturnToModeMenu = useCallback(async () => { await stopNarration(); await restoreVolume(); readerLock.unlock(); setShowMenu(false); setShowIndex(false); setShowEndScreen(false); setShowControls(true); setMode(null); setStage('intro'); }, [stopNarration, readerLock.unlock]);
   const handleClosePanels = useCallback(() => { setMode(null); setStage('intro'); }, []);
   const handleReadAgain = useCallback(() => { readerLock.unlock(); setCurrentPage(0); setShowEndScreen(false); setShowControls(true); }, [setCurrentPage, readerLock.unlock]);
