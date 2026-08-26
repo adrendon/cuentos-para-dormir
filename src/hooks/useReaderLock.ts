@@ -1,30 +1,48 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-/** Owns the complete child-lock state so BookScreen never references a lock
- * variable that can be dropped independently while resolving merge conflicts. */
+const PROMPT_TIMEOUT_MS = 3000;
+
 export function useReaderLock() {
   const [isLocked, setIsLocked] = useState(false);
   const [showUnlockPrompt, setShowUnlockPrompt] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const hidePrompt = useCallback(() => {
-    setShowUnlockPrompt(false);
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
   }, []);
+
+  const scheduleHide = useCallback(() => {
+    clearTimer();
+    timerRef.current = setTimeout(() => setShowUnlockPrompt(false), PROMPT_TIMEOUT_MS);
+  }, [clearTimer]);
 
   const lock = useCallback(() => {
-    setShowUnlockPrompt(false);
     setIsLocked(true);
-  }, []);
+    setShowUnlockPrompt(true);
+    scheduleHide();
+  }, [scheduleHide]);
 
-  // While locked, a normal tap only toggles the lock/unlock affordance.
-  // It never unlocks the reader.
   const requestUnlock = useCallback(() => {
-    setShowUnlockPrompt((visible) => !visible);
-  }, []);
+    setShowUnlockPrompt(current => {
+      const next = !current;
+      if (next) scheduleHide(); else clearTimer();
+      return next;
+    });
+  }, [clearTimer, scheduleHide]);
+
+  const hidePrompt = useCallback(() => {
+    clearTimer();
+    setShowUnlockPrompt(false);
+  }, [clearTimer]);
 
   const unlock = useCallback(() => {
+    clearTimer();
     setIsLocked(false);
     setShowUnlockPrompt(false);
-  }, []);
+  }, [clearTimer]);
+
+  useEffect(() => () => clearTimer(), [clearTimer]);
 
   return { isLocked, showUnlockPrompt, lock, requestUnlock, hidePrompt, unlock };
 }
