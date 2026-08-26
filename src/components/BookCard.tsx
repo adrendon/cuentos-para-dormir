@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { memo, useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Book, BookCardLayout } from '../types/book';
@@ -11,7 +11,7 @@ interface BookCardProps { book: Book; onPress:(book:Book,layout:BookCardLayout)=
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
 const animatedBooks = new Set<string>();
 
-export function BookCard({ book,onPress,onDownloadComplete,onToggleFavorite,onDelete,index=0,cardWidth }:BookCardProps){
+function BookCardComponent({ book,onPress,onDownloadComplete,onToggleFavorite,onDelete,index=0,cardWidth }:BookCardProps){
   const isAvailable=book.isDownloaded; const isIncluded=book.isEmbedded; const alreadyAnimated=animatedBooks.has(book.id);
   const displayScale=cardWidth/361; const uiScale=clamp(displayScale,0.72,1.16); const titleSize=clamp(cardWidth*0.078,20,31); const edgeWidth=12*uiScale; const cardHeight=cardWidth*(402/361);
   const [showMenu,setShowMenu]=useState(false); const [menuAnchor,setMenuAnchor]=useState({x:0,y:0});
@@ -37,4 +37,15 @@ export function BookCard({ book,onPress,onDownloadComplete,onToggleFavorite,onDe
     <BookCardMenu visible={showMenu} book={book} anchor={menuAnchor} onToggleFavorite={()=>onToggleFavorite(book.id)} onDelete={()=>onDelete(book.id)} onClose={()=>setShowMenu(false)}/>
   </Animated.View>;
 }
+
+export const BookCard = memo(BookCardComponent, (previous, next) =>
+  previous.book === next.book &&
+  previous.index === next.index &&
+  previous.cardWidth === next.cardWidth &&
+  previous.onPress === next.onPress &&
+  previous.onDownloadComplete === next.onDownloadComplete &&
+  previous.onToggleFavorite === next.onToggleFavorite &&
+  previous.onDelete === next.onDelete
+);
+
 const styles=StyleSheet.create({cardShadow:{elevation:9,shadowColor:'#000',shadowOffset:{width:0,height:5},shadowOpacity:0.36,shadowRadius:8},container:{overflow:'hidden'},coverSurface:{position:'absolute',top:0,left:0,bottom:0,overflow:'hidden'},coverImage:{width:'100%',height:'100%'},placeholder:{flex:1,justifyContent:'center',alignItems:'center'},placeholderEmoji:{fontSize:48},titleGradient:{position:'absolute',bottom:0,left:0,right:0,justifyContent:'flex-end'},title:{color:Colors.textWhite,fontFamily:'Montserrat-ExtraBold',textAlign:'center',textShadowColor:'rgba(0,0,0,0.65)',textShadowOffset:{width:0,height:2}},downloadContainer:{position:'absolute',top:0,left:0,right:0,bottom:0},bookEdge:{position:'absolute',top:0,right:0,bottom:0,overflow:'hidden'},edgeHighlightStrong:{position:'absolute',top:0,bottom:0,left:1,width:3,backgroundColor:'rgba(255,255,255,0.48)'},edgeHighlightSoft:{position:'absolute',top:0,bottom:0,left:5,width:2,backgroundColor:'rgba(255,255,255,0.24)'},edgeShadow:{position:'absolute',top:0,bottom:0,right:0,width:3,backgroundColor:'rgba(0,0,0,0.22)'},ribbon:{position:'absolute',tintColor:'#FFFFFF'},menuButton:{position:'absolute',justifyContent:'center',alignItems:'center'},menuButtonText:{color:'#4F5364',fontWeight:'bold'},readBadge:{position:'absolute',width:22,height:22,borderRadius:11,backgroundColor:Colors.success,justifyContent:'center',alignItems:'center'},readBadgeText:{color:Colors.textWhite,fontSize:12,fontWeight:'bold'},favoriteBadge:{position:'absolute',width:22,height:22,borderRadius:11,backgroundColor:Colors.chipOrange,justifyContent:'center',alignItems:'center'},favoriteText:{color:Colors.textWhite,fontSize:13}});
