@@ -59,17 +59,8 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
   }, [progress, onUnlock]);
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} pointerEvents="box-none">
       <Pressable style={StyleSheet.absoluteFillObject} onPress={onRequestPrompt} />
-
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          StyleSheet.absoluteFillObject,
-          styles.promptBackdrop,
-          { opacity: promptAnim },
-        ]}
-      />
 
       <Animated.View
         style={[
@@ -126,14 +117,13 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     zIndex: 200,
     elevation: 200,
-  },
-  promptBackdrop: {
-    backgroundColor: 'rgba(0, 0, 0, 0.08)',
   },
   hint: {
     position: 'absolute',
@@ -146,8 +136,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   unlockWrapper: {
+    position: 'absolute',
+    bottom: 32,
+    alignSelf: 'center',
     alignItems: 'center',
-    marginBottom: 32,
   },
   unlockButton: {
     width: UNLOCK_BUTTON_SIZE,
