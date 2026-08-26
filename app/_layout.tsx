@@ -18,7 +18,7 @@ export default function RootLayout() {
   const [, setFontsLoaded] = useState(false);
 
   useEffect(() => {
-    initializeApp();
+    void initializeApp();
   }, []);
 
   const initializeApp = async () => {
@@ -29,11 +29,22 @@ export default function RootLayout() {
         'Montserrat-ExtraBold': require('../assets/fonts/montserrat_extra_bold.ttf'),
       });
       setFontsLoaded(true);
-      if (Platform.OS === 'android') await NavigationBar.setVisibilityAsync('hidden');
-      await setupPlayer();
+
+      if (Platform.OS === 'android') {
+        await NavigationBar.setVisibilityAsync('hidden');
+      }
+
+      // The React splash contains the MP4. Reveal it before initializing audio;
+      // otherwise the native Expo splash can cover the entire video playback.
+      await SplashScreen.hideAsync();
+
+      // Audio initialization is independent from the visual splash and must not
+      // keep the native splash over the React video.
+      void setupPlayer().catch((error) => {
+        console.error('Error initializing audio player:', error);
+      });
     } catch (error) {
       console.error('Error initializing app:', error);
-    } finally {
       await SplashScreen.hideAsync();
     }
   };
