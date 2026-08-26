@@ -1,5 +1,5 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 
 const STARS = [
   [7, 8, 2, .32], [17, 5, 1, .24], [27, 12, 2, .22], [39, 7, 1, .30], [51, 13, 2, .28], [63, 6, 1, .22], [76, 10, 2, .30], [89, 5, 1, .24],
@@ -10,23 +10,36 @@ const STARS = [
 ] as const;
 
 export function OnboardingStarField() {
+  const reveal = useRef(new Animated.Value(0)).current;
+  const drift = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(reveal, { toValue: 1, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(drift, { toValue: 1, duration: 4200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      Animated.timing(drift, { toValue: 0, duration: 4200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [drift, reveal]);
+
   return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        StyleSheet.absoluteFill,
+        {
+          opacity: reveal,
+          transform: [
+            { translateX: drift.interpolate({ inputRange: [0, 1], outputRange: [-2, 2] }) },
+            { translateY: drift.interpolate({ inputRange: [0, 1], outputRange: [1, -2] }) },
+          ],
+        },
+      ]}
+    >
       {STARS.map(([left, top, size, opacity], index) => (
-        <View
-          key={index}
-          style={{
-            position: 'absolute',
-            left: `${left}%`,
-            top: `${top}%`,
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-            opacity,
-            backgroundColor: '#FFFFFF',
-          }}
-        />
+        <View key={index} style={{ position: 'absolute', left: `${left}%`, top: `${top}%`, width: size, height: size, borderRadius: size / 2, opacity, backgroundColor: '#FFFFFF' }} />
       ))}
-    </View>
+    </Animated.View>
   );
 }
