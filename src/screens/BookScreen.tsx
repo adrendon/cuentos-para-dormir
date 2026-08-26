@@ -182,7 +182,7 @@ export default function BookScreen() {
     <Animated.View style={[styles.container, screenAnimStyle]}>
       <StatusBar hidden />
       {stage === 'intro' ? (
-        <BookOpeningIntro coverColor={book.coverColor} title={title || book.title} firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined} coverSource={getBookCover(book.folderName)} musicEnabled={bookMusic.isPlaying} onToggleMusic={bookMusic.toggle} onClose={handleGoBack} onSelectMode={handleSelectMode} skipEntranceScale={false} />
+        <BookOpeningIntro coverColor={book.coverColor} title={title || book.title} firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined} coverSource={getBookCover(book.folderName)} musicEnabled={bookMusic.isPlaying} onToggleMusic={bookMusic.toggle} onClose={handleGoBack} onSelectMode={handleSelectMode} skipEntranceScale={Boolean(sourceRect)} />
       ) : stage === 'narrationPanel' ? (
         <NarrationPanel narratorName={voiceworkProfile?.narrator ?? ''} childName={voiceworkProfile?.name || profile.name} coverColor={book.coverColor} firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined} musicEnabled={bookMusic.isPlaying} onToggleMusic={() => { void bookMusic.toggle(); }} onHome={() => { void handleReturnToModeMenu(); }} onSelectProfessional={handleSelectProfessionalNarration} onClose={handleClosePanels} />
       ) : stage === 'recordPanel' ? (
