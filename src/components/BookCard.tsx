@@ -5,7 +5,7 @@ import { Book, BookCardLayout } from '../types/book';
 import { Colors } from '../theme/colors';
 import { DownloadButton } from './DownloadButton';
 import { BookCardMenu } from './BookCardMenu';
-import { getBookCover } from '../assets/books/coverRegistry';
+import { getStableBookCover } from '../assets/books/bookVisualRegistry';
 
 interface BookCardProps { book: Book; onPress:(book:Book,layout:BookCardLayout)=>void; onDownloadComplete:(bookId:string)=>void; onToggleFavorite:(bookId:string)=>void; onDelete:(bookId:string)=>void; index?:number; cardWidth:number; }
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
@@ -22,7 +22,7 @@ export function BookCard({ book,onPress,onDownloadComplete,onToggleFavorite,onDe
     Animated.timing(fadeAnim,{toValue:1,duration:360,delay,useNativeDriver:true}), Animated.spring(scaleAnim,{toValue:1,delay,speed:16,bounciness:2,useNativeDriver:true}), Animated.timing(translateXAnim,{toValue:0,duration:420,delay,useNativeDriver:true}), Animated.timing(translateYAnim,{toValue:0,duration:420,delay,useNativeDriver:true})
   ]).start(()=>animatedBooks.add(book.id)); },[book.id,fadeAnim,index,scaleAnim,translateXAnim,translateYAnim]);
   const handlePress=()=>{ if(!isAvailable&&!isIncluded)return; Animated.sequence([Animated.spring(pressScale,{toValue:1.035,speed:28,bounciness:5,useNativeDriver:true}),Animated.timing(pressScale,{toValue:0.975,duration:90,useNativeDriver:true}),Animated.timing(pressScale,{toValue:1,duration:90,useNativeDriver:true})]).start(()=>cardRef.current?.measureInWindow((x:number,y:number,width:number,height:number)=>onPress(book,{x,y,width,height}))); };
-  const coverSource=getBookCover(book.folderName);
+  const coverSource=getStableBookCover(book.folderName);
   return <Animated.View style={[styles.cardShadow,{width:cardWidth,height:cardHeight,borderRadius:12*uiScale,opacity:fadeAnim,transform:[{translateX:translateXAnim},{translateY:translateYAnim},{scale:Animated.multiply(scaleAnim,pressScale)}]}]}>
     <TouchableOpacity ref={cardRef} style={[styles.container,{width:cardWidth,height:cardHeight,borderRadius:12*uiScale,backgroundColor:book.coverColor}]} onPress={handlePress} activeOpacity={isAvailable||isIncluded?0.85:1}>
       <View style={[styles.coverSurface,{right:edgeWidth}]}>{coverSource?<Image source={coverSource} style={styles.coverImage} resizeMode="cover"/>:<View style={[styles.placeholder,{backgroundColor:book.coverColor}]}><Text style={styles.placeholderEmoji}>📖</Text></View>}
