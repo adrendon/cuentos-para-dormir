@@ -35,8 +35,6 @@ export default function SettingsScreen() {
   const { destination = 'profile' } = useLocalSearchParams<{ destination?: 'profile' | 'mail' }>();
   const { width, height } = useWindowDimensions();
 
-  // Landscape UI is driven primarily by the available height. Very wide phones should
-  // reveal more background instead of making every control grow independently.
   const uiScale = clamp(height / 407, 0.78, 1.08);
   const sideScale = clamp(height / 407, 0.82, 1.12);
   const mascotHeight = Math.min(height * 0.76, 315 * sideScale);
@@ -54,6 +52,7 @@ export default function SettingsScreen() {
   const progress = useRef(new Animated.Value(0)).current;
   const [loadingPercent, setLoadingPercent] = useState(0);
   const challenge = useMemo(() => Array.from({ length: 3 }, () => String(Math.floor(Math.random() * 10))), []);
+  const viewEntrance = useRef(new Animated.Value(0)).current;
 
   useEffect(() => { void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE); }, []);
   useEffect(() => {
@@ -61,6 +60,15 @@ export default function SettingsScreen() {
     setGender(profile.gender);
     setMusicEnabled(profile.musicEnabled);
   }, [profile.name, profile.gender, profile.musicEnabled]);
+
+  useEffect(() => {
+    viewEntrance.setValue(0);
+    Animated.timing(viewEntrance, {
+      toValue: 1,
+      duration: 420,
+      useNativeDriver: true,
+    }).start();
+  }, [view, viewEntrance]);
 
   useEffect(() => {
     if (view !== 'preparing') return;
@@ -104,20 +112,44 @@ export default function SettingsScreen() {
     if (hasPersonalizationChange) setView('preparing'); else router.back();
   };
 
+  const fadeStyle = {
+    opacity: viewEntrance,
+  };
+  const riseStyle = {
+    opacity: viewEntrance,
+    transform: [{ translateY: viewEntrance.interpolate({ inputRange: [0, 1], outputRange: [24 * uiScale, 0] }) }],
+  };
+  const topStyle = {
+    opacity: viewEntrance,
+    transform: [{ translateY: viewEntrance.interpolate({ inputRange: [0, 1], outputRange: [-18 * uiScale, 0] }) }],
+  };
+  const leftStyle = {
+    opacity: viewEntrance,
+    transform: [{ translateX: viewEntrance.interpolate({ inputRange: [0, 1], outputRange: [-56 * uiScale, 0] }) }],
+  };
+  const rightStyle = {
+    opacity: viewEntrance,
+    transform: [{ translateX: viewEntrance.interpolate({ inputRange: [0, 1], outputRange: [56 * uiScale, 0] }) }],
+  };
+
   if (view === 'gate') {
-    // Keep the whole keypad inside short landscape displays. Width no longer drives scale.
     const gateScale = clamp(height / 560, 0.72, 1);
     const keyWidth = 68 * gateScale;
     const keyHeight = 48 * gateScale;
     return (
       <View style={styles.gateBackdrop}>
-        <View style={[styles.gateCard, {
+        <Animated.View style={[styles.gateCard, {
           width: Math.min(width * 0.50, 500),
           maxHeight: height * 0.92,
           borderRadius: 24 * gateScale,
           paddingHorizontal: 22 * gateScale,
           paddingTop: 18 * gateScale,
           paddingBottom: 14 * gateScale,
+          opacity: viewEntrance,
+          transform: [
+            { translateY: viewEntrance.interpolate({ inputRange: [0, 1], outputRange: [26 * gateScale, 0] }) },
+            { scale: viewEntrance.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }) },
+          ],
         }]}>
           <TouchableOpacity style={[styles.gateClose, { width: 46 * gateScale, height: 46 * gateScale, borderRadius: 23 * gateScale, top: -18 * gateScale, right: -18 * gateScale }]} onPress={() => router.back()} accessibilityLabel="Cerrar">
             <Image source={require('../assets/ui/ic_close.png')} style={{ width: 24 * gateScale, height: 24 * gateScale }} />
@@ -135,7 +167,7 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             ) : <View key={`empty-${index}`} style={{ width: keyWidth, height: keyHeight }} />)}
           </View>
-        </View>
+        </Animated.View>
       </View>
     );
   }
@@ -143,7 +175,7 @@ export default function SettingsScreen() {
   if (view === 'preparing') {
     return (
       <SettingsBackground>
-        <View style={styles.preparingContent}>
+        <Animated.View style={[styles.preparingContent, riseStyle]}>
           <View style={[styles.preparingCopy, { width: Math.min(width * 0.58, 560 * uiScale) }]}>
             <Text style={[styles.preparingTitle, { fontSize: 30 * uiScale }]}>Estamos preparando nuevos cuentos para ti</Text>
             <Text style={[styles.preparingSubtitle, { fontSize: 18 * uiScale }]}>Estamos personalizando las imágenes y los textos…</Text>
@@ -153,7 +185,7 @@ export default function SettingsScreen() {
             <Text style={[styles.progressText, { fontSize: 14 * uiScale }]}>{loadingPercent}%</Text>
           </View>
           <Image source={require('../assets/onboarding/loading_mascot.webp')} style={{ width: 250 * uiScale, height: 235 * uiScale }} resizeMode="contain" />
-        </View>
+        </Animated.View>
       </SettingsBackground>
     );
   }
@@ -161,12 +193,14 @@ export default function SettingsScreen() {
   if (view === 'language') {
     return (
       <SettingsBackground>
-        <TouchableOpacity style={[styles.languageClose, { width: 52 * uiScale, height: 52 * uiScale, borderRadius: 26 * uiScale }]} onPress={() => setView('profile')} accessibilityLabel="Cerrar idioma">
-          <Image source={require('../assets/ui/ic_close.png')} style={{ width: 28 * uiScale, height: 28 * uiScale }} />
-        </TouchableOpacity>
-        <Image source={require('../assets/onboarding/ic_globe.webp')} style={[styles.languageGlobe, { width: 235 * uiScale, height: 285 * uiScale }]} resizeMode="contain" />
-        <Image source={require('../assets/settings/fox.webp')} style={[styles.languageFox, { width: 235 * uiScale, height: 300 * uiScale }]} resizeMode="contain" />
-        <View style={[styles.languageContent, { width: Math.min(width * 0.38, 380 * uiScale) }]}>
+        <Animated.View style={topStyle}>
+          <TouchableOpacity style={[styles.languageClose, { width: 52 * uiScale, height: 52 * uiScale, borderRadius: 26 * uiScale }]} onPress={() => setView('profile')} accessibilityLabel="Cerrar idioma">
+            <Image source={require('../assets/ui/ic_close.png')} style={{ width: 28 * uiScale, height: 28 * uiScale }} />
+          </TouchableOpacity>
+        </Animated.View>
+        <Animated.Image source={require('../assets/onboarding/ic_globe.webp')} style={[styles.languageGlobe, { width: 235 * uiScale, height: 285 * uiScale }, leftStyle]} resizeMode="contain" />
+        <Animated.Image source={require('../assets/settings/fox.webp')} style={[styles.languageFox, { width: 235 * uiScale, height: 300 * uiScale }, rightStyle]} resizeMode="contain" />
+        <Animated.View style={[styles.languageContent, { width: Math.min(width * 0.38, 380 * uiScale) }, riseStyle]}>
           <Text style={[styles.languageTitle, { fontSize: 31 * uiScale }]}>Idioma</Text>
           <TouchableOpacity style={styles.languageRow} onPress={() => {}} accessibilityRole="radio" accessibilityState={{ selected: true }}>
             <View style={[styles.radioSelected, { width: 30 * uiScale, height: 30 * uiScale, borderRadius: 15 * uiScale }]} />
@@ -175,7 +209,7 @@ export default function SettingsScreen() {
           <TouchableOpacity style={[styles.languageConfirm, { width: 68 * uiScale, height: 68 * uiScale, borderRadius: 34 * uiScale }]} onPress={async () => { await updateLanguage('es'); setView('profile'); }} accessibilityLabel="Confirmar español">
             <Text style={[styles.checkmark, { fontSize: 40 * uiScale }]}>✓</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </SettingsBackground>
     );
   }
@@ -184,17 +218,21 @@ export default function SettingsScreen() {
   const topButtonSize = 54 * uiScale;
   return (
     <SettingsBackground>
-      <Image source={require('../assets/settings/bear.webp')} style={[styles.bearImage, { width: mascotWidth, height: mascotHeight }]} resizeMode="contain" />
-      <Image source={require('../assets/settings/fox.webp')} style={[styles.foxImage, { width: mascotWidth, height: mascotHeight }]} resizeMode="contain" />
+      <Animated.Image source={require('../assets/settings/bear.webp')} style={[styles.bearImage, { width: mascotWidth, height: mascotHeight }, leftStyle]} resizeMode="contain" />
+      <Animated.Image source={require('../assets/settings/fox.webp')} style={[styles.foxImage, { width: mascotWidth, height: mascotHeight }, rightStyle]} resizeMode="contain" />
 
-      <TouchableOpacity style={[styles.topButton, { top: 18 * uiScale, left: 18 * uiScale, width: topButtonSize, height: topButtonSize, borderRadius: topButtonSize / 2 }]} onPress={() => setView('language')} accessibilityLabel="Idioma">
-        <Image source={require('../assets/ui/ic_settings_language.png')} style={{ width: 30 * uiScale, height: 30 * uiScale }} resizeMode="contain" />
-      </TouchableOpacity>
-      <TouchableOpacity style={[styles.topButton, { top: 18 * uiScale, right: 18 * uiScale, width: topButtonSize, height: topButtonSize, borderRadius: topButtonSize / 2 }]} onPress={handleMusicToggle} accessibilityLabel="Música">
-        <Image source={musicEnabled ? require('../assets/onboarding/ic_music_on.png') : require('../assets/onboarding/ic_music_off.png')} style={{ width: 28 * uiScale, height: 28 * uiScale }} resizeMode="contain" />
-      </TouchableOpacity>
+      <Animated.View style={topStyle}>
+        <TouchableOpacity style={[styles.topButton, { top: 18 * uiScale, left: 18 * uiScale, width: topButtonSize, height: topButtonSize, borderRadius: topButtonSize / 2 }]} onPress={() => setView('language')} accessibilityLabel="Idioma">
+          <Image source={require('../assets/ui/ic_settings_language.png')} style={{ width: 30 * uiScale, height: 30 * uiScale }} resizeMode="contain" />
+        </TouchableOpacity>
+      </Animated.View>
+      <Animated.View style={topStyle}>
+        <TouchableOpacity style={[styles.topButton, { top: 18 * uiScale, right: 18 * uiScale, width: topButtonSize, height: topButtonSize, borderRadius: topButtonSize / 2 }]} onPress={handleMusicToggle} accessibilityLabel="Música">
+          <Image source={musicEnabled ? require('../assets/onboarding/ic_music_on.png') : require('../assets/onboarding/ic_music_off.png')} style={{ width: 28 * uiScale, height: 28 * uiScale }} resizeMode="contain" />
+        </TouchableOpacity>
+      </Animated.View>
 
-      <View style={[styles.profileForm, { width: formWidth }]}>
+      <Animated.View style={[styles.profileForm, { width: formWidth }, riseStyle]}>
         <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82} style={[styles.profileTitle, { fontSize: 31 * uiScale, lineHeight: 34 * uiScale, marginBottom: 8 * uiScale }]}>Historias sobre tus hijos</Text>
         <Text style={[styles.profileLabel, { fontSize: 18 * uiScale, marginBottom: 6 * uiScale }]}>Nombre del niño/niña:</Text>
         <TextInput
@@ -220,7 +258,7 @@ export default function SettingsScreen() {
             <Text style={[styles.continueText, { fontSize: 18 * uiScale }]}>Continuar</Text>
           </LinearGradient>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
     </SettingsBackground>
   );
 }
@@ -228,7 +266,7 @@ export default function SettingsScreen() {
 function SettingsBackground({ children }: { children: React.ReactNode }) {
   return (
     <LinearGradient colors={['#2D399E', '#273285']} style={styles.background}>
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
         {STARS.map((star, index) => <View key={index} style={[styles.star, { left: `${star.left}%`, top: `${star.top}%`, width: star.size, height: star.size }]} />)}
       </View>
       {children}
