@@ -6,11 +6,11 @@ export function useReaderLock() {
 
   const lock = useCallback(() => {
     setIsLocked(true);
-    setShowUnlockPrompt(true);
+    setShowUnlockPrompt(false);
   }, []);
 
   const requestUnlock = useCallback(() => {
-    setShowUnlockPrompt(current => !current);
+    setShowUnlockPrompt(true);
   }, []);
 
   const hidePrompt = useCallback(() => {

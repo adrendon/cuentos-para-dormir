@@ -266,7 +266,7 @@ export default function SettingsScreen() {
 function SettingsBackground({ children }: { children: React.ReactNode }) {
   return (
     <LinearGradient colors={['#2D399E', '#273285']} style={styles.background}>
-      <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
         {STARS.map((star, index) => <View key={index} style={[styles.star, { left: `${star.left}%`, top: `${star.top}%`, width: star.size, height: star.size }]} />)}
       </View>
       {children}

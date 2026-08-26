@@ -583,8 +583,8 @@ function GenderChoice({ gender, selected, scale, onPress }: { gender: Gender; se
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG, overflow: 'hidden' },
-  backgroundBase: { ...StyleSheet.absoluteFillObject, backgroundColor: BG },
-  starBackground: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%', opacity: 0.13 },
+  backgroundBase: { ...StyleSheet.absoluteFill, backgroundColor: BG },
+  starBackground: { ...StyleSheet.absoluteFill, width: '100%', height: '100%', opacity: 0.13 },
   flex: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 20 },
   headerCircle: { backgroundColor: '#3E459B', justifyContent: 'center', alignItems: 'center' },

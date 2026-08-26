@@ -58,7 +58,7 @@ export default function LumioSplash({ onComplete }: Props) {
         player={player}
         nativeControls={false}
         contentFit="cover"
-        allowsFullscreen={false}
+        fullscreenOptions={{ enable: false }}
         allowsPictureInPicture={false}
       />
     </View>
@@ -73,6 +73,6 @@ const styles = StyleSheet.create({
     backgroundColor: BLUE,
   },
   video: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
 });
