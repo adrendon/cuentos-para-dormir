@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import Animated, {
   useSharedValue,
   withDelay,
   withTiming,
+  runOnJS,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../theme/colors';
@@ -37,6 +38,8 @@ const STARS = [
   [93, 56], [10, 48], [31, 57], [53, 42], [68, 60], [84, 43],
 ];
 
+const BLUE_GRADIENT: [string, string] = ['#28D4EB', '#278BEC'];
+const ORANGE_GRADIENT: [string, string] = ['#F6BD35', '#FF8E3B'];
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
 export function BookOpeningIntro({
@@ -58,12 +61,16 @@ export function BookOpeningIntro({
   const modeButtonWidth = Math.min(width * 0.22, 245 * uiScale);
   const modeButtonHeight = 52 * uiScale;
   const modeButtonRadius = modeButtonHeight / 2;
-  const menuLeft = clamp(width * 0.154, 96, 225);
+  const centeredLeft = (width - modeButtonWidth) / 2;
+  const expandedLeft = clamp(width * 0.154, 96, 225);
+  const shiftDistance = expandedLeft - centeredLeft;
   const menuBaseTranslateY = -92 * uiScale;
   const [menuReady, setMenuReady] = useState(false);
+  const [selectedMode, setSelectedMode] = useState<'listen' | 'record' | null>(null);
   const coverRotation = useSharedValue(skipEntranceScale ? 1 : 0);
   const bookScale = useSharedValue(skipEntranceScale ? 1 : 0.88);
   const menuReveal = useSharedValue(0);
+  const menuShift = useSharedValue(0);
 
   useEffect(() => {
     if (!skipEntranceScale) {
@@ -76,6 +83,16 @@ export function BookOpeningIntro({
     }, skipEntranceScale ? 100 : 1060);
     return () => clearTimeout(menuTimer);
   }, [bookScale, coverRotation, menuReveal, skipEntranceScale]);
+
+  const finishSelection = useCallback((mode: 'listen' | 'record') => onSelectMode(mode), [onSelectMode]);
+
+  const selectExpandableMode = useCallback((mode: 'listen' | 'record') => {
+    if (selectedMode) return;
+    setSelectedMode(mode);
+    menuShift.value = withTiming(1, { duration: 360, easing: Easing.inOut(Easing.cubic) }, (finished) => {
+      if (finished) runOnJS(finishSelection)(mode);
+    });
+  }, [selectedMode, menuShift, finishSelection]);
 
   const bookStyle = useAnimatedStyle(() => ({ transform: [{ scale: bookScale.value }] }));
   const coverStyle = useAnimatedStyle(() => {
@@ -93,6 +110,7 @@ export function BookOpeningIntro({
   const menuStyle = useAnimatedStyle(() => ({
     opacity: menuReveal.value,
     transform: [
+      { translateX: interpolate(menuShift.value, [0, 1], [0, shiftDistance]) },
       { translateY: menuBaseTranslateY + interpolate(menuReveal.value, [0, 1], [18 * uiScale, 0]) },
       { scale: interpolate(menuReveal.value, [0, 1], [0.97, 1]) },
     ],
@@ -115,11 +133,11 @@ export function BookOpeningIntro({
             <Image source={musicEnabled ? require('../assets/onboarding/ic_music_on.png') : require('../assets/onboarding/ic_music_off.png')} style={{ width: 28 * uiScale, height: 28 * uiScale, tintColor: '#168FD1' }} resizeMode="contain" />
           </TouchableOpacity>
         </Animated.View>
-        <Animated.View style={[styles.modeMenu, { left: menuLeft, gap: 14 * uiScale }, menuStyle]}>
-          <ModeButton label="Leer" icon={require('../assets/ui/ic_book_read.png')} width={modeButtonWidth} height={modeButtonHeight} scale={uiScale} onPress={() => onSelectMode('read')} />
-          <ModeButton label="Escuchar" icon={require('../assets/ui/ic_book_listen.png')} width={modeButtonWidth} height={modeButtonHeight} scale={uiScale} onPress={() => onSelectMode('listen')} colors={['#F6BD35', '#FF8E3B']} />
-          <TouchableOpacity style={{ width: modeButtonWidth, height: modeButtonHeight, borderRadius: modeButtonRadius }} onPress={() => onSelectMode('record')}>
-            <LinearGradient colors={['#28D4EB', '#278BEC']} style={[styles.modeButton, { borderRadius: modeButtonRadius, paddingHorizontal: 24 * uiScale }]}>
+        <Animated.View style={[styles.modeMenu, { left: centeredLeft, gap: 14 * uiScale }, menuStyle]}>
+          <ModeButton label="Leer" icon={require('../assets/ui/ic_book_read.png')} width={modeButtonWidth} height={modeButtonHeight} scale={uiScale} onPress={() => onSelectMode('read')} colors={BLUE_GRADIENT} disabled={!!selectedMode} />
+          <ModeButton label="Escuchar" icon={require('../assets/ui/ic_book_listen.png')} width={modeButtonWidth} height={modeButtonHeight} scale={uiScale} onPress={() => selectExpandableMode('listen')} colors={selectedMode === 'listen' ? ORANGE_GRADIENT : BLUE_GRADIENT} disabled={!!selectedMode && selectedMode !== 'listen'} />
+          <TouchableOpacity style={{ width: modeButtonWidth, height: modeButtonHeight, borderRadius: modeButtonRadius }} onPress={() => selectExpandableMode('record')} disabled={!!selectedMode && selectedMode !== 'record'}>
+            <LinearGradient colors={selectedMode === 'record' ? ORANGE_GRADIENT : BLUE_GRADIENT} style={[styles.modeButton, { borderRadius: modeButtonRadius, paddingHorizontal: 24 * uiScale }]}>
               <View style={[styles.microphoneIcon, { width: 32 * uiScale, height: 32 * uiScale }]}>
                 <View style={[styles.microphoneHead, { width: 14 * uiScale, height: 23 * uiScale, borderRadius: 7 * uiScale, borderWidth: 2.5 * uiScale }]} />
                 <View style={[styles.microphoneStand, { width: 21 * uiScale, height: 13 * uiScale, marginTop: -9 * uiScale, borderBottomWidth: 2.5 * uiScale, borderLeftWidth: 2.5 * uiScale, borderRightWidth: 2.5 * uiScale, borderRadius: 10 * uiScale }]} />
@@ -158,10 +176,10 @@ export function BookOpeningIntro({
   );
 }
 
-function ModeButton({ label, icon, width, height, scale, onPress, colors = ['#28D4EB', '#278BEC'] }: { label: string; icon: number; width: number; height: number; scale: number; onPress: () => void; colors?: [string, string] }) {
+function ModeButton({ label, icon, width, height, scale, onPress, colors = BLUE_GRADIENT, disabled = false }: { label: string; icon: number; width: number; height: number; scale: number; onPress: () => void; colors?: [string, string]; disabled?: boolean }) {
   const radius = height / 2;
   return (
-    <TouchableOpacity style={{ width, height, borderRadius: radius }} onPress={onPress}>
+    <TouchableOpacity style={{ width, height, borderRadius: radius }} onPress={onPress} disabled={disabled}>
       <LinearGradient colors={colors} style={[styles.modeButton, { borderRadius: radius, paddingHorizontal: 24 * scale }]}>
         <Image source={icon} style={{ width: 32 * scale, height: 32 * scale }} resizeMode="contain" />
         <Text style={[styles.modeLabel, { fontSize: 18 * scale }]}>{label}</Text>
