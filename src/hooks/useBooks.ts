@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import {
@@ -53,6 +53,20 @@ async function hydrateDownloadedBook(book: Book): Promise<Book> {
     next = { ...next, hasVoicework: voiceDir.exists };
   } catch {}
   return next;
+}
+
+function getFilteredBooks(allBooks: Book[], query: string, activeFilters: LibraryFilters) {
+  const q = query.trim().toLowerCase();
+  return allBooks.filter(b => {
+    if (q && !b.title.toLowerCase().includes(q)) return false;
+    if (activeFilters.unread && b.isRead) return false;
+    if (activeFilters.favorites && !b.isFavorite) return false;
+    if (activeFilters.withVoice && !b.hasVoicework) return false;
+    if (activeFilters.withoutVoice && b.hasVoicework) return false;
+    if (activeFilters.short && b.numberOfPages > SHORT_STORY_MAX_PAGES) return false;
+    if (activeFilters.long && b.numberOfPages <= SHORT_STORY_MAX_PAGES) return false;
+    return true;
+  });
 }
 
 export function useBooks() {
@@ -120,20 +134,10 @@ export function useBooks() {
     await deleteDownloadedBook(book.folderName);
     setBooks(prev => prev.map(b => b.id === bookId ? { ...b, isDownloaded: false, hasVoicework: false } : b));
   }, [books]);
-  function getFilteredBooks(allBooks: Book[], query: string, activeFilters: LibraryFilters) {
-    const q = query.trim().toLowerCase();
-    return allBooks.filter(b => {
-      if (q && !b.title.toLowerCase().includes(q)) return false;
-      if (activeFilters.unread && b.isRead) return false;
-      if (activeFilters.favorites && !b.isFavorite) return false;
-      if (activeFilters.withVoice && !b.hasVoicework) return false;
-      if (activeFilters.withoutVoice && b.hasVoicework) return false;
-      if (activeFilters.short && b.numberOfPages > SHORT_STORY_MAX_PAGES) return false;
-      if (activeFilters.long && b.numberOfPages <= SHORT_STORY_MAX_PAGES) return false;
-      return true;
-    });
-  }
+
   const clearFilters = useCallback(() => setFilters(DEFAULT_LIBRARY_FILTERS), []);
-  const activeFilterCount = Object.values(filters).filter(Boolean).length;
-  return { books,isLoading,searchQuery,setSearchQuery,filters,setFilters,clearFilters,activeFilterCount,filteredBooks:getFilteredBooks(books,searchQuery,filters),markAsRead,toggleFavorite,getBookById,deleteBook,refreshBooks,markBookAsDownloaded };
+  const activeFilterCount = useMemo(() => Object.values(filters).filter(Boolean).length, [filters]);
+  const filteredBooks = useMemo(() => getFilteredBooks(books, searchQuery, filters), [books, searchQuery, filters]);
+
+  return { books,isLoading,searchQuery,setSearchQuery,filters,setFilters,clearFilters,activeFilterCount,filteredBooks,markAsRead,toggleFavorite,getBookById,deleteBook,refreshBooks,markBookAsDownloaded };
 }
