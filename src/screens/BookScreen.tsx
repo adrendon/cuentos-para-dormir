@@ -16,6 +16,7 @@ import { PageIndexOverlay } from '../components/PageIndexOverlay';
 import { NarrationPanel } from '../components/NarrationPanel';
 import { ReaderMenu } from '../components/ReaderMenu';
 import { duckVolume, restoreVolume } from '../services/audioService';
+import { LockOverlay } from '../components/LockOverlay';
 import { useReaderLock } from '../hooks/useReaderLock';
 import { BookEndScreen } from '../components/BookEndScreen';
 import { RecordComingSoonPanel } from '../components/RecordComingSoonPanel';
@@ -103,7 +104,6 @@ export default function BookScreen() {
   const handlePageChange = useCallback(async (pageIndex: number) => { if (pageIndex === currentPage) return; await stopNarration(); await restoreVolume(); setCurrentPage(pageIndex); }, [currentPage, stopNarration]);
   const handleSelectIndexPage = useCallback((pageIndex: number) => { setShowIndex(false); void handlePageChange(pageIndex); }, [handlePageChange]);
   const handleTapScreen = useCallback(() => { if (!readerLock.isLocked) setShowControls(prev => !prev); }, [readerLock.isLocked]);
-  const handleSilentUnlock = useCallback(() => { if (readerLock.isLocked) { readerLock.unlock(); setShowControls(true); } }, [readerLock.isLocked, readerLock.unlock]);
   const handleBackFromFirstPage = useCallback(() => { void stopNarration(); void restoreVolume(); readerLock.unlock(); setCurrentPage(0); setMode(null); setStage('intro'); setShowControls(true); }, [stopNarration, setCurrentPage, readerLock.unlock]);
 
   const handleSelectMode = useCallback((selectedMode: ReadingMode) => {
@@ -143,11 +143,12 @@ export default function BookScreen() {
     : stage === 'narrationPanel' ? <NarrationPanel narratorName={voiceworkProfile?.narrator ?? ''} childName={voiceworkProfile?.name || profile.name} coverColor={book.coverColor} firstPageSource={pages[0] ? { uri: pages[0].uri } : undefined} musicEnabled={bookMusic.isPlaying} onToggleMusic={() => { void bookMusic.toggle(); }} onHome={() => { void handleReturnToModeMenu(); }} onSelectProfessional={handleSelectProfessionalNarration} onClose={handleClosePanels} />
     : stage === 'recordPanel' ? <RecordComingSoonPanel firstPageUri={pages[0]?.uri} onClose={handleClosePanels} />
     : <>
-      {!showEndScreen ? <TouchableOpacity activeOpacity={1} onPress={handleTapScreen} onLongPress={handleSilentUnlock} delayLongPress={1500} style={styles.fullscreen}><PageViewer pages={pages} currentPage={currentPage} onPageChange={handlePageChange} onPageNavigationStart={() => { void stopNarration(); void restoreVolume(); }} onFinish={handleFinish} onBackFromFirstPage={handleBackFromFirstPage} coverColor={book.coverColor} pageTexts={pageTexts} showText={showText} textSize={textSize} /></TouchableOpacity>
+      {!showEndScreen ? <TouchableOpacity activeOpacity={1} onPress={handleTapScreen} style={styles.fullscreen}><PageViewer pages={pages} currentPage={currentPage} onPageChange={handlePageChange} onPageNavigationStart={() => { void stopNarration(); void restoreVolume(); }} onFinish={handleFinish} onBackFromFirstPage={handleBackFromFirstPage} coverColor={book.coverColor} pageTexts={pageTexts} showText={showText} textSize={textSize} /></TouchableOpacity>
       : <BookEndScreen color={book.coverColor} title={title || book.title} author={author || book.author} illustrator={book.illustrator} isFavorite={book.isFavorite} onReadAgain={handleReadAgain} onToggleFavorite={handleToggleFavoriteFromEndScreen} onShare={handleShare} onClose={handleGoBack} />}
       {!showEndScreen && !readerLock.isLocked && <ReaderControls animatedStyle={controlsAnimStyle} interactive={showControls} currentPage={currentPage} totalPages={pages.length} listenMode={mode === 'listen'} isNarrating={isNarrating} isNarrationPaused={isNarrationPaused} narrationVolume={narrationVolume} musicEnabled={bookMusic.isPlaying} musicVolume={bookMusic.musicVolume} showText={showText} onHome={() => { void handleReturnToModeMenu(); }} onOpenMenu={() => { setShowControls(false); setShowMenu(true); }} onToggleNarration={() => { void handleToggleNarration(); }} onPauseNarration={pauseNarration} onResumeNarration={resumeNarration} onNarrationVolumeChange={setNarrationVolume} onToggleText={() => setShowText(prev => !prev)} onToggleMusic={() => { void bookMusic.toggle(); }} onMusicVolumeChange={(volume) => { void bookMusic.changeVolume(volume); }} />}
       <ReaderMenu visible={showMenu} textSize={textSize} onClose={() => setShowMenu(false)} onOpenIndex={() => setShowIndex(true)} onLock={() => { setShowMenu(false); setShowControls(false); readerLock.lock(); }} onTextSizeChange={setTextSize} />
       <PageIndexOverlay visible={showIndex} pages={pages} currentPage={currentPage} onSelectPage={handleSelectIndexPage} onClose={() => setShowIndex(false)} />
+      {readerLock.isLocked && !showEndScreen && <LockOverlay showPrompt={readerLock.showUnlockPrompt} onRequestPrompt={readerLock.requestUnlock} onUnlock={() => { readerLock.unlock(); setShowControls(true); }} />}
     </>}
     {isClosing && sourceRect && <SharedBookTransition direction="closing" source={sourceRect} coverSource={getBookCover(book.folderName)} firstPageSource={pages[currentPage] ? { uri: pages[currentPage].uri } : undefined} coverColor={book.coverColor} title={title || book.title} onComplete={handleSharedCloseComplete} />}
   </Animated.View>;
