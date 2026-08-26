@@ -13,25 +13,31 @@ export function ReaderMenu({ visible, textSize, onClose, onOpenIndex, onLock, on
   const horizontalScale = Math.max(0.78, Math.min(1.2, width / 904));
   const verticalScale = Math.max(0.78, Math.min(1.08, height / 407));
   const [showTextSize, setShowTextSize] = useState(false);
+  const [mounted, setMounted] = useState(visible);
   const entrance = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (!visible) {
-      setShowTextSize(false);
-      entrance.setValue(0);
+    if (visible) {
+      setMounted(true);
+      entrance.stopAnimation();
+      Animated.timing(entrance, { toValue: 1, duration: 230, useNativeDriver: true }).start();
       return;
     }
-    entrance.setValue(0);
-    Animated.timing(entrance, { toValue: 1, duration: 220, useNativeDriver: true }).start();
-  }, [visible, entrance]);
+    if (!mounted) return;
+    entrance.stopAnimation();
+    Animated.timing(entrance, { toValue: 0, duration: 170, useNativeDriver: true }).start(() => {
+      setShowTextSize(false);
+      setMounted(false);
+    });
+  }, [visible, entrance, mounted]);
 
-  if (!visible) return null;
+  if (!mounted) return null;
 
   if (showTextSize) {
     const previewWidth = Math.min(width * 0.62, 610 * horizontalScale);
     const previewHeight = Math.min(height * 0.58, 250 * verticalScale);
     return (
-      <View style={[StyleSheet.absoluteFill, styles.overlay]}>
+      <Animated.View style={[StyleSheet.absoluteFill, styles.overlay, { opacity: entrance }]}>
         <TouchableOpacity
           style={[styles.closeButton, {
             top: 12 * verticalScale,
@@ -52,7 +58,10 @@ export function ReaderMenu({ visible, textSize, onClose, onOpenIndex, onLock, on
           paddingHorizontal: 34 * horizontalScale,
           paddingVertical: 24 * verticalScale,
           opacity: entrance,
-          transform: [{ scale: entrance.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }) }],
+          transform: [
+            { translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [18 * verticalScale, 0] }) },
+            { scale: entrance.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }) },
+          ],
         }]}>
           <View style={[styles.sizeSliderRow, { marginBottom: 20 * verticalScale }]}>
             <Text style={[styles.tLabel, { fontSize: 22 * scale }]}>T</Text>
@@ -72,7 +81,7 @@ export function ReaderMenu({ visible, textSize, onClose, onOpenIndex, onLock, on
           </View>
           <Text style={[styles.previewText, { fontSize: textSize * scale, lineHeight: textSize * scale * 1.36 }]}>A primera vista era como cualquier otro gato - con orejas, bigotes y una larga cola. Pero tenía algo especial.</Text>
         </Animated.View>
-      </View>
+      </Animated.View>
     );
   }
 
@@ -88,27 +97,30 @@ export function ReaderMenu({ visible, textSize, onClose, onOpenIndex, onLock, on
         borderRadius: 12 * scale,
         opacity: entrance,
         transform: [
-          { translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [-10 * verticalScale, 0] }) },
-          { scale: entrance.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
+          { translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [-12 * verticalScale, 0] }) },
+          { translateX: entrance.interpolate({ inputRange: [0, 1], outputRange: [10 * horizontalScale, 0] }) },
+          { scale: entrance.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }) },
         ],
       }]}>
-        <MenuItem image={require('../assets/ui/ic_content_burger.png')} label="Índice" scale={scale} onPress={() => { onClose(); onOpenIndex(); }} />
+        <MenuItem image={require('../assets/ui/ic_content_burger.png')} label="Índice" scale={scale} onPress={() => { onClose(); setTimeout(onOpenIndex, 180); }} />
         <MenuItem image={require('../assets/ui/ic_font_burger.png')} label="Tamaño del texto" scale={scale} onPress={() => setShowTextSize(true)} />
         <MenuItem image={require('../assets/ui/ic_lock.png')} label="Bloquear controles" scale={scale} onPress={onLock} last />
       </Animated.View>
-      <TouchableOpacity
-        style={[styles.popoverClose, {
-          right: rightAnchor + 4 * horizontalScale,
-          top: topAnchor + 4 * verticalScale,
-          width: 30 * scale,
-          height: 30 * scale,
-          borderRadius: 15 * scale,
-        }]}
-        onPress={onClose}
-        accessibilityLabel="Cerrar opciones"
-      >
-        <Text style={[styles.popoverCloseText, { fontSize: 20 * scale }]}>×</Text>
-      </TouchableOpacity>
+      <Animated.View style={{ opacity: entrance }} pointerEvents="box-none">
+        <TouchableOpacity
+          style={[styles.popoverClose, {
+            right: rightAnchor + 4 * horizontalScale,
+            top: topAnchor + 4 * verticalScale,
+            width: 30 * scale,
+            height: 30 * scale,
+            borderRadius: 15 * scale,
+          }]}
+          onPress={onClose}
+          accessibilityLabel="Cerrar opciones"
+        >
+          <Text style={[styles.popoverCloseText, { fontSize: 20 * scale }]}>×</Text>
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 }
