@@ -4,10 +4,10 @@ import Slider from '@react-native-community/slider';
 
 interface ReaderMenuProps {
   visible: boolean; textSize: number; onClose: () => void; onOpenIndex: () => void;
-  onLock: () => void; onTextSizeChange: (size: number) => void;
+  onLock: () => void; onTextSizeChange: (size: number) => void; showLock: boolean;
 }
 
-export function ReaderMenu({ visible, textSize, onClose, onOpenIndex, onLock, onTextSizeChange }: ReaderMenuProps) {
+export function ReaderMenu({ visible, textSize, onClose, onOpenIndex, onLock, onTextSizeChange, showLock }: ReaderMenuProps) {
   const { width, height } = useWindowDimensions();
   const scale = Math.max(0.76, Math.min(1.08, height / 407));
   const horizontalScale = Math.max(0.78, Math.min(1.2, width / 904));
@@ -103,8 +103,8 @@ export function ReaderMenu({ visible, textSize, onClose, onOpenIndex, onLock, on
         ],
       }]}>
         <MenuItem image={require('../assets/ui/ic_content_burger.png')} label="Índice" scale={scale} onPress={() => { onClose(); setTimeout(onOpenIndex, 180); }} />
-        <MenuItem image={require('../assets/ui/ic_font_burger.png')} label="Tamaño del texto" scale={scale} onPress={() => setShowTextSize(true)} />
-        <MenuItem image={require('../assets/ui/ic_lock.png')} label="Bloquear controles" scale={scale} onPress={onLock} last />
+        <MenuItem image={require('../assets/ui/ic_font_burger.png')} label="Tamaño del texto" scale={scale} onPress={() => setShowTextSize(true)} last={!showLock} />
+        {showLock && <MenuItem image={require('../assets/ui/ic_lock.png')} label="Bloquear controles" scale={scale} onPress={onLock} last />}
       </Animated.View>
       <Animated.View style={{ opacity: entrance }} pointerEvents="box-none">
         <TouchableOpacity
