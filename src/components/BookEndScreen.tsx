@@ -1,79 +1,12 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Image, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../theme/colors';
-
-interface BookEndScreenProps {
-  color: string;
-  title: string;
-  author?: string;
-  illustrator?: string;
-  isFavorite: boolean;
-  onReadAgain: () => void;
-  onToggleFavorite: () => void;
-  onShare: () => void;
-  onClose: () => void;
+interface BookEndScreenProps{color:string;title:string;author?:string;illustrator?:string;narrator?:string;layoutArtist?:string;backgroundUri?:string;isFavorite:boolean;onReadAgain:()=>void;onToggleFavorite:()=>void;onShare:()=>void;onClose:()=>void;}
+export function BookEndScreen({title,author,illustrator,narrator,layoutArtist,backgroundUri,onReadAgain,onShare,onClose}:BookEndScreenProps){
+  const {width,height}=useWindowDimensions();const scale=Math.max(.8,Math.min(1.15,height/407));const entrance=useRef(new Animated.Value(0)).current;useEffect(()=>{entrance.setValue(0);Animated.timing(entrance,{toValue:1,duration:620,useNativeDriver:true}).start();},[entrance]);const motion=(start:number)=>({opacity:entrance.interpolate({inputRange:[start,Math.min(1,start+.3)],outputRange:[0,1],extrapolate:'clamp'}),transform:[{translateY:entrance.interpolate({inputRange:[start,Math.min(1,start+.3)],outputRange:[16,0],extrapolate:'clamp'})}]});
+  return <View style={styles.root}>{backgroundUri&&<Image source={{uri:backgroundUri}} style={StyleSheet.absoluteFill} resizeMode="cover"/>}<View style={styles.dim}/><View style={styles.stars} pointerEvents="none">{[8,21,36,52,68,84,94].map((left,i)=><View key={left} style={[styles.star,{left:`${left}%`,top:`${18+(i%4)*19}%`}]} />)}</View><TouchableOpacity style={[styles.close,{top:18*scale,left:66*scale,width:46*scale,height:46*scale,borderRadius:23*scale}]} onPress={onClose}><Image source={require('../assets/ui/ic_close.png')} style={{width:28*scale,height:28*scale}} resizeMode="contain"/></TouchableOpacity><View style={[styles.content,{paddingHorizontal:145*scale}]}><Animated.View style={[styles.left,motion(.08)]}><Action label="Compartir" icon="↥" dark onPress={onShare}/><Action label="Al comienzo" icon="▤" onPress={onReadAgain}/><Action label="A la biblioteca" icon="↪" orange onPress={onClose}/></Animated.View><Animated.View style={[styles.divider,motion(.18)]}/><Animated.View style={[styles.credits,motion(.25)]}><Text style={[styles.heading,{fontSize:23*scale}]}>Los autores:</Text><Credit label="Autor" value={author}/><Credit label="Ilustradora" value={illustrator}/><Credit label="Compaginador" value={layoutArtist}/><Credit label="Narrador" value={narrator}/><Text style={[styles.storyTitle,{fontSize:11*scale}]}>{title}</Text></Animated.View></View></View>;
 }
-
-export function BookEndScreen({ color, title, author, illustrator, isFavorite, onReadAgain, onToggleFavorite, onShare, onClose }: BookEndScreenProps) {
-  const entrance = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    entrance.setValue(0);
-    Animated.timing(entrance, { toValue: 1, duration: 650, useNativeDriver: true }).start();
-  }, [entrance]);
-
-  const motion = (start: number) => ({
-    opacity: entrance.interpolate({ inputRange: [start, Math.min(1, start + 0.35)], outputRange: [0, 1], extrapolate: 'clamp' }),
-    transform: [{ translateY: entrance.interpolate({ inputRange: [start, Math.min(1, start + 0.35)], outputRange: [18, 0], extrapolate: 'clamp' }) }],
-  });
-
-  return (
-    <View style={[styles.container, { backgroundColor: color }]}>
-      <Animated.View style={motion(0)}><Text style={styles.fin}>FIN</Text></Animated.View>
-      <Animated.View style={[styles.copy, motion(0.10)]}>
-        <Text style={styles.title}>{title}</Text>
-        {!!author && <Text style={styles.credits}>Escrito por: {author}</Text>}
-        {!!illustrator && <Text style={styles.credits}>Ilustrado por: {illustrator}</Text>}
-        <Text style={styles.message}>~ Fin ~</Text>
-      </Animated.View>
-
-      <Animated.View style={[styles.actions, motion(0.28)]}>
-        <EndAction label="Leer otra vez" onPress={onReadAgain} />
-        <EndAction label={isFavorite ? 'En favoritos' : 'Agregar a favoritos'} onPress={onToggleFavorite} accessibilityLabel={isFavorite ? 'Sacar de favoritos' : 'Agregar a favoritos'} />
-        <EndAction label="Compartir" onPress={onShare} />
-      </Animated.View>
-
-      <Animated.View style={motion(0.46)}>
-        <TouchableOpacity style={styles.closeButton} onPress={onClose} accessibilityLabel="Volver a la biblioteca">
-          <LinearGradient colors={[Colors.buttonGreenStart, Colors.buttonGreenEnd]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.closeGradient}>
-            <Text style={styles.closeText}>Volver a la biblioteca</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </Animated.View>
-    </View>
-  );
-}
-
-function EndAction({ label, onPress, accessibilityLabel = label }: { label: string; onPress: () => void; accessibilityLabel?: string }) {
-  return (
-    <TouchableOpacity style={styles.actionButton} onPress={onPress} accessibilityLabel={accessibilityLabel}>
-      <Text style={styles.actionText}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 },
-  copy: { alignItems: 'center' },
-  fin: { color: Colors.titleGold, fontSize: 32, fontFamily: 'Montserrat-ExtraBold', marginBottom: 20 },
-  title: { color: Colors.textWhite, fontSize: 28, fontWeight: '800', textAlign: 'center', marginBottom: 12 },
-  credits: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 14, marginBottom: 4 },
-  message: { color: Colors.titleGold, fontSize: 22, fontWeight: '700', marginTop: 20, marginBottom: 32 },
-  actions: { flexDirection: 'row', gap: 16, marginBottom: 32 },
-  actionButton: { alignItems: 'center', width: 90 },
-  actionText: { color: Colors.textWhite, fontSize: 12, fontWeight: '600', textAlign: 'center' },
-  closeButton: { borderRadius: 28, overflow: 'hidden' },
-  closeGradient: { paddingHorizontal: 32, paddingVertical: 14, borderRadius: 28 },
-  closeText: { color: Colors.textWhite, fontSize: 16, fontWeight: '700' },
-});
+function Action({label,icon,onPress,orange=false,dark=false}:{label:string;icon:string;onPress:()=>void;orange?:boolean;dark?:boolean}){return <TouchableOpacity style={styles.actionOuter} onPress={onPress}><LinearGradient colors={orange?[Colors.chipOrange,'#FF9238']:dark?['#3C3C95','#31307E']:['#25BDE8','#228CE9']} start={{x:0,y:0}} end={{x:0,y:1}} style={styles.action}><Text style={styles.actionIcon}>{icon}</Text><Text style={styles.actionText}>{label}</Text></LinearGradient></TouchableOpacity>}
+function Credit({label,value}:{label:string;value?:string}){if(!value)return null;return <View style={styles.creditRow}><Text style={styles.creditLabel}>{label}</Text><Text style={styles.creditValue}>{value.toUpperCase()}</Text></View>}
+const styles=StyleSheet.create({root:{flex:1,backgroundColor:'#282775'},dim:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(38,36,116,.83)'},stars:{...StyleSheet.absoluteFillObject},star:{position:'absolute',width:4,height:4,borderRadius:2,backgroundColor:'rgba(255,255,255,.35)'},close:{position:'absolute',zIndex:10,backgroundColor:'#F3F4EA',justifyContent:'center',alignItems:'center',elevation:7},content:{flex:1,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:70},left:{width:'38%',alignItems:'center',gap:22},divider:{width:5,height:'52%',backgroundColor:'#F3F4EA',borderRadius:3},credits:{width:'42%',justifyContent:'center',gap:15},heading:{color:'#FFF',fontFamily:'Montserrat-ExtraBold',textAlign:'center',marginBottom:10},creditRow:{flexDirection:'row',alignItems:'center'},creditLabel:{width:115,color:'#FFF',fontFamily:'Montserrat-SemiBold',fontSize:15,textAlign:'right',marginRight:24},creditValue:{flex:1,color:'#FFF',fontFamily:'Montserrat-SemiBold',fontSize:17},storyTitle:{color:'rgba(255,255,255,.35)',textAlign:'right',marginTop:6},actionOuter:{width:290,borderRadius:30,overflow:'hidden'},action:{height:58,borderRadius:30,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:16},actionIcon:{color:'#FFF',fontSize:27,fontWeight:'800'},actionText:{color:'#FFF',fontFamily:'Montserrat-ExtraBold',fontSize:20}});
