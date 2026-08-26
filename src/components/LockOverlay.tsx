@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Pressable } from 'react-native';
 import { Colors } from '../theme/colors';
 
@@ -10,14 +10,19 @@ interface LockOverlayProps {
 
 const HOLD_DURATION_MS = 1500;
 
-/**
- * Full-screen touch blocker for kids. Swallows all taps except the
- * hold-to-unlock button, which requires a sustained press to release.
- */
 export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverlayProps) {
   const [isHolding, setIsHolding] = useState(false);
   const progress = useRef(new Animated.Value(0)).current;
+  const promptAnim = useRef(new Animated.Value(showPrompt ? 1 : 0)).current;
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    Animated.timing(promptAnim, {
+      toValue: showPrompt ? 1 : 0,
+      duration: showPrompt ? 220 : 180,
+      useNativeDriver: true,
+    }).start();
+  }, [promptAnim, showPrompt]);
 
   const clearHold = useCallback(() => {
     if (holdTimer.current) {
@@ -43,52 +48,74 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
   }, [progress, onUnlock]);
 
   return (
-    <View style={[styles.container, showPrompt && styles.promptBackdrop]} pointerEvents="box-none">
-      {/* Transparent full-screen tap absorber — blocks the reader underneath without eating the unlock button's touches */}
-      <Pressable style={StyleSheet.absoluteFill} onPress={onRequestPrompt} />
+    <View style={styles.container} pointerEvents="box-none">
+      <Pressable style={StyleSheet.absoluteFillObject} onPress={onRequestPrompt} />
 
-      {showPrompt && (
-        <>
-          <View style={styles.hint} pointerEvents="none">
-            <View style={styles.closedLockIcon} />
-            <Text style={styles.hintText}>Bloqueado para niños</Text>
-          </View>
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFillObject,
+          styles.promptBackdrop,
+          { opacity: promptAnim },
+        ]}
+      />
 
-          <View style={styles.unlockWrapper}>
-            <TouchableOpacity
-              style={styles.unlockButton}
-              onPressIn={handlePressIn}
-              onPressOut={clearHold}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Mantén presionado para desbloquear"
-            >
-              <Animated.View
-                style={[
-                  styles.unlockFill,
-                  {
-                    width: progress.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0%', '100%'],
-                    }),
-                  },
-                ]}
-              />
-              <View style={styles.openLockIcon} />
-            </TouchableOpacity>
-            <Text style={styles.unlockLabel}>
-              {isHolding ? 'Mantén presionado…' : 'Mantén presionado para desbloquear'}
-            </Text>
-          </View>
-        </>
-      )}
+      <Animated.View
+        style={[
+          styles.hint,
+          {
+            opacity: promptAnim,
+            transform: [{ translateY: promptAnim.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }],
+          },
+        ]}
+        pointerEvents="none"
+      >
+        <View style={styles.closedLockIcon} />
+        <Text style={styles.hintText}>Bloqueado para niños</Text>
+      </Animated.View>
+
+      <Animated.View
+        pointerEvents={showPrompt ? 'auto' : 'none'}
+        style={[
+          styles.unlockWrapper,
+          {
+            opacity: promptAnim,
+            transform: [
+              { translateY: promptAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) },
+              { scale: promptAnim.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }) },
+            ],
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.unlockButton}
+          onPressIn={handlePressIn}
+          onPressOut={clearHold}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Mantén presionado para desbloquear"
+        >
+          <Animated.View
+            style={[
+              styles.unlockFill,
+              {
+                width: progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+              },
+            ]}
+          />
+          <View style={styles.openLockIcon} />
+        </TouchableOpacity>
+        <Text style={styles.unlockLabel}>
+          {isHolding ? 'Mantén presionado…' : 'Mantén presionado para desbloquear'}
+        </Text>
+      </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFill,
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-end',
     alignItems: 'center',
     zIndex: 200,
