@@ -15,6 +15,7 @@ export default function SplashScreen() {
   const hasNavigated = useRef(false);
   const hasStartedVideo = useRef(false);
   const [videoFinished, setVideoFinished] = useState(false);
+  const [videoStarted, setVideoStarted] = useState(false);
 
   const player = useVideoPlayer(logoVideo, (p) => {
     p.loop = false;
@@ -29,19 +30,33 @@ export default function SplashScreen() {
   useEffect(() => {
     let cancelled = false;
 
-    const revealAndPlay = async () => {
-      // Never let the native Expo splash cover the MP4 while it is already
-      // playing. Hide native splash first, then start the video from frame 0.
-      await ExpoSplashScreen.hideAsync().catch(() => undefined);
-      if (cancelled || hasStartedVideo.current) return;
+    const revealAndPlay = async (status = player.status) => {
+      if (status !== 'readyToPlay' || cancelled || hasStartedVideo.current) return;
       hasStartedVideo.current = true;
+
+      // Keep the native splash only while the local asset is preparing. Once
+      // ready, remove that native layer before playback begins at frame zero.
+      await ExpoSplashScreen.hideAsync().catch(() => undefined);
+      if (cancelled) return;
       player.currentTime = 0;
       player.play();
+      setVideoStarted(true);
     };
+
+    const statusSubscription = player.addListener('statusChange', ({ status, error }) => {
+      if (status === 'error') {
+        console.error('Error loading splash video:', error?.message);
+        void ExpoSplashScreen.hideAsync().catch(() => undefined);
+        setVideoFinished(true);
+        return;
+      }
+      void revealAndPlay(status);
+    });
 
     void revealAndPlay();
     return () => {
       cancelled = true;
+      statusSubscription.remove();
     };
   }, [player]);
 
@@ -67,12 +82,12 @@ export default function SplashScreen() {
     const subscription = player.addListener('playToEnd', () => {
       setVideoFinished(true);
     });
-    const fallback = setTimeout(() => setVideoFinished(true), 9500);
+    const fallback = videoStarted ? setTimeout(() => setVideoFinished(true), 9500) : undefined;
     return () => {
       subscription.remove();
-      clearTimeout(fallback);
+      if (fallback) clearTimeout(fallback);
     };
-  }, [player]);
+  }, [player, videoStarted]);
 
   useEffect(() => {
     goNext();
@@ -86,7 +101,7 @@ export default function SplashScreen() {
         nativeControls={false}
         contentFit="cover"
         surfaceType="textureView"
-        allowsFullscreen={false}
+        fullscreenOptions={{ enable: false }}
         allowsPictureInPicture={false}
       />
     </Animated.View>
@@ -99,6 +114,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#004B82',
   },
   video: {
-    ...StyleSheet.absoluteFillObject,
+    position:'absolute',top:0,right:0,bottom:0,left:0,
   },
 });

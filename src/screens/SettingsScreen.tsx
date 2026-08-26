@@ -37,7 +37,7 @@ export default function SettingsScreen() {
 
   const uiScale = clamp(height / 407, 0.78, 1.08);
   const sideScale = clamp(height / 407, 0.82, 1.12);
-  const mascotHeight = Math.min(height * 0.76, 315 * sideScale);
+  const mascotHeight = Math.min(height * 0.60, 260 * sideScale);
   const mascotWidth = mascotHeight * 0.78;
   const formWidth = Math.min(width * 0.39, 460 * uiScale);
   const inputWidth = Math.min(width * 0.31, 360 * uiScale);
@@ -266,7 +266,7 @@ export default function SettingsScreen() {
 function SettingsBackground({ children }: { children: React.ReactNode }) {
   return (
     <LinearGradient colors={['#2D399E', '#273285']} style={styles.background}>
-      <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
         {STARS.map((star, index) => <View key={index} style={[styles.star, { left: `${star.left}%`, top: `${star.top}%`, width: star.size, height: star.size }]} />)}
       </View>
       {children}
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   languageLabel: { color: Colors.textWhite, fontFamily: Fonts.heading },
   languageConfirm: { backgroundColor: '#F6A928', justifyContent: 'center', alignItems: 'center', marginTop: 28, elevation: 4 },
   checkmark: { color: Colors.textWhite, fontFamily: Fonts.heading, marginTop: -4 },
-  bearImage: { position: 'absolute', left: 0, bottom: -4 },
+  bearImage: { position: 'absolute', left: '-2.5%', bottom: -4 },
   foxImage: { position: 'absolute', right: 0, bottom: -4 },
   topButton: { position: 'absolute', backgroundColor: '#187AD1', justifyContent: 'center', alignItems: 'center', zIndex: 5 },
   profileForm: { flex: 1, alignSelf: 'center', justifyContent: 'center', alignItems: 'center' },
