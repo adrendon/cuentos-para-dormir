@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { Animated, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '../theme/colors';
 
 interface LockOverlayProps {
@@ -14,7 +14,6 @@ const BUTTON_SIZE = 64;
 export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverlayProps) {
   const [isHolding, setIsHolding] = useState(false);
   const progress = useRef(new Animated.Value(0)).current;
-  const didLongPress = useRef(false);
 
   const clearHold = useCallback(() => {
     progress.stopAnimation();
@@ -23,7 +22,6 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
   }, [progress]);
 
   const handlePressIn = useCallback(() => {
-    didLongPress.current = false;
     progress.stopAnimation();
     progress.setValue(0);
     setIsHolding(true);
@@ -34,60 +32,47 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
     }).start();
   }, [progress]);
 
-  const handleLongPress = useCallback(() => {
-    didLongPress.current = true;
+  const handleUnlock = useCallback(() => {
+    clearHold();
     onUnlock();
-  }, [onUnlock]);
-
-  const handleButtonPress = useCallback(() => {
-    if (!didLongPress.current) onRequestPrompt();
-    didLongPress.current = false;
-  }, [onRequestPrompt]);
+  }, [clearHold, onUnlock]);
 
   return (
-    <Modal
-      visible
-      transparent
-      animationType="none"
-      statusBarTranslucent
-      hardwareAccelerated
-      onRequestClose={() => undefined}
-    >
-      <View style={styles.container}>
-        <Pressable style={StyleSheet.absoluteFillObject} onPress={onRequestPrompt} />
+    <View style={styles.container} pointerEvents="box-none">
+      <Pressable style={StyleSheet.absoluteFillObject} onPress={onRequestPrompt} />
 
-        {showPrompt && (
-          <View style={styles.unlockWrapper} pointerEvents="box-none">
-            <Pressable
-              style={styles.unlockButton}
-              onPress={handleButtonPress}
-              onLongPress={handleLongPress}
-              delayLongPress={HOLD_DURATION_MS}
-              onPressIn={handlePressIn}
-              onPressOut={clearHold}
-            >
-              <Animated.View
-                pointerEvents="none"
-                style={[
-                  styles.unlockFill,
-                  { width: progress.interpolate({ inputRange: [0, 1], outputRange: [0, BUTTON_SIZE] }) },
-                ]}
-              />
-              <View pointerEvents="none" style={styles.lockBody}>
-                <View style={styles.lockShackle} />
-              </View>
-            </Pressable>
-            {isHolding && <Text style={styles.label}>Mantén presionado…</Text>}
-          </View>
-        )}
-      </View>
-    </Modal>
+      {showPrompt && (
+        <View style={styles.unlockWrapper} pointerEvents="box-none">
+          <Pressable
+            style={styles.unlockButton}
+            onLongPress={handleUnlock}
+            delayLongPress={HOLD_DURATION_MS}
+            onPressIn={handlePressIn}
+            onPressOut={clearHold}
+          >
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.unlockFill,
+                { width: progress.interpolate({ inputRange: [0, 1], outputRange: [0, BUTTON_SIZE] }) },
+              ]}
+            />
+            <View pointerEvents="none" style={styles.lockBody}>
+              <View style={styles.lockShackle} />
+            </View>
+          </Pressable>
+          {isHolding && <Text style={styles.label}>Mantén presionado…</Text>}
+        </View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
+    zIndex: 9999,
+    elevation: 9999,
   },
   unlockWrapper: {
     position: 'absolute',
@@ -95,6 +80,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
+    zIndex: 10000,
+    elevation: 10000,
   },
   unlockButton: {
     width: BUTTON_SIZE,
@@ -104,7 +91,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-    elevation: 20,
   },
   unlockFill: {
     position: 'absolute',
