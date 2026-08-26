@@ -1,5 +1,5 @@
-import React, { useCallback, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '../theme/colors';
 
 interface LockOverlayProps {
@@ -8,60 +8,68 @@ interface LockOverlayProps {
   onRequestPrompt: () => void;
 }
 
-const HOLD_DURATION_MS = 1500;
+const REQUIRED_TAPS = 3;
+const TAP_SEQUENCE_TIMEOUT_MS = 1800;
 const BUTTON_SIZE = 64;
 
 export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverlayProps) {
-  const [isHolding, setIsHolding] = useState(false);
-  const progress = useRef(new Animated.Value(0)).current;
+  const [tapCount, setTapCount] = useState(0);
+  const tapCountRef = useRef(0);
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const clearHold = useCallback(() => {
-    progress.stopAnimation();
-    progress.setValue(0);
-    setIsHolding(false);
-  }, [progress]);
+  const clearSequence = useCallback(() => {
+    if (resetTimer.current) clearTimeout(resetTimer.current);
+    resetTimer.current = null;
+    tapCountRef.current = 0;
+    setTapCount(0);
+  }, []);
 
-  const handlePressIn = useCallback(() => {
-    progress.stopAnimation();
-    progress.setValue(0);
-    setIsHolding(true);
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: HOLD_DURATION_MS,
-      useNativeDriver: false,
-    }).start();
-  }, [progress]);
+  useEffect(() => clearSequence, [clearSequence]);
 
-  const handleUnlock = useCallback(() => {
-    clearHold();
-    onUnlock();
-  }, [clearHold, onUnlock]);
+  useEffect(() => {
+    if (!showPrompt) clearSequence();
+  }, [clearSequence, showPrompt]);
+
+  const handleUnlockTap = useCallback(() => {
+    if (resetTimer.current) clearTimeout(resetTimer.current);
+
+    const nextCount = tapCountRef.current + 1;
+    if (nextCount >= REQUIRED_TAPS) {
+      clearSequence();
+      onUnlock();
+      return;
+    }
+
+    tapCountRef.current = nextCount;
+    setTapCount(nextCount);
+    resetTimer.current = setTimeout(clearSequence, TAP_SEQUENCE_TIMEOUT_MS);
+  }, [clearSequence, onUnlock]);
 
   return (
     <View style={styles.container} pointerEvents="box-none">
-      <Pressable style={StyleSheet.absoluteFillObject} onPress={onRequestPrompt} />
+      <Pressable
+        accessibilityLabel="Controles bloqueados"
+        accessibilityHint="Toca para mostrar el botón de desbloqueo"
+        style={StyleSheet.absoluteFill}
+        onPress={onRequestPrompt}
+      />
 
       {showPrompt && (
         <View style={styles.unlockWrapper} pointerEvents="box-none">
           <Pressable
             style={styles.unlockButton}
-            onLongPress={handleUnlock}
-            delayLongPress={HOLD_DURATION_MS}
-            onPressIn={handlePressIn}
-            onPressOut={clearHold}
+            accessibilityRole="button"
+            accessibilityLabel="Desbloquear controles"
+            accessibilityHint="Toca tres veces para desbloquear"
+            onPress={handleUnlockTap}
           >
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.unlockFill,
-                { width: progress.interpolate({ inputRange: [0, 1], outputRange: [0, BUTTON_SIZE] }) },
-              ]}
-            />
             <View pointerEvents="none" style={styles.lockBody}>
               <View style={styles.lockShackle} />
             </View>
           </Pressable>
-          {isHolding && <Text style={styles.label}>Mantén presionado…</Text>}
+          <Text style={styles.label} pointerEvents="none">
+            {tapCount === 0 ? 'Toca 3 veces para desbloquear' : `${REQUIRED_TAPS - tapCount} toque${REQUIRED_TAPS - tapCount === 1 ? '' : 's'} más`}
+          </Text>
         </View>
       )}
     </View>
@@ -70,7 +78,7 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 9999,
     elevation: 9999,
   },
@@ -91,13 +99,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-  },
-  unlockFill: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: Colors.accentYellow,
   },
   lockBody: {
     width: 22,

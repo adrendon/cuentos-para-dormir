@@ -84,8 +84,8 @@ function ModeButton({ label, icon, width, height, scale, onPress, colors }: { la
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.backgroundDark },
-  background: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
-  shade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(8, 4, 30, 0.72)' },
+  background: { ...StyleSheet.absoluteFill, width: '100%', height: '100%' },
+  shade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(8, 4, 30, 0.72)' },
   modeMenu: { position: 'absolute', top: '50%', alignItems: 'center' },
   modeButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14, borderWidth: 1.5, borderColor: '#25C8EE', elevation: 5 },
   modeLabel: { color: '#FFF', fontFamily: 'Montserrat-ExtraBold' },
