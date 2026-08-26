@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useEvent } from 'expo';
 import { useVideoPlayer, VideoView } from 'expo-video';
 
 const BLUE = '#004B82';
@@ -13,7 +12,6 @@ export default function LumioSplash({ onComplete }: Props) {
     videoPlayer.muted = true;
     videoPlayer.play();
   });
-  const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing });
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
@@ -49,6 +47,5 @@ const styles = StyleSheet.create({
   },
   video: {
     ...StyleSheet.absoluteFillObject,
-    opacity: 1,
   },
 });
