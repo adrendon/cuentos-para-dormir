@@ -37,6 +37,24 @@ function parseTextsCSV(content: string): BookTexts {
   };
 }
 
+async function hydrateDownloadedBook(book: Book): Promise<Book> {
+  const bookLocalPath = `${BOOKS_LOCAL_DIR}${book.folderName}`;
+  let next = { ...book, isDownloaded: true };
+  try {
+    const parsed = parseTextsCSV(await FileSystem.readAsStringAsync(`${bookLocalPath}/Texts.csv`));
+    next = { ...next, title: parsed.title || next.title, author: parsed.author || next.author, illustrator: parsed.illustrator, description: parsed.description };
+  } catch {}
+  try {
+    const info: BookAdditionalInfo = JSON.parse(await FileSystem.readAsStringAsync(`${bookLocalPath}/AdditionalInfo.json`));
+    next = { ...next, numberOfPages: info.numberOfPages, imageType: info.imageType, resolution: info.resolution, commonPages: info.commonPages };
+  } catch {}
+  try {
+    const voiceDir = await FileSystem.getInfoAsync(`${bookLocalPath}/voicework_es`);
+    next = { ...next, hasVoicework: voiceDir.exists };
+  } catch {}
+  return next;
+}
+
 export function useBooks() {
   const [books, setBooks] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,128 +67,63 @@ export function useBooks() {
     try {
       const booksDir = await FileSystem.getInfoAsync(BOOKS_LOCAL_DIR);
       if (!booksDir.exists) await FileSystem.makeDirectoryAsync(BOOKS_LOCAL_DIR, { intermediates: true });
-
-      const [readStored, favStored] = await Promise.all([
-        AsyncStorage.getItem(READ_BOOKS_KEY),
-        AsyncStorage.getItem(FAVORITE_BOOKS_KEY),
-      ]);
+      const [readStored, favStored] = await Promise.all([AsyncStorage.getItem(READ_BOOKS_KEY), AsyncStorage.getItem(FAVORITE_BOOKS_KEY)]);
       const readSet = readStored ? new Set<string>(JSON.parse(readStored)) : new Set<string>();
       const favSet = favStored ? new Set<string>(JSON.parse(favStored)) : new Set<string>();
-      setReadBooks(readSet);
-      setFavoriteBooks(favSet);
-
+      setReadBooks(readSet); setFavoriteBooks(favSet);
       const loadedBooks: Book[] = [];
       for (const entry of bookCatalog) {
-        const { folderName, coverColor, embedded, title, author } = entry;
-        const bookLocalPath = `${BOOKS_LOCAL_DIR}${folderName}`;
-        const isAvailable = await isBookDownloaded(folderName);
-        let bookTitle = title;
-        let bookAuthor = author;
-        let illustrator = '';
-        let description = '';
-        let numberOfPages = 20;
-        let imageType = 'webp';
-        let resolution = 'h1080xr1610';
-        let commonPages: number[] = [];
-        let hasVoicework = false;
-
-        if (isAvailable) {
-          try {
-            const textsContent = await FileSystem.readAsStringAsync(`${bookLocalPath}/Texts.csv`);
-            const parsed = parseTextsCSV(textsContent);
-            if (parsed.title) bookTitle = parsed.title;
-            if (parsed.author) bookAuthor = parsed.author;
-            illustrator = parsed.illustrator;
-            description = parsed.description;
-          } catch {}
-          try {
-            const infoContent = await FileSystem.readAsStringAsync(`${bookLocalPath}/AdditionalInfo.json`);
-            const info: BookAdditionalInfo = JSON.parse(infoContent);
-            numberOfPages = info.numberOfPages;
-            imageType = info.imageType;
-            resolution = info.resolution;
-            commonPages = info.commonPages;
-          } catch {}
-          try {
-            const voiceDir = await FileSystem.getInfoAsync(`${bookLocalPath}/voicework_es`);
-            hasVoicework = voiceDir.exists;
-          } catch {}
-        }
-
-        loadedBooks.push({
-          id: folderName,
-          folderName,
-          title: bookTitle,
-          author: bookAuthor,
-          illustrator,
-          description,
-          coverColor,
-          numberOfPages,
-          imageType,
-          resolution,
-          commonPages,
-          hasVoicework,
-          isRead: readSet.has(folderName),
-          isFavorite: favSet.has(folderName),
-          isDownloaded: isAvailable,
-          isEmbedded: embedded,
-          sizeMB: entry.sizeMB,
-        });
+        const isAvailable = await isBookDownloaded(entry.folderName);
+        let base: Book = {
+          id: entry.folderName, folderName: entry.folderName, title: entry.title, author: entry.author,
+          illustrator: '', description: '', coverColor: entry.coverColor, numberOfPages: 20,
+          imageType: 'webp', resolution: 'h1080xr1610', commonPages: [], hasVoicework: false,
+          isRead: readSet.has(entry.folderName), isFavorite: favSet.has(entry.folderName),
+          isDownloaded: isAvailable, isEmbedded: entry.embedded, sizeMB: entry.sizeMB,
+        };
+        if (isAvailable) base = await hydrateDownloadedBook(base);
+        loadedBooks.push(base);
       }
       setBooks(loadedBooks);
-    } catch (error) {
-      console.error('Error loading books:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    } catch (error) { console.error('Error loading books:', error); }
+    finally { setIsLoading(false); }
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
-      await setupEmbeddedBooks();
-      if (!cancelled) await loadBooksData();
-    })();
+    void (async () => { await setupEmbeddedBooks(); if (!cancelled) await loadBooksData(); })();
     return () => { cancelled = true; };
   }, [loadBooksData]);
 
-  const refreshBooks = useCallback(() => {
-    void loadBooksData();
-  }, [loadBooksData]);
-
+  const refreshBooks = useCallback(() => { void loadBooksData(); }, [loadBooksData]);
   const markBookAsDownloaded = useCallback((bookId: string) => {
-    setBooks(prev => prev.map(b => (b.id === bookId ? { ...b, isDownloaded: true } : b)));
-  }, []);
-
-  async function markAsRead(bookId: string) {
-    const newReadBooks = new Set(readBooks);
-    newReadBooks.add(bookId);
-    setReadBooks(newReadBooks);
-    await AsyncStorage.setItem(READ_BOOKS_KEY, JSON.stringify([...newReadBooks]));
-    setBooks(prev => prev.map(b => (b.id === bookId ? { ...b, isRead: true } : b)));
-  }
-
-  async function toggleFavorite(bookId: string) {
-    const newFavorites = new Set(favoriteBooks);
-    if (newFavorites.has(bookId)) newFavorites.delete(bookId); else newFavorites.add(bookId);
-    setFavoriteBooks(newFavorites);
-    await AsyncStorage.setItem(FAVORITE_BOOKS_KEY, JSON.stringify([...newFavorites]));
-    setBooks(prev => prev.map(b => b.id === bookId ? { ...b, isFavorite: newFavorites.has(bookId) } : b));
-  }
-
-  function getBookById(bookId: string): Book | undefined { return books.find(b => b.id === bookId); }
-
-  const deleteBook = useCallback(async (bookId: string) => {
-    const book = books.find(b => b.id === bookId);
-    if (!book || book.isEmbedded) return;
-    await deleteDownloadedBook(book.folderName);
-    setBooks(prev => prev.map(b => (b.id === bookId ? { ...b, isDownloaded: false } : b)));
+    const target = books.find(b => b.id === bookId);
+    if (!target) return;
+    void hydrateDownloadedBook(target).then(hydrated => {
+      setBooks(prev => prev.map(b => b.id === bookId ? hydrated : b));
+    });
   }, [books]);
 
-  function getFilteredBooks(allBooks: Book[], query: string, activeFilters: LibraryFilters): Book[] {
-    const normalizedQuery = query.trim().toLowerCase();
-    return allBooks.filter((b) => {
-      if (normalizedQuery && !b.title.toLowerCase().includes(normalizedQuery)) return false;
+  async function markAsRead(bookId: string) {
+    const next = new Set(readBooks); next.add(bookId); setReadBooks(next);
+    await AsyncStorage.setItem(READ_BOOKS_KEY, JSON.stringify([...next]));
+    setBooks(prev => prev.map(b => b.id === bookId ? { ...b, isRead: true } : b));
+  }
+  async function toggleFavorite(bookId: string) {
+    const next = new Set(favoriteBooks); if (next.has(bookId)) next.delete(bookId); else next.add(bookId); setFavoriteBooks(next);
+    await AsyncStorage.setItem(FAVORITE_BOOKS_KEY, JSON.stringify([...next]));
+    setBooks(prev => prev.map(b => b.id === bookId ? { ...b, isFavorite: next.has(bookId) } : b));
+  }
+  function getBookById(bookId: string) { return books.find(b => b.id === bookId); }
+  const deleteBook = useCallback(async (bookId: string) => {
+    const book = books.find(b => b.id === bookId); if (!book || book.isEmbedded) return;
+    await deleteDownloadedBook(book.folderName);
+    setBooks(prev => prev.map(b => b.id === bookId ? { ...b, isDownloaded: false, hasVoicework: false } : b));
+  }, [books]);
+  function getFilteredBooks(allBooks: Book[], query: string, activeFilters: LibraryFilters) {
+    const q = query.trim().toLowerCase();
+    return allBooks.filter(b => {
+      if (q && !b.title.toLowerCase().includes(q)) return false;
       if (activeFilters.unread && b.isRead) return false;
       if (activeFilters.favorites && !b.isFavorite) return false;
       if (activeFilters.withVoice && !b.hasVoicework) return false;
@@ -180,25 +133,7 @@ export function useBooks() {
       return true;
     });
   }
-
   const clearFilters = useCallback(() => setFilters(DEFAULT_LIBRARY_FILTERS), []);
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
-
-  return {
-    books,
-    isLoading,
-    searchQuery,
-    setSearchQuery,
-    filters,
-    setFilters,
-    clearFilters,
-    activeFilterCount,
-    filteredBooks: getFilteredBooks(books, searchQuery, filters),
-    markAsRead,
-    toggleFavorite,
-    getBookById,
-    deleteBook,
-    refreshBooks,
-    markBookAsDownloaded,
-  };
+  return { books,isLoading,searchQuery,setSearchQuery,filters,setFilters,clearFilters,activeFilterCount,filteredBooks:getFilteredBooks(books,searchQuery,filters),markAsRead,toggleFavorite,getBookById,deleteBook,refreshBooks,markBookAsDownloaded };
 }
