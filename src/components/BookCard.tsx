@@ -30,23 +30,28 @@ export function BookCard({ book, onPress, onDownloadComplete, onToggleFavorite, 
   const [showMenu, setShowMenu] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState({ x: 0, y: 0 });
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const scaleAnim = useRef(new Animated.Value(0.94)).current;
+  const translateXAnim = useRef(new Animated.Value(index % 3 === 0 ? -30 : index % 3 === 2 ? 30 : 0)).current;
+  const translateYAnim = useRef(new Animated.Value(index % 3 === 1 ? 22 : 14)).current;
   const pressScale = useRef(new Animated.Value(1)).current;
   const cardRef = useRef<any>(null);
 
   useEffect(() => {
+    const delay = Math.min(index, 8) * 65;
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 400, delay: index * 80, useNativeDriver: true }),
-      Animated.timing(scaleAnim, { toValue: 1, duration: 350, delay: index * 80, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 360, delay, useNativeDriver: true }),
+      Animated.spring(scaleAnim, { toValue: 1, delay, speed: 16, bounciness: 2, useNativeDriver: true }),
+      Animated.timing(translateXAnim, { toValue: 0, duration: 420, delay, useNativeDriver: true }),
+      Animated.timing(translateYAnim, { toValue: 0, duration: 420, delay, useNativeDriver: true }),
     ]).start();
-  }, []);
+  }, [fadeAnim, index, scaleAnim, translateXAnim, translateYAnim]);
 
   const handlePress = () => {
     if (!isAvailable && !isIncluded) return;
     Animated.sequence([
-      Animated.spring(pressScale, { toValue: 1.045, speed: 28, bounciness: 7, useNativeDriver: true }),
-      Animated.timing(pressScale, { toValue: 0.96, duration: 120, useNativeDriver: true }),
-      Animated.timing(pressScale, { toValue: 1, duration: 100, useNativeDriver: true }),
+      Animated.spring(pressScale, { toValue: 1.035, speed: 28, bounciness: 5, useNativeDriver: true }),
+      Animated.timing(pressScale, { toValue: 0.975, duration: 90, useNativeDriver: true }),
+      Animated.timing(pressScale, { toValue: 1, duration: 90, useNativeDriver: true }),
     ]).start(() => {
       cardRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => onPress(book, { x, y, width, height }));
     });
@@ -63,7 +68,11 @@ export function BookCard({ book, onPress, onDownloadComplete, onToggleFavorite, 
           height: cardHeight,
           borderRadius: 12 * uiScale,
           opacity: fadeAnim,
-          transform: [{ scale: Animated.multiply(scaleAnim, pressScale) }],
+          transform: [
+            { translateX: translateXAnim },
+            { translateY: translateYAnim },
+            { scale: Animated.multiply(scaleAnim, pressScale) },
+          ],
         },
       ]}
     >
@@ -75,7 +84,7 @@ export function BookCard({ book, onPress, onDownloadComplete, onToggleFavorite, 
         accessibilityRole="button"
         accessibilityLabel={`${isIncluded ? 'Cuento incluido' : isAvailable ? 'Abrir' : 'Descargar'}: ${book.title}`}
       >
-        <View style={[styles.coverSurface, { right: edgeWidth }]}> 
+        <View style={[styles.coverSurface, { right: edgeWidth }]}>
           {coverSource
             ? <Image source={coverSource} style={styles.coverImage} resizeMode="cover" />
             : <View style={[styles.placeholder, { backgroundColor: book.coverColor }]}><Text style={styles.placeholderEmoji}>📖</Text></View>}
@@ -109,7 +118,7 @@ export function BookCard({ book, onPress, onDownloadComplete, onToggleFavorite, 
           )}
         </View>
 
-        <View style={[styles.bookEdge, { width: edgeWidth, backgroundColor: book.coverColor }]}> 
+        <View style={[styles.bookEdge, { width: edgeWidth, backgroundColor: book.coverColor }]}>
           <View style={styles.edgeHighlightStrong} />
           <View style={styles.edgeHighlightSoft} />
           <View style={styles.edgeShadow} />
