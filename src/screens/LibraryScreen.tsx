@@ -49,12 +49,11 @@ export default function LibraryScreen() {
   const [isFilterModalVisible, setFilterModalVisible] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const railAnim = useRef(new Animated.Value(0)).current;
+  const headerAnim = useRef(new Animated.Value(0)).current;
   const scrollTopAnim = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList>(null);
 
-  // Keep the same three-column composition as the Android reference, but size
-  // each region from the real viewport instead of scaling a fixed 1280x768
-  // canvas. This lets wide phones/tablets use their extra horizontal space.
   const densityScale = clamp(windowHeight / 768, 0.72, 1.18);
   const outerPadding = clamp(windowWidth * 0.016, 12, 28);
   const railSize = clamp(windowHeight * 0.13, 72, 104);
@@ -85,12 +84,15 @@ export default function LibraryScreen() {
   }, [refreshBooks]);
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 550,
-      useNativeDriver: true,
-    }).start();
-  }, []);
+    fadeAnim.setValue(0);
+    railAnim.setValue(0);
+    headerAnim.setValue(0);
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 420, useNativeDriver: true }),
+      Animated.timing(railAnim, { toValue: 1, duration: 430, delay: 80, useNativeDriver: true }),
+      Animated.timing(headerAnim, { toValue: 1, duration: 430, delay: 120, useNativeDriver: true }),
+    ]).start();
+  }, [fadeAnim, headerAnim, railAnim]);
 
   const handleBookPress = useCallback((book: Book, layout: BookCardLayout) => {
     router.push({
@@ -110,17 +112,9 @@ export default function LibraryScreen() {
     const shouldShow = offsetY > cardWidth + 20;
     if (shouldShow && !showScrollTop) {
       setShowScrollTop(true);
-      Animated.timing(scrollTopAnim, {
-        toValue: 1,
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
+      Animated.spring(scrollTopAnim, { toValue: 1, speed: 20, bounciness: 4, useNativeDriver: true }).start();
     } else if (!shouldShow && showScrollTop) {
-      Animated.timing(scrollTopAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => setShowScrollTop(false));
+      Animated.timing(scrollTopAnim, { toValue: 0, duration: 180, useNativeDriver: true }).start(() => setShowScrollTop(false));
     }
   }, [showScrollTop, cardWidth, scrollTopAnim]);
 
@@ -163,48 +157,41 @@ export default function LibraryScreen() {
           ))}
         </View>
 
-        <View style={[styles.sideRail, {
+        <Animated.View style={[styles.sideRail, {
           left: outerPadding,
           top: headerTop,
           width: railSize,
           gap: railGap,
+          opacity: railAnim,
+          transform: [
+            { translateX: railAnim.interpolate({ inputRange: [0, 1], outputRange: [-34, 0] }) },
+            { scale: railAnim.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
+          ],
         }]}>
           <TouchableOpacity
-            style={[styles.settingsButton, {
-              width: railSize,
-              height: railSize,
-              borderRadius: railSize / 2,
-            }]}
+            style={[styles.settingsButton, { width: railSize, height: railSize, borderRadius: railSize / 2 }]}
             onPress={handleSettingsPress}
             accessibilityLabel="Abrir ajustes"
             accessibilityRole="button"
           >
-            <Image source={require('../assets/ui/ic_settings.png')} style={[styles.settingsIcon, {
-              width: railSize * 0.52,
-              height: railSize * 0.52,
-            }]} />
+            <Image source={require('../assets/ui/ic_settings.png')} style={[styles.settingsIcon, { width: railSize * 0.52, height: railSize * 0.52 }]} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.mailButton, {
-              width: railSize,
-              height: railSize,
-              borderRadius: railSize / 2,
-            }]}
+            style={[styles.mailButton, { width: railSize, height: railSize, borderRadius: railSize / 2 }]}
             onPress={handleMailPress}
             accessibilityLabel="Enviar un correo"
           >
-            <Image source={require('../assets/ui/ic_mail_to.png')} style={[styles.mailIcon, {
-              width: railSize * 0.5,
-              height: railSize * 0.5,
-            }]} />
+            <Image source={require('../assets/ui/ic_mail_to.png')} style={[styles.mailIcon, { width: railSize * 0.5, height: railSize * 0.5 }]} />
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
-        <View style={[styles.searchRow, {
+        <Animated.View style={[styles.searchRow, {
           top: headerTop,
           left: contentLeft,
           right: contentRight,
           gap: headerGap,
+          opacity: headerAnim,
+          transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-24, 0] }) }],
         }]}>
           <View style={[styles.searchBox, {
             height: headerHeight,
@@ -221,10 +208,7 @@ export default function LibraryScreen() {
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Limpiar búsqueda">
-                <Image source={require('../assets/ui/ic_close.png')} style={[styles.clearSearchIcon, {
-                  width: clamp(30 * densityScale, 24, 32),
-                  height: clamp(30 * densityScale, 24, 32),
-                }]} />
+                <Image source={require('../assets/ui/ic_close.png')} style={[styles.clearSearchIcon, { width: clamp(30 * densityScale, 24, 32), height: clamp(30 * densityScale, 24, 32) }]} />
               </TouchableOpacity>
             )}
           </View>
@@ -240,10 +224,7 @@ export default function LibraryScreen() {
             accessibilityRole="button"
             accessibilityLabel="Filtro"
           >
-            <View style={[styles.filterIcon, {
-              width: clamp(30 * densityScale, 24, 32),
-              height: clamp(24 * densityScale, 19, 26),
-            }]}>
+            <View style={[styles.filterIcon, { width: clamp(30 * densityScale, 24, 32), height: clamp(24 * densityScale, 19, 26) }]}>
               <View style={styles.filterLineLong} />
               <View style={styles.filterLineMedium} />
               <View style={styles.filterLineShort} />
@@ -255,7 +236,7 @@ export default function LibraryScreen() {
               </View>
             )}
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
         <FilterModal
           visible={isFilterModalVisible}
@@ -311,12 +292,13 @@ export default function LibraryScreen() {
             width: railSize,
             height: railSize,
             borderRadius: railSize / 2,
+            transform: [
+              { translateY: scrollTopAnim.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) },
+              { scale: scrollTopAnim.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1] }) },
+            ],
           }]}>
             <TouchableOpacity onPress={scrollToTop} accessibilityLabel="Volver arriba" accessibilityRole="button">
-              <Image source={require('../assets/ui/ic_arrow_up.png')} style={[styles.scrollTopIcon, {
-                width: railSize * 0.54,
-                height: railSize * 0.54,
-              }]} />
+              <Image source={require('../assets/ui/ic_arrow_up.png')} style={[styles.scrollTopIcon, { width: railSize * 0.54, height: railSize * 0.54 }]} />
             </TouchableOpacity>
           </Animated.View>
         )}
@@ -328,7 +310,7 @@ export default function LibraryScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   gradient: { flex: 1 },
-  stars: { ...StyleSheet.absoluteFill },
+  stars: { ...StyleSheet.absoluteFillObject },
   star: {
     position: 'absolute',
     width: 3,
