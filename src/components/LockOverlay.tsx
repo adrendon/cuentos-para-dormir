@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../theme/colors';
 
 interface LockOverlayProps {
@@ -19,7 +19,7 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
   useEffect(() => {
     Animated.timing(promptAnim, {
       toValue: showPrompt ? 1 : 0,
-      duration: showPrompt ? 180 : 150,
+      duration: showPrompt ? 160 : 120,
       useNativeDriver: true,
     }).start();
   }, [promptAnim, showPrompt]);
@@ -44,62 +44,92 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
   useEffect(() => () => clearHold(), [clearHold]);
 
   return (
-    <View style={styles.container} pointerEvents="auto">
-      <Pressable style={StyleSheet.absoluteFillObject} onPress={onRequestPrompt} />
-      <Animated.View
-        pointerEvents={showPrompt ? 'auto' : 'none'}
-        style={[
-          styles.unlockWrapper,
-          {
-            opacity: promptAnim,
-            transform: [
-              { translateY: promptAnim.interpolate({ inputRange: [0, 1], outputRange: [-10, 0] }) },
-              { scale: promptAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) },
-            ],
-          },
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.unlockButton}
-          onPress={onRequestPrompt}
-          onLongPress={onUnlock}
-          delayLongPress={HOLD_DURATION_MS}
-          onPressIn={handlePressIn}
-          onPressOut={clearHold}
-          activeOpacity={0.85}
+    <Modal
+      visible
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      hardwareAccelerated
+      onRequestClose={() => undefined}
+    >
+      <View style={styles.container} pointerEvents="box-none">
+        <Pressable style={StyleSheet.absoluteFillObject} onPress={onRequestPrompt} />
+
+        <Animated.View
+          pointerEvents={showPrompt ? 'auto' : 'none'}
+          style={[
+            styles.unlockWrapper,
+            {
+              opacity: promptAnim,
+              transform: [
+                { translateY: promptAnim.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) },
+                { scale: promptAnim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) },
+              ],
+            },
+          ]}
         >
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.unlockFill,
-              { width: progress.interpolate({ inputRange: [0, 1], outputRange: [0, BUTTON_SIZE] }) },
-            ]}
-          />
-          <View pointerEvents="none" style={styles.lockBody}>
-            <View style={styles.lockShackle} />
-          </View>
-        </TouchableOpacity>
-        {isHolding && <Text style={styles.label}>Mantén presionado…</Text>}
-      </Animated.View>
-    </View>
+          <TouchableOpacity
+            style={styles.unlockButton}
+            onLongPress={onUnlock}
+            delayLongPress={HOLD_DURATION_MS}
+            onPressIn={handlePressIn}
+            onPressOut={clearHold}
+            activeOpacity={0.9}
+          >
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.unlockFill,
+                { width: progress.interpolate({ inputRange: [0, 1], outputRange: [0, BUTTON_SIZE] }) },
+              ]}
+            />
+            <View pointerEvents="none" style={styles.lockBody}>
+              <View style={styles.lockShackle} />
+            </View>
+          </TouchableOpacity>
+          {isHolding && <Text style={styles.label}>Mantén presionado…</Text>}
+        </Animated.View>
+      </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { ...StyleSheet.absoluteFillObject, zIndex: 200, elevation: 200 },
-  unlockWrapper: { position: 'absolute', top: 18, alignSelf: 'center', alignItems: 'center' },
+  container: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  unlockWrapper: {
+    position: 'absolute',
+    top: 18,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
   unlockButton: {
     width: BUTTON_SIZE,
     height: BUTTON_SIZE,
     borderRadius: BUTTON_SIZE / 2,
-    backgroundColor: 'rgba(0,0,0,.58)',
+    backgroundColor: 'rgba(0,0,0,.62)',
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-    elevation: 8,
+    elevation: 20,
   },
-  unlockFill: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: Colors.accentYellow },
-  lockBody: { width: 22, height: 18, borderWidth: 4, borderColor: Colors.accentYellow, borderRadius: 4, marginTop: 7 },
+  unlockFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: Colors.accentYellow,
+  },
+  lockBody: {
+    width: 22,
+    height: 18,
+    borderWidth: 4,
+    borderColor: Colors.accentYellow,
+    borderRadius: 4,
+    marginTop: 7,
+  },
   lockShackle: {
     position: 'absolute',
     width: 15,
@@ -117,7 +147,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'Montserrat-SemiBold',
     marginTop: 5,
-    backgroundColor: 'rgba(0,0,0,.38)',
+    backgroundColor: 'rgba(0,0,0,.42)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
