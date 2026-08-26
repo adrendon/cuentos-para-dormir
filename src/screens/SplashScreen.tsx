@@ -17,12 +17,28 @@ export default function SplashScreen() {
   const player = useVideoPlayer(logoVideo, (p) => {
     p.loop = false;
     p.muted = true;
+    p.currentTime = 0;
     p.play();
   });
 
   useEffect(() => {
     void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
   }, []);
+
+  useEffect(() => {
+    // Android release builds can create the native video surface one frame after
+    // the player itself. Re-issuing play after mount avoids remaining on the
+    // blue backing view when the initial play() happens too early.
+    const timer = setTimeout(() => {
+      try {
+        player.currentTime = 0;
+        player.play();
+      } catch {
+        // The playToEnd/fallback path below will still let the app continue.
+      }
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [player]);
 
   const goNext = useCallback(() => {
     if (hasNavigated.current || isLoading || !videoFinished) return;
@@ -46,7 +62,11 @@ export default function SplashScreen() {
     const subscription = player.addListener('playToEnd', () => {
       setVideoFinished(true);
     });
-    return () => subscription.remove();
+    const fallback = setTimeout(() => setVideoFinished(true), 9500);
+    return () => {
+      subscription.remove();
+      clearTimeout(fallback);
+    };
   }, [player]);
 
   useEffect(() => {
@@ -60,6 +80,7 @@ export default function SplashScreen() {
         player={player}
         nativeControls={false}
         contentFit="cover"
+        surfaceType="textureView"
         allowsFullscreen={false}
         allowsPictureInPicture={false}
       />
