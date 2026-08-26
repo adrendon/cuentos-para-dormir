@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Defs, Mask, Path, Rect } from 'react-native-svg';
 import orbitPaths from '../assets/branding/lumioOrbit';
 import astronautAPaths from '../assets/branding/lumioAstronautA';
 import astronautBPaths from '../assets/branding/lumioAstronautB';
@@ -9,44 +9,88 @@ import wordmarkPaths from '../assets/branding/lumioWordmark';
 
 const BLUE = '#004B82';
 const WHITE = '#FFFFFF';
+const VIEWBOX_SIZE = 1254;
 const SPLASH_DURATION = 9001;
+
+const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 type Props = {
   onComplete?: () => void;
 };
 
-function LogoLayer({ paths }: { paths: readonly string[] }) {
-  return (
-    <Svg
-      width="100%"
-      height="100%"
-      viewBox="0 0 1254 1254"
-      preserveAspectRatio="xMidYMid meet"
-    >
-      {paths.map((d, index) => (
-        <Path
-          key={index}
-          d={d}
-          fill={WHITE}
-          fillRule="evenodd"
-          clipRule="evenodd"
-        />
-      ))}
-    </Svg>
-  );
-}
+type RevealDirection = 'left' | 'right' | 'up' | 'down';
 
-function AnimatedLayer({
+function RevealLayer({
   paths,
-  opacity,
+  progress,
+  direction,
 }: {
   paths: readonly string[];
-  opacity: Animated.Value;
+  progress: Animated.Value;
+  direction: RevealDirection;
 }) {
+  const reactId = useId().replace(/:/g, '');
+  const maskId = `lumio-reveal-${reactId}`;
+
+  const horizontalSize = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, VIEWBOX_SIZE],
+  });
+  const verticalSize = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, VIEWBOX_SIZE],
+  });
+  const reverseX = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [VIEWBOX_SIZE, 0],
+  });
+  const reverseY = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [VIEWBOX_SIZE, 0],
+  });
+
+  const maskRectProps = (() => {
+    switch (direction) {
+      case 'right':
+        return { x: reverseX, y: 0, width: horizontalSize, height: VIEWBOX_SIZE };
+      case 'up':
+        return { x: 0, y: reverseY, width: VIEWBOX_SIZE, height: verticalSize };
+      case 'down':
+        return { x: 0, y: 0, width: VIEWBOX_SIZE, height: verticalSize };
+      case 'left':
+      default:
+        return { x: 0, y: 0, width: horizontalSize, height: VIEWBOX_SIZE };
+    }
+  })();
+
   return (
-    <Animated.View pointerEvents="none" style={[styles.logoLayer, { opacity }]}>
-      <LogoLayer paths={paths} />
-    </Animated.View>
+    <View pointerEvents="none" style={styles.logoLayer}>
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <Defs>
+          <Mask id={maskId} x="0" y="0" width={VIEWBOX_SIZE} height={VIEWBOX_SIZE}>
+            <AnimatedRect
+              {...(maskRectProps as any)}
+              fill={WHITE}
+            />
+          </Mask>
+        </Defs>
+        {paths.map((d, index) => (
+          <Path
+            key={index}
+            d={d}
+            fill={WHITE}
+            fillRule="evenodd"
+            clipRule="evenodd"
+            mask={`url(#${maskId})`}
+          />
+        ))}
+      </Svg>
+    </View>
   );
 }
 
@@ -69,39 +113,46 @@ export default function LumioSplash({ onComplete }: Props) {
     stars.setValue(0);
     wordmark.setValue(0);
 
+    // Build the mark instead of fading entire SVG layers in at once. Each
+    // original vector path is progressively exposed by an animated SVG mask.
     const reveal = Animated.sequence([
       Animated.delay(120),
       Animated.timing(orbit, {
         toValue: 1,
-        duration: 900,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(astronaut, {
-        toValue: 1,
-        duration: 1150,
+        duration: 1250,
         easing: Easing.inOut(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
-      Animated.timing(face, {
-        toValue: 1,
-        duration: 620,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.delay(300),
+      Animated.parallel([
+        Animated.timing(astronaut, {
+          toValue: 1,
+          duration: 1750,
+          easing: Easing.inOut(Easing.cubic),
+          useNativeDriver: false,
+        }),
+        Animated.sequence([
+          Animated.delay(720),
+          Animated.timing(face, {
+            toValue: 1,
+            duration: 900,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: false,
+          }),
+        ]),
+      ]),
+      Animated.delay(180),
       Animated.timing(stars, {
         toValue: 1,
-        duration: 520,
+        duration: 700,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
-      Animated.delay(180),
+      Animated.delay(120),
       Animated.timing(wordmark, {
         toValue: 1,
-        duration: 920,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        duration: 1450,
+        easing: Easing.inOut(Easing.cubic),
+        useNativeDriver: false,
       }),
     ]);
 
@@ -117,11 +168,11 @@ export default function LumioSplash({ onComplete }: Props) {
   return (
     <View style={styles.root}>
       <View style={styles.logoCanvas}>
-        <AnimatedLayer paths={orbitPaths} opacity={orbit} />
-        <AnimatedLayer paths={astronautAPaths} opacity={astronaut} />
-        <AnimatedLayer paths={astronautBPaths} opacity={face} />
-        <AnimatedLayer paths={starPaths} opacity={stars} />
-        <AnimatedLayer paths={wordmarkPaths} opacity={wordmark} />
+        <RevealLayer paths={orbitPaths} progress={orbit} direction="left" />
+        <RevealLayer paths={astronautAPaths} progress={astronaut} direction="up" />
+        <RevealLayer paths={astronautBPaths} progress={face} direction="down" />
+        <RevealLayer paths={starPaths} progress={stars} direction="right" />
+        <RevealLayer paths={wordmarkPaths} progress={wordmark} direction="left" />
       </View>
     </View>
   );
