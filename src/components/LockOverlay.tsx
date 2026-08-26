@@ -9,6 +9,7 @@ interface LockOverlayProps {
 }
 
 const HOLD_DURATION_MS = 1500;
+const UNLOCK_BUTTON_SIZE = 64;
 
 export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverlayProps) {
   const [isHolding, setIsHolding] = useState(false);
@@ -34,8 +35,17 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
     setIsHolding(false);
   }, [progress]);
 
+  useEffect(() => () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    progress.stopAnimation();
+  }, [progress]);
+
   const handlePressIn = useCallback(() => {
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    progress.stopAnimation();
+    progress.setValue(0);
     setIsHolding(true);
+
     Animated.timing(progress, {
       toValue: 1,
       duration: HOLD_DURATION_MS,
@@ -43,12 +53,13 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
     }).start();
 
     holdTimer.current = setTimeout(() => {
+      holdTimer.current = null;
       onUnlock();
     }, HOLD_DURATION_MS);
   }, [progress, onUnlock]);
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
+    <View style={styles.container}>
       <Pressable style={StyleSheet.absoluteFillObject} onPress={onRequestPrompt} />
 
       <Animated.View
@@ -96,14 +107,15 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
           accessibilityLabel="Mantén presionado para desbloquear"
         >
           <Animated.View
+            pointerEvents="none"
             style={[
               styles.unlockFill,
               {
-                width: progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+                width: progress.interpolate({ inputRange: [0, 1], outputRange: [0, UNLOCK_BUTTON_SIZE] }),
               },
             ]}
           />
-          <View style={styles.openLockIcon} />
+          <View pointerEvents="none" style={styles.openLockIcon} />
         </TouchableOpacity>
         <Text style={styles.unlockLabel}>
           {isHolding ? 'Mantén presionado…' : 'Mantén presionado para desbloquear'}
@@ -119,6 +131,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'center',
     zIndex: 200,
+    elevation: 200,
   },
   promptBackdrop: {
     backgroundColor: 'rgba(0, 0, 0, 0.08)',
@@ -145,9 +158,9 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   unlockButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: UNLOCK_BUTTON_SIZE,
+    height: UNLOCK_BUTTON_SIZE,
+    borderRadius: UNLOCK_BUTTON_SIZE / 2,
     backgroundColor: 'rgba(0, 0, 0, 0.55)',
     justifyContent: 'center',
     alignItems: 'center',
