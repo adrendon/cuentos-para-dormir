@@ -4,7 +4,6 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
-  TextInput,
   StyleSheet,
   Animated,
   StatusBar,
@@ -18,6 +17,7 @@ import { Colors, Gradients } from '../theme/colors';
 import { useBooks } from '../hooks/useBooks';
 import { BookCard } from '../components/BookCard';
 import { FilterModal } from '../components/FilterModal';
+import { SearchOverlay } from '../components/SearchOverlay';
 import { Book, BookCardLayout } from '../types/book';
 import { setupEmbeddedBooks } from '../services/embeddedBooksService';
 
@@ -47,6 +47,7 @@ export default function LibraryScreen() {
     refreshBooks,
   } = useBooks();
   const [isFilterModalVisible, setFilterModalVisible] = useState(false);
+  const [isSearchVisible, setSearchVisible] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const railAnim = useRef(new Animated.Value(0)).current;
@@ -135,6 +136,11 @@ export default function LibraryScreen() {
     refreshBooks();
   }, [markBookAsDownloaded, refreshBooks]);
 
+  const handleSearchSubmit = useCallback((value: string) => {
+    setSearchQuery(value);
+    requestAnimationFrame(() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true }));
+  }, [setSearchQuery]);
+
   const renderBookItem = ({ item, index }: { item: Book; index: number }) => (
     <BookCard
       book={item}
@@ -193,25 +199,39 @@ export default function LibraryScreen() {
           opacity: headerAnim,
           transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-24, 0] }) }],
         }]}>
-          <View style={[styles.searchBox, {
-            height: headerHeight,
-            borderRadius: headerHeight / 2,
-            paddingHorizontal: clamp(windowWidth * 0.02, 22, 34),
-          }]}>
-            <TextInput
-              style={[styles.searchInput, { fontSize: clamp(30 * densityScale, 22, 31) }]}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Escribe el texto que buscas…"
-              placeholderTextColor={Colors.textFieldColor}
-              returnKeyType="search"
-            />
+          <TouchableOpacity
+            activeOpacity={0.94}
+            onPress={() => setSearchVisible(true)}
+            style={[styles.searchBox, {
+              height: headerHeight,
+              borderRadius: headerHeight / 2,
+              paddingHorizontal: clamp(windowWidth * 0.02, 22, 34),
+            }]}
+            accessibilityRole="button"
+            accessibilityLabel="Buscar cuentos"
+          >
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.searchInput,
+                { fontSize: clamp(30 * densityScale, 22, 31) },
+                !searchQuery && styles.searchPlaceholder,
+              ]}
+            >
+              {searchQuery || 'Escribe el texto que buscas…'}
+            </Text>
             {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Limpiar búsqueda">
+              <TouchableOpacity
+                onPress={(event) => {
+                  event.stopPropagation();
+                  setSearchQuery('');
+                }}
+                accessibilityLabel="Limpiar búsqueda"
+              >
                 <Image source={require('../assets/ui/ic_close.png')} style={[styles.clearSearchIcon, { width: clamp(30 * densityScale, 24, 32), height: clamp(30 * densityScale, 24, 32) }]} />
               </TouchableOpacity>
             )}
-          </View>
+          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.filterButton, {
               width: filterWidth,
@@ -237,6 +257,13 @@ export default function LibraryScreen() {
             )}
           </TouchableOpacity>
         </Animated.View>
+
+        <SearchOverlay
+          visible={isSearchVisible}
+          value={searchQuery}
+          onSubmit={handleSearchSubmit}
+          onClose={() => setSearchVisible(false)}
+        />
 
         <FilterModal
           visible={isFilterModalVisible}
@@ -352,7 +379,10 @@ const styles = StyleSheet.create({
     flex: 1,
     color: Colors.textFieldColor,
     fontFamily: 'Montserrat-SemiBold',
-    height: '100%',
+  },
+  searchPlaceholder: {
+    color: Colors.textFieldColor,
+    opacity: 0.72,
   },
   clearSearchIcon: { tintColor: Colors.textFieldColor, resizeMode: 'contain' },
   filterButton: {
