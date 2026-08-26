@@ -1,5 +1,5 @@
-import React from 'react';
-import { Alert, Modal, Pressable, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { Alert, Animated, Modal, Pressable, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Book } from '../types/book';
 
 interface BookCardMenuProps {
@@ -18,30 +18,65 @@ export function BookCardMenu({ visible, book, anchor, onToggleFavorite, onDelete
   const canDelete = book.isDownloaded && !book.isEmbedded;
   const left = Math.max(12, Math.min(width - menuWidth - 12, anchor.x - menuWidth + 30 * scale));
   const top = Math.max(12, Math.min(height - 124 * scale, anchor.y - 4 * scale));
+  const entrance = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!visible) {
+      entrance.setValue(0);
+      return;
+    }
+    entrance.setValue(0);
+    Animated.spring(entrance, {
+      toValue: 1,
+      speed: 20,
+      bounciness: 3,
+      useNativeDriver: true,
+    }).start();
+  }, [entrance, visible]);
+
+  const closeAnimated = useCallback(() => {
+    Animated.timing(entrance, { toValue: 0, duration: 150, useNativeDriver: true }).start(onClose);
+  }, [entrance, onClose]);
 
   const handleDeletePress = () => {
     if (!canDelete) return;
-    onClose();
-    Alert.alert(
-      book.title,
-      '¿Quieres borrar la descarga? La portada seguirá en la biblioteca y podrás descargar el cuento otra vez.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Borrar descarga', style: 'destructive', onPress: onDelete },
-      ]
-    );
+    closeAnimated();
+    setTimeout(() => {
+      Alert.alert(
+        book.title,
+        '¿Quieres borrar la descarga? La portada seguirá en la biblioteca y podrás descargar el cuento otra vez.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Borrar descarga', style: 'destructive', onPress: onDelete },
+        ]
+      );
+    }, 170);
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable
-          style={[styles.menu, { top, left, width: menuWidth, borderRadius: 14 * scale }]}
-          onPress={(event) => event.stopPropagation()}
+    <Modal visible={visible} transparent animationType="none" onRequestClose={closeAnimated} statusBarTranslucent>
+      <Animated.View style={[styles.backdrop, { opacity: entrance.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }) }]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={closeAnimated} />
+        <Animated.View
+          style={[
+            styles.menu,
+            {
+              top,
+              left,
+              width: menuWidth,
+              borderRadius: 14 * scale,
+              opacity: entrance,
+              transform: [
+                { translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [-12 * scale, 0] }) },
+                { translateX: entrance.interpolate({ inputRange: [0, 1], outputRange: [10 * scale, 0] }) },
+                { scale: entrance.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }) },
+              ],
+            },
+          ]}
         >
           <TouchableOpacity
             style={[styles.item, { minHeight: 54 * scale, paddingHorizontal: 18 * scale, gap: 12 * scale }]}
-            onPress={() => { onToggleFavorite(); onClose(); }}
+            onPress={() => { onToggleFavorite(); closeAnimated(); }}
             accessibilityLabel={book.isFavorite ? 'Sacar de favoritos' : 'Añadir a favoritos'}
           >
             <Text style={[styles.favoriteIcon, { width: 34 * scale, fontSize: 31 * scale }]}>{book.isFavorite ? '♥' : '♡'}</Text>
@@ -58,8 +93,8 @@ export function BookCardMenu({ visible, book, anchor, onToggleFavorite, onDelete
             <TrashIcon scale={scale} disabled={!canDelete} />
             <Text style={[styles.itemText, !canDelete && styles.disabled, { fontSize: 16 * scale }]}>Borrar el libro</Text>
           </TouchableOpacity>
-        </Pressable>
-      </Pressable>
+        </Animated.View>
+      </Animated.View>
     </Modal>
   );
 }
@@ -67,7 +102,7 @@ export function BookCardMenu({ visible, book, anchor, onToggleFavorite, onDelete
 function TrashIcon({ scale, disabled }: { scale: number; disabled: boolean }) {
   const color = disabled ? '#B6B7B1' : '#63697C';
   return (
-    <View style={[styles.trashSlot, { width: 34 * scale, height: 28 * scale }]}> 
+    <View style={[styles.trashSlot, { width: 34 * scale, height: 28 * scale }]}>
       <View style={[styles.trashLid, { width: 18 * scale, height: 2.5 * scale, backgroundColor: color, top: 3 * scale }]} />
       <View style={[styles.trashHandle, { width: 7 * scale, height: 3 * scale, borderColor: color, top: 0 }]} />
       <View style={[styles.trashCan, { width: 15 * scale, height: 17 * scale, borderColor: color, borderRadius: 2 * scale, top: 7 * scale }]}>
