@@ -35,7 +35,8 @@
         }
       ],
       "./plugins/withMusicVolumeControls",
-      "expo-asset"
+      "expo-asset",
+      "expo-video"
     ],
     "scheme": "cuentos",
     "extra": {
