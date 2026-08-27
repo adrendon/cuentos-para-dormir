@@ -123,6 +123,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
+  unlockFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(246,184,43,.46)',
+  },
   lockBody: {
     width: 22,
     height: 18,
