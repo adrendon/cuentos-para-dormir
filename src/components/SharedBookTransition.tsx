@@ -123,9 +123,9 @@ export function SharedBookTransition({
       borderRadius: interpolate(travel, [0, 1], [12, 9]),
       transform: [
         { perspective: 1400 },
-        { translateX: -currentWidth / 2 },
-        { rotateY: `${interpolate(opening, [0, 1], [0, -179])}deg` },
         { translateX: currentWidth / 2 },
+        { rotateY: `${interpolate(opening, [0, 1], [0, -179])}deg` },
+        { translateX: -currentWidth / 2 },
       ],
     };
   });
