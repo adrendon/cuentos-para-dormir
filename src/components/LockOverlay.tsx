@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '../theme/colors';
 
 interface LockOverlayProps {
@@ -16,13 +16,19 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
   const [tapCount, setTapCount] = useState(0);
   const tapCountRef = useRef(0);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const progress = useRef(new Animated.Value(0)).current;
+  const shackle = useRef(new Animated.Value(0)).current;
 
   const clearSequence = useCallback(() => {
     if (resetTimer.current) clearTimeout(resetTimer.current);
     resetTimer.current = null;
     tapCountRef.current = 0;
     setTapCount(0);
-  }, []);
+    progress.stopAnimation();
+    progress.setValue(0);
+    shackle.stopAnimation();
+    shackle.setValue(0);
+  }, [progress, shackle]);
 
   useEffect(() => clearSequence, [clearSequence]);
 
@@ -35,13 +41,26 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
 
     const nextCount = tapCountRef.current + 1;
     if (nextCount >= REQUIRED_TAPS) {
-      clearSequence();
-      onUnlock();
+      tapCountRef.current = nextCount;
+      setTapCount(nextCount);
+      Animated.parallel([
+        Animated.timing(progress, { toValue: 1, duration: 150, useNativeDriver: false }),
+        Animated.spring(shackle, { toValue: 1, speed: 22, bounciness: 7, useNativeDriver: true }),
+      ]).start(() => {
+        clearSequence();
+        onUnlock();
+      });
       return;
     }
 
     tapCountRef.current = nextCount;
     setTapCount(nextCount);
+    Animated.spring(progress, {
+      toValue: nextCount / REQUIRED_TAPS,
+      speed: 24,
+      bounciness: 4,
+      useNativeDriver: false,
+    }).start();
     resetTimer.current = setTimeout(clearSequence, TAP_SEQUENCE_TIMEOUT_MS);
   }, [clearSequence, onUnlock]);
 
@@ -63,9 +82,13 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
             accessibilityHint="Toca tres veces para desbloquear"
             onPress={handleUnlockTap}
           >
-            <View pointerEvents="none" style={styles.lockBody}>
-              <View style={styles.lockShackle} />
-            </View>
+            <Animated.View
+              pointerEvents="none"
+              style={[styles.unlockFill, { width: progress.interpolate({ inputRange: [0, 1], outputRange: [0, BUTTON_SIZE] }) }]}
+            />
+            <Animated.View pointerEvents="none" style={[styles.lockBody, { transform: [{ scale: progress.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] }) }] }]}>
+              <Animated.View style={[styles.lockShackle, { transform: [{ translateY: shackle.interpolate({ inputRange: [0, 1], outputRange: [0, -7] }) }, { rotate: shackle.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-18deg'] }) }] }]} />
+            </Animated.View>
           </Pressable>
           <Text style={styles.label} pointerEvents="none">
             {tapCount === 0 ? 'Toca 3 veces para desbloquear' : `${REQUIRED_TAPS - tapCount} toque${REQUIRED_TAPS - tapCount === 1 ? '' : 's'} más`}
@@ -78,7 +101,7 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFill,
+    position:'absolute',top:0,right:0,bottom:0,left:0,
     zIndex: 9999,
     elevation: 9999,
   },

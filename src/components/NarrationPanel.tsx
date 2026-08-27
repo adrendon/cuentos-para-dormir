@@ -142,8 +142,8 @@ function ModeButton({ label, icon, width, height, scale, onPress, colors = ['#28
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.backgroundDark },
-  background: { ...StyleSheet.absoluteFill, width: '100%', height: '100%' },
-  shade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(8, 4, 30, 0.72)' },
+  background: { position:'absolute',top:0,right:0,bottom:0,left:0, width: '100%', height: '100%' },
+  shade: { position:'absolute',top:0,right:0,bottom:0,left:0, backgroundColor: 'rgba(8, 4, 30, 0.72)' },
   roundButton: { position: 'absolute', zIndex: 20, backgroundColor: '#F6F4E8', justifyContent: 'center', alignItems: 'center', elevation: 4 },
   modeMenu: { position: 'absolute', top: '50%', alignItems: 'center' },
   modeButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14, borderWidth: 1.5, borderColor: '#25C8EE', elevation: 5 },
