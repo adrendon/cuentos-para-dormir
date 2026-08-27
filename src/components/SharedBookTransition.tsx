@@ -7,6 +7,7 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
   withTiming,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -55,18 +56,24 @@ export function SharedBookTransition({
 
   useEffect(() => {
     progress.value = 0;
-    progress.value = withTiming(
-      1,
-      {
-        duration: direction === 'opening' ? 2200 : 1750,
-        easing: direction === 'opening'
-          ? Easing.bezier(0.22, 1, 0.36, 1)
-          : Easing.bezier(0.4, 0, 0.2, 1),
-      },
-      (finished) => {
+    if (direction === 'opening') {
+      progress.value = withSequence(
+        withTiming(0.24, { duration: 730, easing: Easing.out(Easing.cubic) }),
+        withTiming(0.46, { duration: 460, easing: Easing.inOut(Easing.cubic) }),
+        withTiming(0.50, { duration: 160, easing: Easing.linear }),
+        withTiming(0.82, { duration: 1000, easing: Easing.out(Easing.cubic) }),
+        withTiming(1, { duration: 1050, easing: Easing.out(Easing.quad) }, (finished) => {
+          if (finished) runOnJS(onComplete)();
+        }),
+      );
+    } else {
+      progress.value = withTiming(1, {
+        duration: 3400,
+        easing: Easing.bezier(0.4, 0, 0.2, 1),
+      }, (finished) => {
         if (finished) runOnJS(onComplete)();
-      },
-    );
+      });
+    }
   }, [direction, onComplete, progress]);
 
   const timeline = (value: number) => {
@@ -153,24 +160,15 @@ export function SharedBookTransition({
       >
         <View style={[styles.backCover, { borderColor: coverColor, backgroundColor: coverColor }]} />
         <Animated.View style={[styles.pages, pagesStyle]}>
-          <View style={[styles.leftPage, { width: pageWidth, borderColor: coverColor }]}>
-            {firstPageSource && (
-              <Animated.Image
-                source={firstPageSource}
-                style={[styles.spreadArtwork, { width: pageWidth * 2 }, artworkStyle]}
-                resizeMode="cover"
-              />
-            )}
-          </View>
-          <View style={[styles.rightPage, { left: pageWidth, width: pageWidth, borderColor: coverColor }]}>
-            {firstPageSource && (
-              <Animated.Image
-                source={firstPageSource}
-                style={[styles.spreadArtwork, { left: -pageWidth, width: pageWidth * 2 }, artworkStyle]}
-                resizeMode="cover"
-              />
-            )}
-          </View>
+          {firstPageSource && (
+            <Animated.Image
+              source={firstPageSource}
+              style={[styles.spreadArtwork, { width: pageWidth * 2 }, artworkStyle]}
+              resizeMode="cover"
+            />
+          )}
+          <View style={[styles.leftPage, { width: pageWidth, borderColor: coverColor }]} />
+          <View style={[styles.rightPage, { left: pageWidth, width: pageWidth, borderColor: coverColor }]} />
         </Animated.View>
         <Animated.View style={[styles.spine, { left: pageWidth - 5 * uiScale, width: 10 * uiScale }, spineStyle]} />
       </Animated.View>
@@ -208,9 +206,9 @@ const styles = StyleSheet.create({
   background: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: Colors.backgroundDark },
   openBook: { position: 'absolute' },
   backCover: { position: 'absolute', top: 3, right: -5, bottom: -4, left: -5, borderWidth: 3, borderRadius: 11 },
-  pages: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
-  leftPage: { position: 'absolute', top: 0, bottom: 0, left: 0, overflow: 'hidden', borderWidth: 3, borderTopLeftRadius: 10, borderBottomLeftRadius: 10, backgroundColor: '#F3F0E3' },
-  rightPage: { position: 'absolute', top: 0, bottom: 0, overflow: 'hidden', borderWidth: 3, borderTopRightRadius: 10, borderBottomRightRadius: 10, backgroundColor: '#F3F0E3' },
+  pages: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, overflow: 'hidden' },
+  leftPage: { position: 'absolute', top: 0, bottom: 0, left: 0, borderWidth: 3, borderTopLeftRadius: 10, borderBottomLeftRadius: 10, backgroundColor: 'transparent' },
+  rightPage: { position: 'absolute', top: 0, bottom: 0, overflow: 'hidden', borderWidth: 3, borderTopRightRadius: 10, borderBottomRightRadius: 10, backgroundColor: 'transparent' },
   spreadArtwork: { position: 'absolute', top: 0, height: '100%' },
   spine: { position: 'absolute', top: 4, bottom: 4, zIndex: 8, backgroundColor: 'rgba(0,0,0,0.32)', borderRadius: 6 },
   frontCover: { position: 'absolute', borderWidth: 3, elevation: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.45, shadowRadius: 12 },

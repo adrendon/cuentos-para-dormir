@@ -7,9 +7,9 @@ import { Colors, Gradients } from '../theme/colors';
 interface FilterModalProps { visible: boolean; filters: LibraryFilters; onChange: (filters: LibraryFilters) => void; onClear: () => void; onClose: () => void; }
 type ChipCategory = 'purple' | 'cyan' | 'orange';
 const CHIPS: { key: keyof LibraryFilters; label: string; category: ChipCategory }[] = [
-  { key: 'unread', label: 'No leídos aún', category: 'purple' }, { key: 'favorites', label: 'Predilectos', category: 'purple' },
-  { key: 'withVoice', label: 'Cuentos con narración', category: 'cyan' }, { key: 'withoutVoice', label: 'Cuentos sin narración', category: 'cyan' },
-  { key: 'short', label: 'Cuentos cortos', category: 'orange' }, { key: 'long', label: 'Cuentos largos', category: 'orange' },
+  { key: 'unread', label: 'No leídos', category: 'purple' }, { key: 'notDownloaded', label: 'No descargados', category: 'purple' },
+  { key: 'favorites', label: 'Favoritos', category: 'cyan' }, { key: 'read', label: 'Leídos', category: 'cyan' },
+  { key: 'short', label: 'Cortos (< 30 páginas)', category: 'orange' }, { key: 'long', label: 'Largos (> 40 páginas)', category: 'orange' },
 ];
 const CHIP_COLORS: Record<ChipCategory, string> = { purple: Colors.chipPurple, cyan: Colors.chipBlue, orange: Colors.chipOrange };
 

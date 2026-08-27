@@ -72,23 +72,24 @@ export type FilterType = 'all' | 'favorites' | 'unread';
 
 export interface LibraryFilters {
   unread: boolean;
+  notDownloaded: boolean;
   favorites: boolean;
-  withVoice: boolean;
-  withoutVoice: boolean;
+  read: boolean;
   short: boolean;
   long: boolean;
 }
 
 export const DEFAULT_LIBRARY_FILTERS: LibraryFilters = {
   unread: false,
+  notDownloaded: false,
   favorites: false,
-  withVoice: false,
-  withoutVoice: false,
+  read: false,
   short: false,
   long: false,
 };
 
 export const SHORT_STORY_MAX_PAGES = 30;
+export const LONG_STORY_MIN_PAGES = 40;
 
 export interface VoiceworkInfo {
   language: string;

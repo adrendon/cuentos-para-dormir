@@ -12,10 +12,12 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Asset } from 'expo-asset';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Colors, Fonts, Gradients } from '../theme/colors';
 import { useProfile } from '../hooks/useProfile';
+import { playBookMusic, stopMusic } from '../services/audioService';
 import { Gender } from '../types/book';
 
 type SettingsView = 'gate' | 'profile' | 'language' | 'preparing';
@@ -29,6 +31,7 @@ const STARS = Array.from({ length: 34 }, (_, index) => ({
 }));
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+const SETTINGS_MUSIC = require('../assets/books/ADayInReverse/ADayInReverse.mp3');
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -43,7 +46,7 @@ export default function SettingsScreen() {
   const formWidth = Math.min(width * 0.39, 460 * uiScale);
   const inputWidth = Math.min(width * 0.31, 360 * uiScale);
 
-  const { profile, toggleMusic, updateLanguage, saveProfile } = useProfile();
+  const { profile, isLoading: isProfileLoading, toggleMusic, updateLanguage, saveProfile } = useProfile();
   const [view, setView] = useState<SettingsView>('gate');
   const [name, setName] = useState(profile.name);
   const [gender, setGender] = useState<Gender>(profile.gender);
@@ -61,6 +64,33 @@ export default function SettingsScreen() {
     setGender(profile.gender);
     setMusicEnabled(profile.musicEnabled);
   }, [profile.name, profile.gender, profile.musicEnabled]);
+
+  useEffect(() => {
+    if (isProfileLoading) return;
+    let cancelled = false;
+
+    const syncSettingsMusic = async () => {
+      if (!musicEnabled) {
+        await stopMusic();
+        return;
+      }
+
+      try {
+        const asset = Asset.fromModule(SETTINGS_MUSIC);
+        await asset.downloadAsync();
+        const uri = asset.localUri ?? asset.uri;
+        if (!cancelled && uri) await playBookMusic('Configuración', uri);
+      } catch (error) {
+        console.error('Error playing settings music:', error);
+      }
+    };
+
+    void syncSettingsMusic();
+    return () => {
+      cancelled = true;
+      void stopMusic();
+    };
+  }, [isProfileLoading, musicEnabled]);
 
   useEffect(() => {
     viewEntrance.setValue(0);
@@ -139,6 +169,7 @@ export default function SettingsScreen() {
     const keyHeight = 44 * gateScale;
     return (
       <View style={styles.gateBackdrop}>
+        <SettingsMusicButton enabled={musicEnabled} onPress={handleMusicToggle} scale={gateScale} />
         <Animated.View style={[styles.gateCard, {
           width: Math.min(width * 0.42, 420),
           maxHeight: height * 0.92,
@@ -199,6 +230,7 @@ export default function SettingsScreen() {
             <Image source={require('../assets/ui/ic_close.png')} style={{ width: 28 * uiScale, height: 28 * uiScale }} />
           </TouchableOpacity>
         </Animated.View>
+        <SettingsMusicButton enabled={musicEnabled} onPress={handleMusicToggle} scale={uiScale} />
         <Animated.Image source={require('../assets/onboarding/ic_globe.webp')} style={[styles.languageGlobe, { width: 235 * uiScale, height: 285 * uiScale }, leftStyle]} resizeMode="contain" />
         <Animated.Image source={require('../assets/settings/fox.webp')} style={[styles.languageFox, { width: 235 * uiScale, height: 300 * uiScale }, rightStyle]} resizeMode="contain" />
         <Animated.View style={[styles.languageContent, { width: Math.min(width * 0.38, 380 * uiScale) }, riseStyle]}>
@@ -286,6 +318,23 @@ function GenderButton({ gender, selected, size, onPress }: { gender: Gender; sel
   );
 }
 
+function SettingsMusicButton({ enabled, onPress, scale }: { enabled: boolean; onPress: () => void; scale: number }) {
+  const size = 54 * scale;
+  return (
+    <TouchableOpacity
+      style={[styles.settingsMusicButton, { top: 18 * scale, right: 18 * scale, width: size, height: size, borderRadius: size / 2 }]}
+      onPress={onPress}
+      accessibilityLabel={enabled ? 'Silenciar música' : 'Activar música'}
+    >
+      <Image
+        source={enabled ? require('../assets/onboarding/ic_music_on.png') : require('../assets/onboarding/ic_music_off.png')}
+        style={{ width: 28 * scale, height: 28 * scale }}
+        resizeMode="contain"
+      />
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
   background: { flex: 1, overflow: 'hidden' },
   star: { position: 'absolute', borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.28)' },
@@ -318,7 +367,8 @@ const styles = StyleSheet.create({
   languageLabel: { color: Colors.textWhite, fontFamily: Fonts.heading },
   languageConfirm: { backgroundColor: '#F6A928', justifyContent: 'center', alignItems: 'center', marginTop: 28, elevation: 4 },
   checkmark: { color: Colors.textWhite, fontFamily: Fonts.heading, marginTop: -4 },
-  bearImage: { position: 'absolute', left: '-2.5%', bottom: -1 },
+  settingsMusicButton: { position: 'absolute', backgroundColor: '#187AD1', justifyContent: 'center', alignItems: 'center', zIndex: 6 },
+  bearImage: { position: 'absolute', left: '-2.5%', bottom: -24 },
   foxImage: { position: 'absolute', right: 0, bottom: 0 },
   topButton: { position: 'absolute', backgroundColor: '#187AD1', justifyContent: 'center', alignItems: 'center', zIndex: 5 },
   profileForm: { flex: 1, alignSelf: 'center', justifyContent: 'center', alignItems: 'center' },

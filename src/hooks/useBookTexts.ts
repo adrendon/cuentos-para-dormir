@@ -12,7 +12,7 @@ export interface PageText {
 function normalizeLineBreaks(value: string): string {
   // Catalog files encode line breaks as the two characters `\` and `n`.
   // Accept repeated escaping too, since downloaded ZIPs have used both forms.
-  return value.replace(/\\+n/gi, '\n');
+  return value.replace(/(?:\\+n|\/n)/gi, '\n');
 }
 
 /** Metadata is displayed on one line in cards and credits. */

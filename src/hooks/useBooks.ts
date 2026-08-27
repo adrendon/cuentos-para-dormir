@@ -7,6 +7,7 @@ import {
   BookTexts,
   LibraryFilters,
   DEFAULT_LIBRARY_FILTERS,
+  LONG_STORY_MIN_PAGES,
   SHORT_STORY_MAX_PAGES,
 } from '../types/book';
 import { bookCatalog } from '../assets/books/bookAssets';
@@ -18,7 +19,7 @@ const FAVORITE_BOOKS_KEY = '@cuentos_favorite_books';
 
 function normalizeMetadata(value: string): string {
   return value
-    .replace(/(?:\\\\n|\/n)/gi, ' ')
+    .replace(/(?:\\+n|\/n)/gi, ' ')
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
@@ -67,11 +68,11 @@ function getFilteredBooks(allBooks: Book[], query: string, activeFilters: Librar
   return allBooks.filter(b => {
     if (q && !b.title.toLowerCase().includes(q)) return false;
     if (activeFilters.unread && b.isRead) return false;
+    if (activeFilters.notDownloaded && b.isDownloaded) return false;
     if (activeFilters.favorites && !b.isFavorite) return false;
-    if (activeFilters.withVoice && !b.hasVoicework) return false;
-    if (activeFilters.withoutVoice && b.hasVoicework) return false;
-    if (activeFilters.short && b.numberOfPages > SHORT_STORY_MAX_PAGES) return false;
-    if (activeFilters.long && b.numberOfPages <= SHORT_STORY_MAX_PAGES) return false;
+    if (activeFilters.read && !b.isRead) return false;
+    if (activeFilters.short && b.numberOfPages >= SHORT_STORY_MAX_PAGES) return false;
+    if (activeFilters.long && b.numberOfPages <= LONG_STORY_MIN_PAGES) return false;
     return true;
   });
 }

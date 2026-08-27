@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Alert, Animated, Modal, Pressable, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Animated, Modal, Pressable, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Book } from '../types/book';
 
 interface BookCardMenuProps {
@@ -19,6 +19,7 @@ export function BookCardMenu({ visible, book, anchor, onToggleFavorite, onDelete
   const left = Math.max(12, Math.min(width - menuWidth - 12, anchor.x - menuWidth + 30 * scale));
   const top = Math.max(12, Math.min(height - 124 * scale, anchor.y - 4 * scale));
   const entrance = useRef(new Animated.Value(0)).current;
+  const [confirmVisible, setConfirmVisible] = React.useState(false);
 
   useEffect(() => {
     if (!visible) {
@@ -41,20 +42,14 @@ export function BookCardMenu({ visible, book, anchor, onToggleFavorite, onDelete
   const handleDeletePress = () => {
     if (!canDelete) return;
     closeAnimated();
-    setTimeout(() => {
-      Alert.alert(
-        book.title,
-        '¿Quieres borrar la descarga? La portada seguirá en la biblioteca y podrás descargar el cuento otra vez.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Borrar descarga', style: 'destructive', onPress: onDelete },
-        ]
-      );
-    }, 170);
+    setTimeout(() => setConfirmVisible(true), 170);
   };
 
+  const closeConfirmation = () => setConfirmVisible(false);
+
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={closeAnimated} statusBarTranslucent>
+    <>
+      <Modal visible={visible} transparent animationType="none" onRequestClose={closeAnimated} statusBarTranslucent>
       <Animated.View style={[styles.backdrop, { opacity: entrance.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }) }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={closeAnimated} />
         <Animated.View
@@ -95,7 +90,25 @@ export function BookCardMenu({ visible, book, anchor, onToggleFavorite, onDelete
           </TouchableOpacity>
         </Animated.View>
       </Animated.View>
-    </Modal>
+      </Modal>
+      <Modal visible={confirmVisible} transparent animationType="fade" onRequestClose={closeConfirmation} statusBarTranslucent>
+      <View style={styles.confirmBackdrop}>
+        <View style={[styles.confirmCard, { width: Math.min(width * 0.72, 560 * scale), borderRadius: 20 * scale, padding: 28 * scale }]}>
+          <Text style={[styles.confirmTitle, { fontSize: 24 * scale }]} numberOfLines={2}>{book.title}</Text>
+          <Text style={[styles.confirmSize, { fontSize: 17 * scale }]}>{book.sizeMB} MB</Text>
+          <Text style={[styles.confirmMessage, { fontSize: 18 * scale }]}>¿Quieres borrar el libro?</Text>
+          <View style={[styles.confirmActions, { gap: 14 * scale, marginTop: 24 * scale }]}>
+            <TouchableOpacity style={[styles.confirmButton, styles.cancelButton, { height: 48 * scale, borderRadius: 24 * scale }]} onPress={closeConfirmation}>
+              <Text style={[styles.confirmButtonText, { fontSize: 16 * scale }]}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.confirmButton, styles.deleteButton, { height: 48 * scale, borderRadius: 24 * scale }]} onPress={() => { closeConfirmation(); onDelete(); }}>
+              <Text style={[styles.confirmButtonText, { fontSize: 16 * scale }]}>Borrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+      </Modal>
+    </>
   );
 }
 
@@ -148,6 +161,56 @@ const styles = StyleSheet.create({
   },
   disabled: {
     color: '#B6B7B1',
+  },
+  confirmBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(8, 10, 35, 0.62)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confirmCard: {
+    backgroundColor: '#F3F4E8',
+    alignItems: 'center',
+    elevation: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+  },
+  confirmTitle: {
+    color: '#F58232',
+    fontFamily: 'Montserrat-ExtraBold',
+    textAlign: 'center',
+  },
+  confirmSize: {
+    color: '#303037',
+    fontFamily: 'Montserrat-SemiBold',
+    marginTop: 5,
+  },
+  confirmMessage: {
+    color: '#303037',
+    fontFamily: 'Montserrat-SemiBold',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    width: '100%',
+  },
+  confirmButton: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#20A9E0',
+  },
+  deleteButton: {
+    backgroundColor: '#F58232',
+  },
+  confirmButtonText: {
+    color: '#FFF',
+    fontFamily: 'Montserrat-ExtraBold',
   },
   trashSlot: {
     position: 'relative',
