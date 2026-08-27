@@ -36,8 +36,9 @@ export default function SettingsScreen() {
   const { width, height } = useWindowDimensions();
 
   const uiScale = clamp(height / 407, 0.78, 1.08);
-  const sideScale = clamp(height / 407, 0.82, 1.12);
-  const mascotHeight = Math.min(height * 0.60, 260 * sideScale);
+  // The character artwork is anchored to the viewport, not to the compact UI
+  // scale: on tablets the old 260px cap left both mascots floating above the edge.
+  const mascotHeight = clamp(height * 0.59, 250, 530);
   const mascotWidth = mascotHeight * 0.78;
   const formWidth = Math.min(width * 0.39, 460 * uiScale);
   const inputWidth = Math.min(width * 0.31, 360 * uiScale);
@@ -317,7 +318,7 @@ const styles = StyleSheet.create({
   languageLabel: { color: Colors.textWhite, fontFamily: Fonts.heading },
   languageConfirm: { backgroundColor: '#F6A928', justifyContent: 'center', alignItems: 'center', marginTop: 28, elevation: 4 },
   checkmark: { color: Colors.textWhite, fontFamily: Fonts.heading, marginTop: -4 },
-  bearImage: { position: 'absolute', left: '-2.5%', bottom: 0 },
+  bearImage: { position: 'absolute', left: '-2.5%', bottom: -1 },
   foxImage: { position: 'absolute', right: 0, bottom: 0 },
   topButton: { position: 'absolute', backgroundColor: '#187AD1', justifyContent: 'center', alignItems: 'center', zIndex: 5 },
   profileForm: { flex: 1, alignSelf: 'center', justifyContent: 'center', alignItems: 'center' },
