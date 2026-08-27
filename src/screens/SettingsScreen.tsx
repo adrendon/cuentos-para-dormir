@@ -134,13 +134,13 @@ export default function SettingsScreen() {
   };
 
   if (view === 'gate') {
-    const gateScale = clamp(height / 560, 0.72, 1);
-    const keyWidth = 68 * gateScale;
-    const keyHeight = 48 * gateScale;
+    const gateScale = clamp(height / 650, 0.62, 0.88);
+    const keyWidth = 62 * gateScale;
+    const keyHeight = 44 * gateScale;
     return (
       <View style={styles.gateBackdrop}>
         <Animated.View style={[styles.gateCard, {
-          width: Math.min(width * 0.50, 500),
+          width: Math.min(width * 0.42, 420),
           maxHeight: height * 0.92,
           borderRadius: 24 * gateScale,
           paddingHorizontal: 22 * gateScale,
