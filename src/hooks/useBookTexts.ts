@@ -8,6 +8,16 @@ export interface PageText {
   text: string;
 }
 
+/** Convert both supported escaped line-break spellings from book data. */
+function normalizeLineBreaks(value: string): string {
+  return value.replace(/(?:\\\\n|\/n)/gi, '\n');
+}
+
+/** Metadata is displayed on one line in cards and credits. */
+function normalizeMetadata(value: string): string {
+  return normalizeLineBreaks(value).replace(/\s*\n\s*/g, ' ').replace(/\s{2,}/g, ' ').trim();
+}
+
 /**
  * Hook to load and personalize page texts from Texts.csv.
  * Replaces {NAME:P1}, {NAME:P2} with the child's name.
@@ -53,8 +63,8 @@ export function useBookTexts(
       }
 
       // Extract title and author
-      setTitle(data['title'] ?? '');
-      setAuthor(data['author'] ?? '');
+      setTitle(normalizeMetadata(data['title'] ?? ''));
+      setAuthor(normalizeMetadata(data['author'] ?? ''));
 
       // Extract page texts based on gender
       const prefix = `${g}.page.`;
@@ -69,8 +79,7 @@ export function useBookTexts(
               .replace(/\{NAME:P1\}/g, name || 'Amiguito')
               .replace(/\{NAME:P2\}/g, name || 'Amiguito')
               .replace(/\{NAME\}/g, name || 'Amiguito');
-            // Replace \n with actual newlines
-            personalized = personalized.replace(/\\n/g, '\n');
+            personalized = normalizeLineBreaks(personalized);
             texts.set(pageNum, personalized);
           }
         }

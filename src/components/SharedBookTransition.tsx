@@ -25,7 +25,10 @@ interface SharedBookTransitionProps {
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 const segment = (value: number, start: number, end: number) =>
-  interpolate(value, [start, end], [0, 1], Extrapolation.CLAMP);
+  {
+    'worklet';
+    return interpolate(value, [start, end], [0, 1], Extrapolation.CLAMP);
+  };
 
 /**
  * One continuous shared-element timeline. The selected card is never swapped or
@@ -66,7 +69,10 @@ export function SharedBookTransition({
     );
   }, [direction, onComplete, progress]);
 
-  const timeline = (value: number) => direction === 'opening' ? value : 1 - value;
+  const timeline = (value: number) => {
+    'worklet';
+    return direction === 'opening' ? value : 1 - value;
+  };
 
   const backgroundStyle = useAnimatedStyle(() => {
     const p = timeline(progress.value);
