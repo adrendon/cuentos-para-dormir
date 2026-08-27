@@ -353,6 +353,14 @@
       "sizeMB": 25
     },
     {
+      "folderName": "OopsASecretFlewAway",
+      "coverColor": "#09911A",
+      "embedded": false,
+      "title": "¡Oh! Se propaló el secreto",
+      "author": "Little Stories",
+      "sizeMB": 24
+    },
+    {
       "folderName": "Panda",
       "coverColor": "#9B3F55",
       "embedded": false,
@@ -615,6 +623,14 @@
       "title": "El pequeño osito",
       "author": "Liz Bickerstaff",
       "sizeMB": 25
+    },
+    {
+      "folderName": "ThePondAndTheElephant",
+      "coverColor": "#61BFCE",
+      "embedded": false,
+      "title": "El estanque y el elefante",
+      "author": "Little Stories",
+      "sizeMB": 39
     },
     {
       "folderName": "ThePurpleSparrow",

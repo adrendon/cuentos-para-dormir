@@ -5,7 +5,7 @@ App de cuentos infantiles personalizados con audio, narración por página, y si
 ## Flujo completo de la app
 
 ```
-Splash (video logo_video.mp4, fondo #004B80, portrait)
+Splash (video lumio-splash.mp4, fondo #004B80, portrait)
   ↓ fade-out
 Onboarding (portrait, 9 pasos + pantalla de carga)
   1. Idioma (solo español)
@@ -144,7 +144,7 @@ src/
     settings/                 # bear.webp + fox.webp
     ui/                       # 35+ iconos de interfaz
     fonts/                    # BalooBhaijaan + Montserrat
-    logo_video.mp4            # Splash video (9s)
+    lumio-splash.mp4          # Splash video (9s)
   components/
     BookCard.tsx              # Card tipo libro con spine + ribbon + MB
     BookCardMenu.tsx          # Menú 3 puntos (favorito/eliminar)
@@ -194,7 +194,7 @@ Los libros se descargan como ZIP desde GitHub:
 https://github.com/adrendon/cuentos-para-dormir/raw/main/books-zip/{FolderName}.zip
 ```
 
-El catálogo contiene **92 libros**: `ADayInReverse` se distribuye embebido y los otros 91 se instalan bajo demanda. Cada entrada debe tener un ZIP en `books-zip/` y una portada registrada; `npm run validate:catalog` comprueba esa correspondencia.
+El catálogo contiene **94 libros**: `ADayInReverse` se distribuye embebido y los otros 93 se instalan bajo demanda. La lista base procede de los 92 libros incluidos en el APK y se complementa con novedades de la API. Cada entrada debe tener un ZIP en `books-zip/` y una portada registrada; `npm run validate:catalog` comprueba esa correspondencia.
 
 La extracción se ejecuta de forma nativa, directamente entre el ZIP y una carpeta temporal. Antes de publicar el cuento, la app comprueba espacio libre, `Texts.csv` y `AdditionalInfo.json`, y después realiza una instalación con respaldo. Al incluir código nativo, hace falta un development build o un APK/AAB nuevo; Expo Go no puede ejecutar las descargas.
 
