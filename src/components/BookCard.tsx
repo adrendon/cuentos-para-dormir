@@ -7,11 +7,11 @@ import { DownloadButton } from './DownloadButton';
 import { BookCardMenu } from './BookCardMenu';
 import { getStableBookCover } from '../assets/books/bookVisualRegistry';
 
-interface BookCardProps { book: Book; onPress:(book:Book,layout:BookCardLayout)=>void; onDownloadComplete:(bookId:string)=>void; onToggleFavorite:(bookId:string)=>void; onDelete:(bookId:string)=>void; index?:number; cardWidth:number; }
+interface BookCardProps { book: Book; onPress:(book:Book,layout:BookCardLayout)=>void; onDownloadComplete:(bookId:string)=>void; onToggleFavorite:(bookId:string)=>void; onDelete:(bookId:string)=>void; index?:number; cardWidth:number; selectedBookId?:string|null; isolationProgress?:Animated.Value; }
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
 const animatedBooks = new Set<string>();
 
-function BookCardComponent({ book,onPress,onDownloadComplete,onToggleFavorite,onDelete,index=0,cardWidth }:BookCardProps){
+function BookCardComponent({ book,onPress,onDownloadComplete,onToggleFavorite,onDelete,index=0,cardWidth,selectedBookId,isolationProgress }:BookCardProps){
   const isAvailable=book.isDownloaded; const isIncluded=book.isEmbedded; const alreadyAnimated=animatedBooks.has(book.id);
   const displayScale=cardWidth/361;
   // Covers remain responsive, but controls/chrome must not grow beyond the
@@ -28,7 +28,11 @@ function BookCardComponent({ book,onPress,onDownloadComplete,onToggleFavorite,on
   ]).start(()=>animatedBooks.add(book.id)); },[book.id,fadeAnim,index,scaleAnim,translateXAnim,translateYAnim]);
   const handlePress=()=>{ if(!isAvailable&&!isIncluded)return; Animated.sequence([Animated.spring(pressScale,{toValue:1.035,speed:28,bounciness:5,useNativeDriver:true}),Animated.timing(pressScale,{toValue:0.975,duration:90,useNativeDriver:true}),Animated.timing(pressScale,{toValue:1,duration:90,useNativeDriver:true})]).start(()=>cardRef.current?.measureInWindow((x:number,y:number,width:number,height:number)=>onPress(book,{x,y,width,height}))); };
   const coverSource=getStableBookCover(book.folderName);
-  return <Animated.View style={[styles.cardShadow,{width:cardWidth,height:cardHeight,borderRadius:12*uiScale,opacity:fadeAnim,transform:[{translateX:translateXAnim},{translateY:translateYAnim},{scale:Animated.multiply(scaleAnim,pressScale)}]}]}>
+  const isSelected=selectedBookId===book.id;
+  const isolationOpacity=isolationProgress?.interpolate({inputRange:[0,1],outputRange:[1,isSelected?1:0.08]})??1;
+  const isolationScale=isolationProgress?.interpolate({inputRange:[0,1],outputRange:[1,isSelected?1:0.96]})??1;
+  const isolationTranslateY=isolationProgress?.interpolate({inputRange:[0,1],outputRange:[0,isSelected?0:14]})??0;
+  return <Animated.View pointerEvents={selectedBookId?'none':'auto'} style={[styles.cardShadow,{width:cardWidth,height:cardHeight,borderRadius:12*uiScale,opacity:Animated.multiply(fadeAnim,isolationOpacity),transform:[{translateX:translateXAnim},{translateY:Animated.add(translateYAnim,isolationTranslateY)},{scale:Animated.multiply(Animated.multiply(scaleAnim,pressScale),isolationScale)}]}]}>
     <TouchableOpacity ref={cardRef} style={[styles.container,{width:cardWidth,height:cardHeight,borderRadius:12*uiScale,backgroundColor:book.coverColor}]} onPress={handlePress} activeOpacity={isAvailable||isIncluded?0.85:1}>
       <View style={[styles.coverSurface,{right:edgeWidth}]}>{coverSource?<Image source={coverSource} style={styles.coverImage} resizeMode="cover"/>:<View style={[styles.placeholder,{backgroundColor:book.coverColor}]}><Text style={styles.placeholderEmoji}>📖</Text></View>}
         <LinearGradient colors={['transparent','rgba(0,0,0,0.84)']} locations={[0.35,1]} style={[styles.titleGradient,{minHeight:cardWidth*0.31,paddingBottom:15*uiScale,paddingHorizontal:13*uiScale}]}><Text style={[styles.title,{fontSize:titleSize,lineHeight:titleSize*1.12,textShadowRadius:4*uiScale}]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.82}>{book.title}</Text></LinearGradient>
@@ -44,7 +48,7 @@ function BookCardComponent({ book,onPress,onDownloadComplete,onToggleFavorite,on
 }
 
 export const BookCard = memo(BookCardComponent, (previous, next) =>
-  previous.book === next.book && previous.index === next.index && previous.cardWidth === next.cardWidth && previous.onPress === next.onPress && previous.onDownloadComplete === next.onDownloadComplete && previous.onToggleFavorite === next.onToggleFavorite && previous.onDelete === next.onDelete
+  previous.book === next.book && previous.index === next.index && previous.cardWidth === next.cardWidth && previous.selectedBookId === next.selectedBookId && previous.isolationProgress === next.isolationProgress && previous.onPress === next.onPress && previous.onDownloadComplete === next.onDownloadComplete && previous.onToggleFavorite === next.onToggleFavorite && previous.onDelete === next.onDelete
 );
 
 const styles=StyleSheet.create({cardShadow:{elevation:9,shadowColor:'#000',shadowOffset:{width:0,height:5},shadowOpacity:0.36,shadowRadius:8},container:{overflow:'hidden'},coverSurface:{position:'absolute',top:0,left:0,bottom:0,overflow:'hidden'},coverImage:{width:'100%',height:'100%'},placeholder:{flex:1,justifyContent:'center',alignItems:'center'},placeholderEmoji:{fontSize:48},titleGradient:{position:'absolute',bottom:0,left:0,right:0,justifyContent:'flex-end'},title:{color:Colors.textWhite,fontFamily:'Montserrat-ExtraBold',textAlign:'center',textShadowColor:'rgba(0,0,0,0.65)',textShadowOffset:{width:0,height:2}},downloadContainer:{position:'absolute',top:0,left:0,right:0,bottom:0},bookEdge:{position:'absolute',top:0,right:0,bottom:0,overflow:'hidden'},edgeHighlightStrong:{position:'absolute',top:0,bottom:0,left:1,width:3,backgroundColor:'rgba(255,255,255,0.48)'},edgeHighlightSoft:{position:'absolute',top:0,bottom:0,left:5,width:2,backgroundColor:'rgba(255,255,255,0.24)'},edgeShadow:{position:'absolute',top:0,bottom:0,right:0,width:3,backgroundColor:'rgba(0,0,0,0.22)'},ribbon:{position:'absolute',tintColor:'#FFFFFF'},menuButton:{position:'absolute',justifyContent:'center',alignItems:'center'},menuButtonText:{color:'#4F5364',fontWeight:'bold'},readBadge:{position:'absolute',width:22,height:22,borderRadius:11,backgroundColor:Colors.success,justifyContent:'center',alignItems:'center'},readBadgeText:{color:Colors.textWhite,fontSize:12,fontWeight:'bold'},favoriteBadge:{position:'absolute',width:22,height:22,borderRadius:11,backgroundColor:Colors.chipOrange,justifyContent:'center',alignItems:'center'},favoriteText:{color:Colors.textWhite,fontSize:13}});
