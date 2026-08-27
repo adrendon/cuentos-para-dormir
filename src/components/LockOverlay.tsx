@@ -6,13 +6,14 @@ interface LockOverlayProps {
   onUnlock: () => void;
   showPrompt: boolean;
   onRequestPrompt: () => void;
+  onDismissPrompt: () => void;
 }
 
 const REQUIRED_TAPS = 3;
 const TAP_SEQUENCE_TIMEOUT_MS = 1800;
 const BUTTON_SIZE = 64;
 
-export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverlayProps) {
+export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt, onDismissPrompt }: LockOverlayProps) {
   const [tapCount, setTapCount] = useState(0);
   const tapCountRef = useRef(0);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -68,9 +69,9 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt }: LockOverl
     <View style={styles.container} pointerEvents="box-none">
       <Pressable
         accessibilityLabel="Controles bloqueados"
-        accessibilityHint="Toca para mostrar el botón de desbloqueo"
+        accessibilityHint={showPrompt ? 'Toca fuera del candado para ocultarlo' : 'Toca para mostrar el botón de desbloqueo'}
         style={StyleSheet.absoluteFill}
-        onPress={onRequestPrompt}
+        onPress={showPrompt ? onDismissPrompt : onRequestPrompt}
       />
 
       {showPrompt && (
