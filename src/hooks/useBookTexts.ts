@@ -10,7 +10,9 @@ export interface PageText {
 
 /** Convert both supported escaped line-break spellings from book data. */
 function normalizeLineBreaks(value: string): string {
-  return value.replace(/(?:\\\\n|\/n)/gi, '\n');
+  // Catalog files encode line breaks as the two characters `\` and `n`.
+  // Accept repeated escaping too, since downloaded ZIPs have used both forms.
+  return value.replace(/\\+n/gi, '\n');
 }
 
 /** Metadata is displayed on one line in cards and credits. */
