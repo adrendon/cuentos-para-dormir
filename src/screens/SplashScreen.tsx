@@ -19,15 +19,21 @@ export default function SplashScreen() {
 
   const player = useVideoPlayer(logoVideo, (p) => {
     p.loop = false;
-    p.muted = true;
+    p.muted = false;
+    p.volume = 1;
     p.currentTime = 0;
   });
 
   useEffect(() => {
-    void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-  }, []);
+    if (isLoading) return;
+    const orientation = profile.hasCompletedOnboarding
+      ? ScreenOrientation.OrientationLock.LANDSCAPE
+      : ScreenOrientation.OrientationLock.PORTRAIT_UP;
+    void ScreenOrientation.lockAsync(orientation);
+  }, [isLoading, profile.hasCompletedOnboarding]);
 
   useEffect(() => {
+    if (isLoading) return;
     let cancelled = false;
 
     const revealAndPlay = async (status = player.status) => {
@@ -58,7 +64,7 @@ export default function SplashScreen() {
       cancelled = true;
       statusSubscription.remove();
     };
-  }, [player]);
+  }, [isLoading, player]);
 
   const goNext = useCallback(() => {
     if (hasNavigated.current || isLoading || !videoFinished) return;
@@ -96,10 +102,10 @@ export default function SplashScreen() {
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <VideoView
-        style={styles.video}
+        style={[styles.video, profile.hasCompletedOnboarding && styles.returningVideo]}
         player={player}
         nativeControls={false}
-        contentFit="cover"
+        contentFit={profile.hasCompletedOnboarding ? 'contain' : 'cover'}
         surfaceType="textureView"
         fullscreenOptions={{ enable: false }}
         allowsPictureInPicture={false}
@@ -115,5 +121,11 @@ const styles = StyleSheet.create({
   },
   video: {
     position:'absolute',top:0,right:0,bottom:0,left:0,
+  },
+  returningVideo: {
+    top: '10%',
+    right: '18%',
+    bottom: '10%',
+    left: '18%',
   },
 });

@@ -250,8 +250,8 @@ export default function SettingsScreen() {
         />
         <Text style={[styles.profileLabel, { fontSize: 18 * uiScale, marginTop: 10 * uiScale, marginBottom: 1 * uiScale }]}>Género:</Text>
         <View style={[styles.genderRow, { gap: 38 * uiScale }]}>
-          <GenderButton gender="girl" selected={gender === 'girl'} size={genderSize} onPress={() => setGender('girl')} />
           <GenderButton gender="boy" selected={gender === 'boy'} size={genderSize} onPress={() => setGender('boy')} />
+          <GenderButton gender="girl" selected={gender === 'girl'} size={genderSize} onPress={() => setGender('girl')} />
         </View>
         <TouchableOpacity style={{ marginTop: 7 * uiScale }} onPress={() => { void handleContinue(); }} accessibilityLabel="Continuar">
           <LinearGradient colors={[...Gradients.orange]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.continueButton, { width: 220 * uiScale, height: 46 * uiScale, borderRadius: 23 * uiScale }]}>
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   languageLabel: { color: Colors.textWhite, fontFamily: Fonts.heading },
   languageConfirm: { backgroundColor: '#F6A928', justifyContent: 'center', alignItems: 'center', marginTop: 28, elevation: 4 },
   checkmark: { color: Colors.textWhite, fontFamily: Fonts.heading, marginTop: -4 },
-  bearImage: { position: 'absolute', left: '-2.5%', bottom: -4 },
+  bearImage: { position: 'absolute', left: '-6%', bottom: -4 },
   foxImage: { position: 'absolute', right: 0, bottom: -4 },
   topButton: { position: 'absolute', backgroundColor: '#187AD1', justifyContent: 'center', alignItems: 'center', zIndex: 5 },
   profileForm: { flex: 1, alignSelf: 'center', justifyContent: 'center', alignItems: 'center' },
