@@ -16,6 +16,13 @@ import { setupEmbeddedBooks } from '../services/embeddedBooksService';
 const READ_BOOKS_KEY = '@cuentos_read_books';
 const FAVORITE_BOOKS_KEY = '@cuentos_favorite_books';
 
+function normalizeMetadata(value: string): string {
+  return value
+    .replace(/(?:\\\\n|\/n)/gi, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 function parseTextsCSV(content: string): BookTexts {
   const lines = content.split('\n').filter(line => line.trim().length > 0);
   if (lines.length < 2) return { title: '', author: '', illustrator: '', description: '' };
@@ -30,10 +37,10 @@ function parseTextsCSV(content: string): BookTexts {
     if (key) result[key] = value;
   }
   return {
-    title: result['title'] ?? '',
-    author: result['author'] ?? '',
-    illustrator: result['illustrator'] ?? '',
-    description: result['boy.description'] ?? result['description'] ?? '',
+    title: normalizeMetadata(result['title'] ?? ''),
+    author: normalizeMetadata(result['author'] ?? ''),
+    illustrator: normalizeMetadata(result['illustrator'] ?? ''),
+    description: normalizeMetadata(result['boy.description'] ?? result['description'] ?? ''),
   };
 }
 
