@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -12,10 +12,31 @@ const NAV_MOTION = Object.freeze({
   settingsSlide: 460,
 });
 
+// Landscape screens were designed against a denser tablet canvas. Rendering
+// them at the raw Android dp viewport makes every fixed-size control dominate
+// wide phones whose display-size setting reports fewer dp. Give the app a
+// slightly larger virtual canvas and scale it back to the physical viewport.
+// Backgrounds still cover edge-to-edge, while artwork, cards and controls all
+// receive the same correction instead of fixing only their text.
+const LANDSCAPE_CONTENT_SCALE = 0.82;
+
 SplashScreen.preventAutoHideAsync();
 
+// The application is a fixed, highly visual children's interface. Android's
+// accessibility font multiplier can otherwise enlarge labels independently of
+// their buttons, making the whole landscape UI look zoomed and wrapping short
+// words onto several lines. Keep text at the size defined by the responsive UI.
+const FixedText = Text as typeof Text & { defaultProps?: { allowFontScaling?: boolean } };
+const FixedTextInput = TextInput as typeof TextInput & { defaultProps?: { allowFontScaling?: boolean } };
+FixedText.defaultProps = { ...FixedText.defaultProps, allowFontScaling: false };
+FixedTextInput.defaultProps = { ...FixedTextInput.defaultProps, allowFontScaling: false };
+
 export default function RootLayout() {
+  const { width, height } = useWindowDimensions();
   const [, setFontsLoaded] = useState(false);
+  const contentScale = width > height ? LANDSCAPE_CONTENT_SCALE : 1;
+  const virtualWidth = width / contentScale;
+  const virtualHeight = height / contentScale;
 
   useEffect(() => {
     void initializeApp();
@@ -34,12 +55,8 @@ export default function RootLayout() {
         await NavigationBar.setVisibilityAsync('hidden');
       }
 
-      // The React splash contains the MP4. Reveal it before initializing audio;
-      // otherwise the native Expo splash can cover the entire video playback.
-      await SplashScreen.hideAsync();
-
-      // Audio initialization is independent from the visual splash and must not
-      // keep the native splash over the React video.
+      // SplashScreen owns the native-splash handoff so it can first set the
+      // correct orientation and reveal the video at frame zero without a flash.
       void setupPlayer().catch((error) => {
         console.error('Error initializing audio player:', error);
       });
@@ -50,24 +67,42 @@ export default function RootLayout() {
   };
 
   return (
-    <>
+    <View style={styles.appRoot}>
       <StatusBar hidden />
-      <Stack screenOptions={{ headerShown: false, animation: 'fade', animationDuration: NAV_MOTION.fade, contentStyle: { backgroundColor: '#03032A' } }}>
-        <Stack.Screen name="index" options={{ animation: 'fade' }} />
-        <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
-        <Stack.Screen name="library" options={{ animation: 'fade', gestureEnabled: false }} />
-        <Stack.Screen name="book/[id]" options={{ animation: 'none', gestureEnabled: false, presentation: 'transparentModal', contentStyle: { backgroundColor: 'transparent' } }} />
-        <Stack.Screen
-          name="settings"
-          options={{
-            animation: 'slide_from_bottom',
-            animationDuration: NAV_MOTION.settingsSlide,
-            gestureEnabled: false,
-            presentation: 'card',
-            contentStyle: { backgroundColor: 'transparent' },
-          }}
-        />
-      </Stack>
-    </>
+      <View
+        style={[
+          styles.scaledViewport,
+          {
+            width: virtualWidth,
+            height: virtualHeight,
+            left: (width - virtualWidth) / 2,
+            top: (height - virtualHeight) / 2,
+            transform: [{ scale: contentScale }],
+          },
+        ]}
+      >
+        <Stack screenOptions={{ headerShown: false, animation: 'fade', animationDuration: NAV_MOTION.fade, contentStyle: { backgroundColor: '#03032A' } }}>
+          <Stack.Screen name="index" options={{ animation: 'fade' }} />
+          <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
+          <Stack.Screen name="library" options={{ animation: 'fade', gestureEnabled: false }} />
+          <Stack.Screen name="book/[id]" options={{ animation: 'none', gestureEnabled: false, presentation: 'transparentModal', contentStyle: { backgroundColor: 'transparent' } }} />
+          <Stack.Screen
+            name="settings"
+            options={{
+              animation: 'slide_from_bottom',
+              animationDuration: NAV_MOTION.settingsSlide,
+              gestureEnabled: false,
+              presentation: 'card',
+              contentStyle: { backgroundColor: 'transparent' },
+            }}
+          />
+        </Stack>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  appRoot: { flex: 1, overflow: 'hidden', backgroundColor: '#03032A' },
+  scaledViewport: { position: 'absolute' },
+});

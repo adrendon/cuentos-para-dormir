@@ -26,22 +26,22 @@ export default function SplashScreen() {
 
   useEffect(() => {
     if (isLoading) return;
-    const orientation = profile.hasCompletedOnboarding
-      ? ScreenOrientation.OrientationLock.LANDSCAPE
-      : ScreenOrientation.OrientationLock.PORTRAIT_UP;
-    void ScreenOrientation.lockAsync(orientation);
-  }, [isLoading, profile.hasCompletedOnboarding]);
-
-  useEffect(() => {
-    if (isLoading) return;
     let cancelled = false;
 
     const revealAndPlay = async (status = player.status) => {
       if (status !== 'readyToPlay' || cancelled || hasStartedVideo.current) return;
       hasStartedVideo.current = true;
 
-      // Keep the native splash only while the local asset is preparing. Once
-      // ready, remove that native layer before playback begins at frame zero.
+      // Set orientation while the plain native splash still covers the React
+      // surface. This avoids showing the logo sideways during Android's turn.
+      const orientation = profile.hasCompletedOnboarding
+        ? ScreenOrientation.OrientationLock.LANDSCAPE
+        : ScreenOrientation.OrientationLock.PORTRAIT_UP;
+      await ScreenOrientation.lockAsync(orientation).catch(() => undefined);
+      if (cancelled) return;
+
+      // The native layer is intentionally only a solid color. Reveal the one
+      // Lumio logo (the video) at frame zero, so the logo is never duplicated.
       await ExpoSplashScreen.hideAsync().catch(() => undefined);
       if (cancelled) return;
       player.currentTime = 0;
@@ -64,7 +64,7 @@ export default function SplashScreen() {
       cancelled = true;
       statusSubscription.remove();
     };
-  }, [isLoading, player]);
+  }, [isLoading, player, profile.hasCompletedOnboarding]);
 
   const goNext = useCallback(() => {
     if (hasNavigated.current || isLoading || !videoFinished) return;
@@ -102,10 +102,10 @@ export default function SplashScreen() {
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <VideoView
-        style={[styles.video, profile.hasCompletedOnboarding && styles.returningVideo]}
+        style={styles.video}
         player={player}
         nativeControls={false}
-        contentFit={profile.hasCompletedOnboarding ? 'contain' : 'cover'}
+        contentFit="contain"
         surfaceType="textureView"
         fullscreenOptions={{ enable: false }}
         allowsPictureInPicture={false}
@@ -121,11 +121,5 @@ const styles = StyleSheet.create({
   },
   video: {
     position:'absolute',top:0,right:0,bottom:0,left:0,
-  },
-  returningVideo: {
-    top: '10%',
-    right: '18%',
-    bottom: '10%',
-    left: '18%',
   },
 });
