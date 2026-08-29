@@ -20,7 +20,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../theme/colors';
-import { getVirtualCanvasSize } from '../theme/layout';
 
 interface BookOpeningIntroProps {
   coverColor: string;
@@ -72,12 +71,8 @@ export function BookOpeningIntro({
 }: BookOpeningIntroProps) {
   const { width, height } = useWindowDimensions();
   const [canvasSize, setCanvasSize] = useState({ width, height });
-  const measuredWidth = canvasSize.width || width;
-  const measuredHeight = canvasSize.height || height;
-  const { width: canvasWidth, height: canvasHeight } = getVirtualCanvasSize(
-    measuredWidth,
-    measuredHeight
-  );
+  const canvasWidth = canvasSize.width || width;
+  const canvasHeight = canvasSize.height || height;
   const uiScale = clamp(canvasHeight / 407, 0.78, 1.08);
   const pageHeight = Math.min(canvasHeight * 0.78, 286 * uiScale);
   const pageWidth = Math.min(canvasWidth * 0.31, pageHeight * 0.9);
@@ -85,7 +80,6 @@ export function BookOpeningIntro({
   const modeButtonWidth = Math.min(canvasWidth * 0.22, 245 * uiScale);
   const modeButtonHeight = 52 * uiScale;
   const modeButtonRadius = modeButtonHeight / 2;
-  const centeredLeft = (canvasWidth - modeButtonWidth) / 2;
   const menuBaseTranslateY = -92 * uiScale;
   const [menuReady, setMenuReady] = useState(false);
   const [selectedMode, setSelectedMode] = useState<'listen' | 'record' | null>(null);
@@ -222,9 +216,7 @@ export function BookOpeningIntro({
             />
           </TouchableOpacity>
         </Animated.View>
-        <Animated.View
-          style={[styles.modeMenu, { left: centeredLeft, gap: 14 * uiScale }, menuStyle]}
-        >
+        <Animated.View style={[styles.modeMenu, { gap: 14 * uiScale }, menuStyle]}>
           <ModeButton
             label="Leer"
             icon={require('../assets/ui/ic_book_read.png')}
@@ -538,7 +530,13 @@ const styles = StyleSheet.create({
     left: 0,
     backgroundColor: 'rgba(8, 4, 30, 0.66)',
   },
-  modeMenu: { position: 'absolute', top: '50%', alignItems: 'center' },
+  modeMenu: {
+    position: 'absolute',
+    top: '50%',
+    right: 0,
+    left: 0,
+    alignItems: 'center',
+  },
   modeButton: {
     flex: 1,
     flexDirection: 'row',

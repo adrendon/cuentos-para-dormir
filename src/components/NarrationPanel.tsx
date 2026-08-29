@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
+  LayoutChangeEvent,
   View,
   Text,
   TouchableOpacity,
@@ -37,7 +38,10 @@ export function NarrationPanel({
   onSelectProfessional,
   onClose,
 }: NarrationPanelProps) {
-  const { width, height } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const [canvasSize, setCanvasSize] = useState({ width: windowWidth, height: windowHeight });
+  const width = canvasSize.width || windowWidth;
+  const height = canvasSize.height || windowHeight;
   const uiScale = clamp(height / 407, 0.78, 1.08);
   const roundSize = 54 * uiScale;
   const buttonWidth = Math.min(width * 0.22, 245 * uiScale);
@@ -50,7 +54,15 @@ export function NarrationPanel({
   const panelTranslateY = -104 * uiScale;
 
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      onLayout={(event: LayoutChangeEvent) => {
+        const { width: nextWidth, height: nextHeight } = event.nativeEvent.layout;
+        if (nextWidth !== canvasSize.width || nextHeight !== canvasSize.height) {
+          setCanvasSize({ width: nextWidth, height: nextHeight });
+        }
+      }}
+    >
       {firstPageSource && (
         <Image source={firstPageSource} style={styles.background} resizeMode="cover" />
       )}

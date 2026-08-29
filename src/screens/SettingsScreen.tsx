@@ -3,6 +3,7 @@ import {
   Animated,
   Alert,
   Image,
+  LayoutChangeEvent,
   Linking,
   StyleSheet,
   Text,
@@ -19,6 +20,7 @@ import { Colors, Fonts, Gradients } from '../theme/colors';
 import { useProfile } from '../hooks/useProfile';
 import { playBookMusic, stopMusic } from '../services/audioService';
 import { Gender } from '../types/book';
+import { getVirtualCanvasSize } from '../theme/layout';
 
 type SettingsView = 'gate' | 'profile' | 'language' | 'preparing';
 
@@ -47,7 +49,12 @@ const SETTINGS_MUSIC = require('../assets/books/ADayInReverse/ADayInReverse.mp3'
 export default function SettingsScreen() {
   const router = useRouter();
   const { destination = 'profile' } = useLocalSearchParams<{ destination?: 'profile' | 'mail' }>();
-  const { width, height } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const [canvasSize, setCanvasSize] = useState(() =>
+    getVirtualCanvasSize(windowWidth, windowHeight)
+  );
+  const width = canvasSize.width || windowWidth;
+  const height = canvasSize.height || windowHeight;
 
   const uiScale = clamp(height / 407, 0.78, 1.08);
   // The character artwork is anchored to the viewport, not to the compact UI
@@ -70,6 +77,7 @@ export default function SettingsScreen() {
   const [musicEnabled, setMusicEnabled] = useState(profile.musicEnabled);
   const [gateValue, setGateValue] = useState('');
   const [gateError, setGateError] = useState(false);
+  const gateIsResolving = useRef(false);
   const progress = useRef(new Animated.Value(0)).current;
   const [loadingPercent, setLoadingPercent] = useState(0);
   const challenge = useMemo(
@@ -138,7 +146,7 @@ export default function SettingsScreen() {
   }, [view, progress, router]);
 
   const handleGateKey = (key: string) => {
-    if (!key) return;
+    if (!key || gateIsResolving.current) return;
     setGateError(false);
     if (key === '⌫') {
       setGateValue((current) => current.slice(0, -1));
@@ -148,6 +156,7 @@ export default function SettingsScreen() {
     const next = gateValue + key;
     setGateValue(next);
     if (next.length === challenge.length) {
+      gateIsResolving.current = true;
       if (next === challenge.join('')) {
         if (destination === 'mail') {
           setTimeout(() => {
@@ -165,7 +174,10 @@ export default function SettingsScreen() {
         } else setTimeout(() => setView('profile'), 120);
       } else {
         setGateError(true);
-        setTimeout(() => setGateValue(''), 450);
+        setTimeout(() => {
+          setGateValue('');
+          gateIsResolving.current = false;
+        }, 450);
       }
     }
   };
@@ -235,7 +247,15 @@ export default function SettingsScreen() {
     const keyWidth = 62 * gateScale;
     const keyHeight = 44 * gateScale;
     return (
-      <View style={styles.gateBackdrop}>
+      <View
+        style={styles.gateBackdrop}
+        onLayout={(event: LayoutChangeEvent) => {
+          const { width: nextWidth, height: nextHeight } = event.nativeEvent.layout;
+          if (nextWidth !== canvasSize.width || nextHeight !== canvasSize.height) {
+            setCanvasSize({ width: nextWidth, height: nextHeight });
+          }
+        }}
+      >
         <SettingsMusicButton enabled={musicEnabled} onPress={handleMusicToggle} scale={gateScale} />
         <Animated.View
           style={[

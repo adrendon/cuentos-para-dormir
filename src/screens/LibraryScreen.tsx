@@ -23,7 +23,6 @@ import { Book } from '../types/book';
 import { warmBookVisual } from '../assets/books/bookVisualRegistry';
 import { useProfile } from '../hooks/useProfile';
 import { useBookMusic } from '../hooks/useBookMusic';
-import { getVirtualCanvasSize } from '../theme/layout';
 
 const LIBRARY_STARS = [
   [9, 65],
@@ -42,12 +41,8 @@ let libraryMotionPlayed = false;
 export default function LibraryScreen() {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [canvasSize, setCanvasSize] = useState({ width: windowWidth, height: windowHeight });
-  const measuredWidth = canvasSize.width || windowWidth;
-  const measuredHeight = canvasSize.height || windowHeight;
-  const { width: canvasWidth, height: canvasHeight } = getVirtualCanvasSize(
-    measuredWidth,
-    measuredHeight
-  );
+  const canvasWidth = canvasSize.width || windowWidth;
+  const canvasHeight = canvasSize.height || windowHeight;
   const router = useRouter();
   const {
     books,
