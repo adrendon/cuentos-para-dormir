@@ -1,6 +1,6 @@
 /**
  * Push notification service using Firebase Cloud Messaging.
- * 
+ *
  * Handles:
  * - FCM token registration
  * - Foreground notification display
@@ -26,7 +26,7 @@ export async function initializeNotifications(): Promise<string | null> {
     const authStatus = await messaging.requestPermission();
     const enabled =
       authStatus === 1 || // AUTHORIZED
-      authStatus === 2;   // PROVISIONAL
+      authStatus === 2; // PROVISIONAL
 
     if (!enabled) {
       console.log('FCM permission denied');
@@ -55,9 +55,7 @@ export async function initializeNotifications(): Promise<string | null> {
  * Set up foreground message handler.
  * Called when the app is in the foreground and receives a push.
  */
-export function onForegroundMessage(
-  callback: (message: NotificationMessage) => void
-): () => void {
+export function onForegroundMessage(callback: (message: NotificationMessage) => void): () => void {
   try {
     const messaging = getMessaging();
     if (!messaging) return () => {};

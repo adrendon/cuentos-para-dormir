@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as Font from 'expo-font';
 import { setupPlayer } from '../src/services/audioService';
+import { LANDSCAPE_CONTENT_SCALE } from '../src/theme/layout';
 
 const NAV_MOTION = Object.freeze({
   fade: 320,
@@ -18,8 +19,6 @@ const NAV_MOTION = Object.freeze({
 // slightly larger virtual canvas and scale it back to the physical viewport.
 // Backgrounds still cover edge-to-edge, while artwork, cards and controls all
 // receive the same correction instead of fixing only their text.
-const LANDSCAPE_CONTENT_SCALE = 0.82;
-
 SplashScreen.preventAutoHideAsync();
 
 // The application is a fixed, highly visual children's interface. Android's
@@ -27,7 +26,9 @@ SplashScreen.preventAutoHideAsync();
 // their buttons, making the whole landscape UI look zoomed and wrapping short
 // words onto several lines. Keep text at the size defined by the responsive UI.
 const FixedText = Text as typeof Text & { defaultProps?: { allowFontScaling?: boolean } };
-const FixedTextInput = TextInput as typeof TextInput & { defaultProps?: { allowFontScaling?: boolean } };
+const FixedTextInput = TextInput as typeof TextInput & {
+  defaultProps?: { allowFontScaling?: boolean };
+};
 FixedText.defaultProps = { ...FixedText.defaultProps, allowFontScaling: false };
 FixedTextInput.defaultProps = { ...FixedTextInput.defaultProps, allowFontScaling: false };
 
@@ -45,7 +46,7 @@ export default function RootLayout() {
   const initializeApp = async () => {
     try {
       await Font.loadAsync({
-        'BalooBhaijaan': require('../assets/fonts/baloo_bhaijaan_medium.ttf'),
+        BalooBhaijaan: require('../assets/fonts/baloo_bhaijaan_medium.ttf'),
         'Montserrat-SemiBold': require('../assets/fonts/montserrat_semi_bold.ttf'),
         'Montserrat-ExtraBold': require('../assets/fonts/montserrat_extra_bold.ttf'),
       });
@@ -81,11 +82,26 @@ export default function RootLayout() {
           },
         ]}
       >
-        <Stack screenOptions={{ headerShown: false, animation: 'fade', animationDuration: NAV_MOTION.fade, contentStyle: { backgroundColor: '#03032A' } }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: 'fade',
+            animationDuration: NAV_MOTION.fade,
+            contentStyle: { backgroundColor: '#03032A' },
+          }}
+        >
           <Stack.Screen name="index" options={{ animation: 'fade' }} />
           <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
           <Stack.Screen name="library" options={{ animation: 'fade', gestureEnabled: false }} />
-          <Stack.Screen name="book/[id]" options={{ animation: 'none', gestureEnabled: false, presentation: 'transparentModal', contentStyle: { backgroundColor: 'transparent' } }} />
+          <Stack.Screen
+            name="book/[id]"
+            options={{
+              animation: 'none',
+              gestureEnabled: false,
+              presentation: 'transparentModal',
+              contentStyle: { backgroundColor: 'transparent' },
+            }}
+          />
           <Stack.Screen
             name="settings"
             options={{

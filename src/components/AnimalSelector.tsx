@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { AVAILABLE_AVATARS, AvatarType } from '../types/book';
 import { Colors } from '../theme/colors';
 
@@ -49,31 +43,18 @@ export function AnimalSelector({ selected, onSelect }: AnimalSelectorProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Elige tu animal favorito</Text>
-      <ScrollView
-        contentContainerStyle={styles.grid}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.grid} showsVerticalScrollIndicator={false}>
         {AVAILABLE_AVATARS.map((animal) => (
           <TouchableOpacity
             key={animal}
-            style={[
-              styles.animalCard,
-              selected === animal && styles.animalCardSelected,
-            ]}
+            style={[styles.animalCard, selected === animal && styles.animalCardSelected]}
             onPress={() => onSelect(animal)}
             accessibilityRole="radio"
             accessibilityState={{ selected: selected === animal }}
             accessibilityLabel={`Seleccionar ${ANIMAL_NAMES[animal]}`}
           >
-            <Text style={styles.animalEmoji}>
-              {ANIMAL_EMOJIS[animal]}
-            </Text>
-            <Text
-              style={[
-                styles.animalName,
-                selected === animal && styles.animalNameSelected,
-              ]}
-            >
+            <Text style={styles.animalEmoji}>{ANIMAL_EMOJIS[animal]}</Text>
+            <Text style={[styles.animalName, selected === animal && styles.animalNameSelected]}>
               {ANIMAL_NAMES[animal]}
             </Text>
           </TouchableOpacity>

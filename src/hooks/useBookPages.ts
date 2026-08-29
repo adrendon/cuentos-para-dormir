@@ -55,7 +55,7 @@ export function useBookPages(book: Book | undefined, gender: Gender) {
       // Gender-specific and common pages complement each other. Merge them by
       // page number instead of treating the common directory as a global fallback.
       const directoryContents = await Promise.all(
-        sourcePaths.map(async path => ({
+        sourcePaths.map(async (path) => ({
           path,
           files: await FileSystem.readDirectoryAsync(path),
         }))
@@ -68,9 +68,7 @@ export function useBookPages(book: Book | undefined, gender: Gender) {
           pagesByNumber.set(pageNumber, { pageNumber, uri: `${path}/${file}` });
         }
       }
-      const loadedPages = [...pagesByNumber.values()].sort(
-        (a, b) => a.pageNumber - b.pageNumber
-      );
+      const loadedPages = [...pagesByNumber.values()].sort((a, b) => a.pageNumber - b.pageNumber);
 
       setPages(loadedPages);
     } catch (err) {
@@ -89,13 +87,13 @@ export function useBookPages(book: Book | undefined, gender: Gender) {
 
   const nextPage = () => {
     if (currentPage < pages.length - 1) {
-      setCurrentPage(prev => prev + 1);
+      setCurrentPage((prev) => prev + 1);
     }
   };
 
   const previousPage = () => {
     if (currentPage > 0) {
-      setCurrentPage(prev => prev - 1);
+      setCurrentPage((prev) => prev - 1);
     }
   };
 

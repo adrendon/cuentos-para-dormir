@@ -29,9 +29,15 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
     // remove() alone is not guaranteed to silence the native decoder before
     // the next JS tick. Mute and pause it first so rapid page changes cannot
     // leave overlapping narration instances behind.
-    try { currentPlayer.volume = 0; } catch {}
-    try { currentPlayer.pause(); } catch {}
-    try { currentPlayer.remove(); } catch {}
+    try {
+      currentPlayer.volume = 0;
+    } catch {}
+    try {
+      currentPlayer.pause();
+    } catch {}
+    try {
+      currentPlayer.remove();
+    } catch {}
   }, []);
 
   const hasVoicework = useCallback(async (): Promise<boolean> => {
@@ -48,50 +54,53 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
   /**
    * Play narration for a specific page number.
    */
-  const playNarration = useCallback(async (pageNumber: number) => {
-    if (!folderName) return false;
+  const playNarration = useCallback(
+    async (pageNumber: number) => {
+      if (!folderName) return false;
 
-    try {
-      // Invalidate and release synchronously before the asynchronous file
-      // lookup. This makes repeated next/previous taps race-safe.
-      playbackGenerationRef.current++;
-      releaseCurrentPlayer();
-      const playbackGeneration = ++playbackGenerationRef.current;
+      try {
+        // Invalidate and release synchronously before the asynchronous file
+        // lookup. This makes repeated next/previous taps race-safe.
+        playbackGenerationRef.current++;
+        releaseCurrentPlayer();
+        const playbackGeneration = ++playbackGenerationRef.current;
 
-      const voiceFile = `${BOOKS_LOCAL_DIR}${folderName}/voicework_es/voice${pageNumber}.mp3`;
-      const fileInfo = await FileSystem.getInfoAsync(voiceFile);
+        const voiceFile = `${BOOKS_LOCAL_DIR}${folderName}/voicework_es/voice${pageNumber}.mp3`;
+        const fileInfo = await FileSystem.getInfoAsync(voiceFile);
 
-      if (!fileInfo.exists || playbackGeneration !== playbackGenerationRef.current) return false;
+        if (!fileInfo.exists || playbackGeneration !== playbackGenerationRef.current) return false;
 
-      const narrationPlayer = createAudioPlayer({ uri: voiceFile });
-      narrationPlayer.volume = narrationVolumeRef.current;
-      playerRef.current = narrationPlayer;
-      statusSubscriptionRef.current = narrationPlayer.addListener('playbackStatusUpdate', (status) => {
-        if (
-          status.didJustFinish &&
-          playbackGeneration === playbackGenerationRef.current
-        ) {
-          statusSubscriptionRef.current?.remove();
-          statusSubscriptionRef.current = null;
-          narrationPlayer.remove();
-          if (playerRef.current === narrationPlayer) playerRef.current = null;
-          setIsNarrating(false);
-          setIsNarrationPaused(false);
-          setCurrentNarrationPage(-1);
-          onNarrationEndRef.current?.();
-        }
-      });
-      narrationPlayer.play();
-      setIsNarrating(true);
-      setIsNarrationPaused(false);
-      setCurrentNarrationPage(pageNumber);
-      return true;
-    } catch (error) {
-      console.error('Error playing narration:', error);
-      setIsNarrating(false);
-      return false;
-    }
-  }, [folderName, releaseCurrentPlayer]);
+        const narrationPlayer = createAudioPlayer({ uri: voiceFile });
+        narrationPlayer.volume = narrationVolumeRef.current;
+        playerRef.current = narrationPlayer;
+        statusSubscriptionRef.current = narrationPlayer.addListener(
+          'playbackStatusUpdate',
+          (status) => {
+            if (status.didJustFinish && playbackGeneration === playbackGenerationRef.current) {
+              statusSubscriptionRef.current?.remove();
+              statusSubscriptionRef.current = null;
+              narrationPlayer.remove();
+              if (playerRef.current === narrationPlayer) playerRef.current = null;
+              setIsNarrating(false);
+              setIsNarrationPaused(false);
+              setCurrentNarrationPage(-1);
+              onNarrationEndRef.current?.();
+            }
+          }
+        );
+        narrationPlayer.play();
+        setIsNarrating(true);
+        setIsNarrationPaused(false);
+        setCurrentNarrationPage(pageNumber);
+        return true;
+      } catch (error) {
+        console.error('Error playing narration:', error);
+        setIsNarrating(false);
+        return false;
+      }
+    },
+    [folderName, releaseCurrentPlayer]
+  );
 
   /**
    * Stop current narration.
@@ -107,14 +116,17 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
   /**
    * Toggle narration for a page.
    */
-  const toggleNarration = useCallback(async (pageNumber: number) => {
-    if (isNarrating && currentNarrationPage === pageNumber) {
-      await stopNarration();
-      return false;
-    } else {
-      return playNarration(pageNumber);
-    }
-  }, [isNarrating, currentNarrationPage, playNarration, stopNarration]);
+  const toggleNarration = useCallback(
+    async (pageNumber: number) => {
+      if (isNarrating && currentNarrationPage === pageNumber) {
+        await stopNarration();
+        return false;
+      } else {
+        return playNarration(pageNumber);
+      }
+    },
+    [isNarrating, currentNarrationPage, playNarration, stopNarration]
+  );
 
   const pauseNarration = useCallback(() => {
     playerRef.current?.pause();
@@ -135,10 +147,13 @@ export function useVoicework(folderName: string | undefined, onNarrationEnd?: ()
 
   // Expo Router can remove or blur the reader while an async file lookup is in
   // flight. Invalidate that lookup and release the native player on unmount.
-  useEffect(() => () => {
-    playbackGenerationRef.current++;
-    releaseCurrentPlayer();
-  }, [releaseCurrentPlayer]);
+  useEffect(
+    () => () => {
+      playbackGenerationRef.current++;
+      releaseCurrentPlayer();
+    },
+    [releaseCurrentPlayer]
+  );
 
   return {
     isNarrating,

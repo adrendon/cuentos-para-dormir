@@ -1,10 +1,10 @@
 {
-  "languageCode" : "es",
-  "isProfessional" : true,
-  "bookId" : "com.diveomedia.ls.adayinreverse",
-  "narrator" : "Ivanna Ochoa Varuzza",
-  "child" : {
-    "gender" : "girl",
-    "name" : "Anahí"
+  "languageCode": "es",
+  "isProfessional": true,
+  "bookId": "com.diveomedia.ls.adayinreverse",
+  "narrator": "Ivanna Ochoa Varuzza",
+  "child": {
+    "gender": "girl",
+    "name": "Anahí"
   }
 }

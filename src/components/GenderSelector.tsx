@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Gender } from '../types/book';
 import { Colors } from '../theme/colors';
 
@@ -22,10 +16,7 @@ export function GenderSelector({ selected, onSelect, label }: GenderSelectorProp
       <View style={styles.cardsRow}>
         {/* Boy card */}
         <TouchableOpacity
-          style={[
-            styles.card,
-            selected === 'boy' && styles.cardSelected,
-          ]}
+          style={[styles.card, selected === 'boy' && styles.cardSelected]}
           onPress={() => onSelect('boy')}
           accessibilityRole="radio"
           accessibilityState={{ selected: selected === 'boy' }}
@@ -40,17 +31,12 @@ export function GenderSelector({ selected, onSelect, label }: GenderSelectorProp
             style={styles.icon}
             resizeMode="contain"
           />
-          <Text style={[styles.cardText, selected === 'boy' && styles.cardTextSelected]}>
-            Niño
-          </Text>
+          <Text style={[styles.cardText, selected === 'boy' && styles.cardTextSelected]}>Niño</Text>
         </TouchableOpacity>
 
         {/* Girl card */}
         <TouchableOpacity
-          style={[
-            styles.card,
-            selected === 'girl' && styles.cardSelected,
-          ]}
+          style={[styles.card, selected === 'girl' && styles.cardSelected]}
           onPress={() => onSelect('girl')}
           accessibilityRole="radio"
           accessibilityState={{ selected: selected === 'girl' }}

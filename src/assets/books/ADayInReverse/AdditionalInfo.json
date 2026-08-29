@@ -1,14 +1,6 @@
 {
-  "commonPages" : [
-    3,
-    5,
-    20,
-    21,
-    28,
-    34,
-    39
-  ],
-  "imageType" : "webp",
-  "numberOfPages" : 43,
-  "resolution" : "h1080xr1610"
+  "commonPages": [3, 5, 20, 21, 28, 34, 39],
+  "imageType": "webp",
+  "numberOfPages": 43,
+  "resolution": "h1080xr1610"
 }

@@ -24,7 +24,9 @@ export function useBookLifecycle({ isLocked, onBack, onDeactivate }: BookLifecyc
   useEffect(() => {
     void activateKeepAwakeAsync();
     void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-    return () => { void deactivateKeepAwake(); };
+    return () => {
+      void deactivateKeepAwake();
+    };
   }, []);
 
   useEffect(() => {

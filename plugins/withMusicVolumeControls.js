@@ -13,10 +13,7 @@ module.exports = function withMusicVolumeControls(config) {
 
     let source = androidConfig.modResults.contents;
     if (!source.includes('import android.media.AudioManager')) {
-      source = source.replace(
-        /^(package\s+[^\n]+\n)/m,
-        '$1\nimport android.media.AudioManager\n'
-      );
+      source = source.replace(/^(package\s+[^\n]+\n)/m, '$1\nimport android.media.AudioManager\n');
     }
 
     if (!source.includes('volumeControlStream = AudioManager.STREAM_MUSIC')) {

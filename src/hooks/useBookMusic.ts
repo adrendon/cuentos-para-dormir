@@ -34,7 +34,9 @@ export function useBookMusic(
     if (book && enabled) {
       void setVolume(savedVolume)
         .then(() => playBookMusic(book.title, getBookAudioUri(book)))
-        .then((started) => { if (!cancelled) setIsPlaying(started); });
+        .then((started) => {
+          if (!cancelled) setIsPlaying(started);
+        });
     } else {
       setIsPlaying(false);
       void stopMusic();
@@ -72,10 +74,13 @@ export function useBookMusic(
     }, 300);
   }, []);
 
-  useEffect(() => () => {
-    if (persistTimer.current) clearTimeout(persistTimer.current);
-    if (pendingVolume.current !== null) void persistVolumeRef.current(pendingVolume.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (persistTimer.current) clearTimeout(persistTimer.current);
+      if (pendingVolume.current !== null) void persistVolumeRef.current(pendingVolume.current);
+    },
+    []
+  );
 
   const stop = useCallback(() => {
     setIsPlaying(false);

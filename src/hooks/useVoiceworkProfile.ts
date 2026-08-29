@@ -21,7 +21,10 @@ export function useVoiceworkProfile(folderName: string | undefined) {
     let cancelled = false;
     setVoiceworkProfile(null);
 
-    if (!folderName) return () => { cancelled = true; };
+    if (!folderName)
+      return () => {
+        cancelled = true;
+      };
 
     void (async () => {
       try {
@@ -42,7 +45,9 @@ export function useVoiceworkProfile(folderName: string | undefined) {
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [folderName]);
 
   return voiceworkProfile;

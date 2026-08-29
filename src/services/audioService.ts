@@ -44,10 +44,7 @@ export async function setupPlayer(): Promise<boolean> {
  * Play background music for a book.
  * Always stops any existing playback first.
  */
-export async function playBookMusic(
-  bookTitle: string,
-  audioUri: string
-): Promise<boolean> {
+export async function playBookMusic(bookTitle: string, audioUri: string): Promise<boolean> {
   try {
     // ALWAYS stop existing player first
     await stopMusic();
@@ -109,9 +106,15 @@ export async function stopMusic(): Promise<void> {
       const p = player;
       player = null;
       // Force pause before remove to ensure silence
-      try { p.pause(); } catch {}
-      try { p.volume = 0; } catch {}
-      try { p.remove(); } catch {}
+      try {
+        p.pause();
+      } catch {}
+      try {
+        p.volume = 0;
+      } catch {}
+      try {
+        p.remove();
+      } catch {}
     }
   } catch (error) {
     console.error('Error stopping:', error);

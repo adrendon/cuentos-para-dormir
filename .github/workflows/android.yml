@@ -17,8 +17,8 @@ jobs:
     timeout-minutes: 60
 
     env:
-      CI: "true"
-      EXPO_NO_TELEMETRY: "1"
+      CI: 'true'
+      EXPO_NO_TELEMETRY: '1'
       GRADLE_OPTS: >-
         -Dorg.gradle.jvmargs=-Xmx4g
         -XX:MaxMetaspaceSize=1g

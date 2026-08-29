@@ -13,7 +13,12 @@ const REQUIRED_TAPS = 3;
 const TAP_SEQUENCE_TIMEOUT_MS = 1800;
 const BUTTON_SIZE = 64;
 
-export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt, onDismissPrompt }: LockOverlayProps) {
+export function LockOverlay({
+  onUnlock,
+  showPrompt,
+  onRequestPrompt,
+  onDismissPrompt,
+}: LockOverlayProps) {
   const [tapCount, setTapCount] = useState(0);
   const tapCountRef = useRef(0);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -69,7 +74,11 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt, onDismissPr
     <View style={styles.container} pointerEvents="box-none">
       <Pressable
         accessibilityLabel="Controles bloqueados"
-        accessibilityHint={showPrompt ? 'Toca fuera del candado para ocultarlo' : 'Toca para mostrar el botón de desbloqueo'}
+        accessibilityHint={
+          showPrompt
+            ? 'Toca fuera del candado para ocultarlo'
+            : 'Toca para mostrar el botón de desbloqueo'
+        }
         style={StyleSheet.absoluteFill}
         onPress={showPrompt ? onDismissPrompt : onRequestPrompt}
       />
@@ -85,14 +94,54 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt, onDismissPr
           >
             <Animated.View
               pointerEvents="none"
-              style={[styles.unlockFill, { width: progress.interpolate({ inputRange: [0, 1], outputRange: [0, BUTTON_SIZE] }) }]}
+              style={[
+                styles.unlockFill,
+                {
+                  width: progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, BUTTON_SIZE],
+                  }),
+                },
+              ]}
             />
-            <Animated.View pointerEvents="none" style={[styles.lockBody, { transform: [{ scale: progress.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] }) }] }]}>
-              <Animated.View style={[styles.lockShackle, { transform: [{ translateY: shackle.interpolate({ inputRange: [0, 1], outputRange: [0, -7] }) }, { rotate: shackle.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-18deg'] }) }] }]} />
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.lockBody,
+                {
+                  transform: [
+                    { scale: progress.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] }) },
+                  ],
+                },
+              ]}
+            >
+              <Animated.View
+                style={[
+                  styles.lockShackle,
+                  {
+                    transform: [
+                      {
+                        translateY: shackle.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, -7],
+                        }),
+                      },
+                      {
+                        rotate: shackle.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['0deg', '-18deg'],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              />
             </Animated.View>
           </Pressable>
           <Text style={styles.label} pointerEvents="none">
-            {tapCount === 0 ? 'Toca 3 veces para desbloquear' : `${REQUIRED_TAPS - tapCount} toque${REQUIRED_TAPS - tapCount === 1 ? '' : 's'} más`}
+            {tapCount === 0
+              ? 'Toca 3 veces para desbloquear'
+              : `${REQUIRED_TAPS - tapCount} toque${REQUIRED_TAPS - tapCount === 1 ? '' : 's'} más`}
           </Text>
         </View>
       )}
@@ -102,7 +151,11 @@ export function LockOverlay({ onUnlock, showPrompt, onRequestPrompt, onDismissPr
 
 const styles = StyleSheet.create({
   container: {
-    position:'absolute',top:0,right:0,bottom:0,left:0,
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     zIndex: 9999,
     elevation: 9999,
   },

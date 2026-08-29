@@ -64,7 +64,9 @@ export function OnboardingHeader({
               <View key={stripe} style={[styles.progressStripe, { left: stripe * 24 }]} />
             ))}
           </View>
-          <Text style={styles.stepLabel}>{step}/{totalSteps}</Text>
+          <Text style={styles.stepLabel}>
+            {step}/{totalSteps}
+          </Text>
         </View>
       </Animated.View>
 

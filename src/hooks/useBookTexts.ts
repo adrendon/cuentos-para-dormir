@@ -17,7 +17,10 @@ function normalizeLineBreaks(value: string): string {
 
 /** Metadata is displayed on one line in cards and credits. */
 function normalizeMetadata(value: string): string {
-  return normalizeLineBreaks(value).replace(/\s*\n\s*/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  return normalizeLineBreaks(value)
+    .replace(/\s*\n\s*/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
 
 /**
@@ -25,11 +28,7 @@ function normalizeMetadata(value: string): string {
  * Replaces {NAME:P1}, {NAME:P2} with the child's name.
  * Uses boy.page.N or girl.page.N keys based on gender.
  */
-export function useBookTexts(
-  folderName: string | undefined,
-  gender: Gender,
-  childName: string
-) {
+export function useBookTexts(folderName: string | undefined, gender: Gender, childName: string) {
   const [pageTexts, setPageTexts] = useState<Map<number, string>>(new Map());
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
@@ -47,12 +46,12 @@ export function useBookTexts(
       const csvPath = `${BOOKS_LOCAL_DIR}${folder}/Texts.csv`;
       const content = await FileSystem.readAsStringAsync(csvPath);
 
-      const lines = content.split('\n').filter(l => l.trim().length > 0);
+      const lines = content.split('\n').filter((l) => l.trim().length > 0);
       if (lines.length < 2) return;
 
       // Find ES column index
       const headers = lines[0].split('\t');
-      const esIndex = headers.findIndex(h => h.trim().toUpperCase() === 'ES');
+      const esIndex = headers.findIndex((h) => h.trim().toUpperCase() === 'ES');
       if (esIndex === -1) return;
 
       // Parse all rows into key-value map

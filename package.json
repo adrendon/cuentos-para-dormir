@@ -4,7 +4,10 @@
   "main": "expo-router/entry",
   "scripts": {
     "validate:catalog": "node scripts/validate-catalog.js",
-    "check": "npm run validate:catalog && tsc --noEmit",
+    "check": "npm run validate:catalog && npm run validate:jsx && tsc --noEmit",
+    "validate:jsx": "node scripts/validate-jsx-whitespace.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
@@ -51,6 +54,7 @@
     "@babel/core": "^7.25.0",
     "@types/react": "~19.2.4",
     "cross-env": "^10.1.0",
+    "prettier": "^3.5.3",
     "typescript": "~6.0.3"
   },
   "private": true,

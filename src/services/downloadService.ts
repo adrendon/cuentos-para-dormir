@@ -12,8 +12,7 @@ import { getUncompressedSize, subscribe, unzip } from 'react-native-zip-archive'
  * {documentDirectory}/books/{FolderName}/
  */
 
-const GITHUB_BOOKS_BASE_URL =
-  'https://github.com/adrendon/cuentos-para-dormir/raw/main/books-zip';
+const GITHUB_BOOKS_BASE_URL = 'https://github.com/adrendon/cuentos-para-dormir/raw/main/books-zip';
 
 export const BOOKS_LOCAL_DIR = `${FileSystem.documentDirectory}books/`;
 
@@ -297,7 +296,9 @@ async function recoverInterruptedInstall(destinationDir: string): Promise<void> 
 async function runExtractionExclusive<T>(task: () => Promise<T>): Promise<T> {
   const previousExtraction = extractionQueue;
   let releaseQueue!: () => void;
-  extractionQueue = new Promise<void>((resolve) => { releaseQueue = resolve; });
+  extractionQueue = new Promise<void>((resolve) => {
+    releaseQueue = resolve;
+  });
   await previousExtraction;
   try {
     return await task();
