@@ -1,6 +1,11 @@
 # dependencies
 node_modules/
 
+# Locally installed agent skills
+.agents/skills/
+.claude/
+skills-lock.json
+
 # Expo
 .expo/
 dist/

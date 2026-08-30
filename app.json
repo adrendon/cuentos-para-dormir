@@ -6,7 +6,9 @@
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -34,7 +36,8 @@
       ],
       "./plugins/withMusicVolumeControls",
       "expo-asset",
-      "expo-video"
+      "expo-video",
+      "expo-font"
     ],
     "scheme": "cuentos",
     "extra": {

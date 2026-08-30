@@ -205,7 +205,7 @@ La extracción se ejecuta de forma nativa, directamente entre el ZIP y una carpe
 npm install --legacy-peer-deps    # Instalar dependencias
 npx expo-doctor                   # Verificar salud (21/21)
 npx tsc --noEmit                  # TypeScript check
-npm run check                     # Catálogo + TypeScript
+npm run check                     # Catálogo + JSX + TypeScript
 npm run build:eas                 # Build APK en la nube (EAS)
 npm run deploy:apk                # Build local + subir al servidor Oracle
 ```
