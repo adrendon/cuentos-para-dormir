@@ -1,14 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Animated,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { Animated, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Slider from '@react-native-community/slider';
+import { useVirtualCanvas } from '../theme/virtualCanvas';
 interface ReaderMenuProps {
   visible: boolean;
   textSize: number;
@@ -34,7 +27,7 @@ export function ReaderMenu({
   onTextSizeChange,
   showLock,
 }: ReaderMenuProps) {
-  const { width, height } = useWindowDimensions();
+  const { width, height } = useVirtualCanvas();
   const scale = Math.max(0.76, Math.min(1.08, height / 407));
   const horizontalScale = Math.max(0.78, Math.min(1.2, width / 904));
   const verticalScale = Math.max(0.78, Math.min(1.08, height / 407));

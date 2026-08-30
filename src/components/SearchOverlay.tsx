@@ -1,14 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  Animated,
-  Easing,
-  Keyboard,
-  Modal,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  useWindowDimensions,
-} from 'react-native';
+import { Animated, Easing, Keyboard, Modal, Pressable, StyleSheet, TextInput } from 'react-native';
+import { useVirtualCanvas } from '../theme/virtualCanvas';
 
 interface SearchOverlayProps {
   visible: boolean;
@@ -19,7 +11,7 @@ interface SearchOverlayProps {
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
 export function SearchOverlay({ visible, value, onSubmit, onClose }: SearchOverlayProps) {
-  const { width, height } = useWindowDimensions();
+  const { width, height } = useVirtualCanvas();
   const [draft, setDraft] = useState(value);
   const entrance = useRef(new Animated.Value(0)).current;
   const inputRef = useRef<TextInput>(null);

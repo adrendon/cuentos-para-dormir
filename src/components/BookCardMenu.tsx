@@ -1,15 +1,7 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import {
-  Animated,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { Animated, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Book } from '../types/book';
+import { useVirtualCanvas } from '../theme/virtualCanvas';
 
 interface BookCardMenuProps {
   visible: boolean;
@@ -28,7 +20,7 @@ export function BookCardMenu({
   onDelete,
   onClose,
 }: BookCardMenuProps) {
-  const { width, height } = useWindowDimensions();
+  const { width, height } = useVirtualCanvas();
   const scale = Math.max(0.78, Math.min(1.08, height / 407));
   const menuWidth = 260 * scale;
   const canDelete = book.isDownloaded && !book.isEmbedded;

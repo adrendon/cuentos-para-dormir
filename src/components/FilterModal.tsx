@@ -7,12 +7,12 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { DEFAULT_LIBRARY_FILTERS, LibraryFilters } from '../types/book';
 import { Colors, Gradients } from '../theme/colors';
+import { useVirtualCanvas } from '../theme/virtualCanvas';
 
 interface FilterModalProps {
   visible: boolean;
@@ -37,7 +37,7 @@ const CHIP_COLORS: Record<ChipCategory, string> = {
 };
 
 export function FilterModal({ visible, filters, onChange, onClear, onClose }: FilterModalProps) {
-  const { width, height } = useWindowDimensions();
+  const { width, height } = useVirtualCanvas();
   const scale = Math.min(width / 1280, height / 768);
   const [draftFilters, setDraftFilters] = useState(filters);
   const entrance = useRef(new Animated.Value(0)).current;

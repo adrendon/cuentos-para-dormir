@@ -7,11 +7,11 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { BookPage } from '../types/book';
 import { Colors } from '../theme/colors';
+import { useVirtualCanvas } from '../theme/virtualCanvas';
 interface PageIndexOverlayProps {
   visible: boolean;
   pages: BookPage[];
@@ -28,7 +28,7 @@ export function PageIndexOverlay({
   onClose,
 }: PageIndexOverlayProps) {
   const listRef = useRef<FlatList<BookPage>>(null);
-  const { width, height } = useWindowDimensions();
+  const { width, height } = useVirtualCanvas();
   const scale = Math.max(0.82, Math.min(1.2, Math.min(width / 904, height / 407)));
   const leftInset = 165 * scale;
   const rightInset = 145 * scale;

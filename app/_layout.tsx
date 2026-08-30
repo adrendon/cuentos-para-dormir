@@ -6,7 +6,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as Font from 'expo-font';
 import { setupPlayer } from '../src/services/audioService';
-import { LANDSCAPE_CONTENT_SCALE } from '../src/theme/layout';
+import { getVirtualCanvasSize, LANDSCAPE_CONTENT_SCALE } from '../src/theme/layout';
+import { VirtualCanvasContext } from '../src/theme/virtualCanvas';
 
 const NAV_MOTION = Object.freeze({
   fade: 320,
@@ -36,8 +37,7 @@ export default function RootLayout() {
   const { width, height } = useWindowDimensions();
   const [, setFontsLoaded] = useState(false);
   const contentScale = width > height ? LANDSCAPE_CONTENT_SCALE : 1;
-  const virtualWidth = width / contentScale;
-  const virtualHeight = height / contentScale;
+  const { width: virtualWidth, height: virtualHeight } = getVirtualCanvasSize(width, height);
 
   useEffect(() => {
     void initializeApp();
@@ -82,37 +82,44 @@ export default function RootLayout() {
           },
         ]}
       >
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            animation: 'fade',
-            animationDuration: NAV_MOTION.fade,
-            contentStyle: { backgroundColor: '#03032A' },
-          }}
+        <VirtualCanvasContext.Provider
+          value={{ width: virtualWidth, height: virtualHeight, scale: contentScale }}
         >
-          <Stack.Screen name="index" options={{ animation: 'fade' }} />
-          <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
-          <Stack.Screen name="library" options={{ animation: 'fade', gestureEnabled: false }} />
-          <Stack.Screen
-            name="book/[id]"
-            options={{
-              animation: 'none',
-              gestureEnabled: false,
-              presentation: 'transparentModal',
-              contentStyle: { backgroundColor: 'transparent' },
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: 'fade',
+              animationDuration: NAV_MOTION.fade,
+              contentStyle: { backgroundColor: '#03032A' },
             }}
-          />
-          <Stack.Screen
-            name="settings"
-            options={{
-              animation: 'slide_from_bottom',
-              animationDuration: NAV_MOTION.settingsSlide,
-              gestureEnabled: false,
-              presentation: 'card',
-              contentStyle: { backgroundColor: 'transparent' },
-            }}
-          />
-        </Stack>
+          >
+            <Stack.Screen name="index" options={{ animation: 'fade' }} />
+            <Stack.Screen
+              name="onboarding"
+              options={{ animation: 'fade', gestureEnabled: false }}
+            />
+            <Stack.Screen name="library" options={{ animation: 'fade', gestureEnabled: false }} />
+            <Stack.Screen
+              name="book/[id]"
+              options={{
+                animation: 'none',
+                gestureEnabled: false,
+                presentation: 'transparentModal',
+                contentStyle: { backgroundColor: 'transparent' },
+              }}
+            />
+            <Stack.Screen
+              name="settings"
+              options={{
+                animation: 'slide_from_bottom',
+                animationDuration: NAV_MOTION.settingsSlide,
+                gestureEnabled: false,
+                presentation: 'card',
+                contentStyle: { backgroundColor: 'transparent' },
+              }}
+            />
+          </Stack>
+        </VirtualCanvasContext.Provider>
       </View>
     </View>
   );

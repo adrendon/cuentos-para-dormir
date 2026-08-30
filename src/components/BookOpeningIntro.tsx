@@ -1,14 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  ImageSourcePropType,
-  LayoutChangeEvent,
-  useWindowDimensions,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ImageSourcePropType } from 'react-native';
 import Animated, {
   Easing,
   interpolate,
@@ -20,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../theme/colors';
+import { useVirtualCanvas } from '../theme/virtualCanvas';
 
 interface BookOpeningIntroProps {
   coverColor: string;
@@ -69,10 +61,7 @@ export function BookOpeningIntro({
   onSelectMode,
   skipEntranceScale = false,
 }: BookOpeningIntroProps) {
-  const { width, height } = useWindowDimensions();
-  const [canvasSize, setCanvasSize] = useState({ width, height });
-  const canvasWidth = canvasSize.width || width;
-  const canvasHeight = canvasSize.height || height;
+  const { width: canvasWidth, height: canvasHeight } = useVirtualCanvas();
   const uiScale = clamp(canvasHeight / 407, 0.78, 1.08);
   const pageHeight = Math.min(canvasHeight * 0.78, 286 * uiScale);
   const pageWidth = Math.min(canvasWidth * 0.31, pageHeight * 0.9);
@@ -155,15 +144,7 @@ export function BookOpeningIntro({
 
   if (menuReady) {
     return (
-      <View
-        style={styles.container}
-        onLayout={(event: LayoutChangeEvent) => {
-          const { width: nextWidth, height: nextHeight } = event.nativeEvent.layout;
-          if (nextWidth !== canvasSize.width || nextHeight !== canvasSize.height) {
-            setCanvasSize({ width: nextWidth, height: nextHeight });
-          }
-        }}
-      >
+      <View style={styles.container}>
         {firstPageSource && (
           <Image source={firstPageSource} style={styles.modeBackground} resizeMode="cover" />
         )}

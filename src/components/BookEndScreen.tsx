@@ -1,15 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  Animated,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { Animated, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../theme/colors';
+import { useVirtualCanvas } from '../theme/virtualCanvas';
 interface BookEndScreenProps {
   color: string;
   author?: string;
@@ -33,7 +26,7 @@ export function BookEndScreen({
   onShare,
   onClose,
 }: BookEndScreenProps) {
-  const { width, height } = useWindowDimensions();
+  const { width, height } = useVirtualCanvas();
   const scale = Math.max(0.8, Math.min(1.15, height / 407));
   const entrance = useRef(new Animated.Value(0)).current;
   useEffect(() => {

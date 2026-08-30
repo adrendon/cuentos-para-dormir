@@ -7,11 +7,11 @@ import {
   Text,
   Pressable,
   ScrollView,
-  useWindowDimensions,
 } from 'react-native';
 import PagerView from 'react-native-pager-view';
 import { BookPage } from '../types/book';
 import { Colors } from '../theme/colors';
+import { useVirtualCanvas } from '../theme/virtualCanvas';
 interface PageViewerProps {
   pages: BookPage[];
   currentPage: number;
@@ -40,7 +40,7 @@ function PageViewerComponent({
   textSize = 18,
 }: PageViewerProps) {
   const pagerRef = useRef<PagerView>(null);
-  const { width, height } = useWindowDimensions();
+  const { width, height } = useVirtualCanvas();
   const uiScale = clamp(height / 407, 0.78, 1.08);
   const sideInset = clamp(width * 0.064, 70, 100);
   const sizeIndex = SIZE_STEPS.reduce(

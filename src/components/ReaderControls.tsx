@@ -1,7 +1,8 @@
 import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import Slider from '@react-native-community/slider';
+import { useVirtualCanvas } from '../theme/virtualCanvas';
 
 interface ReaderControlsProps {
   animatedStyle: object;
@@ -29,7 +30,7 @@ interface ReaderControlsProps {
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
 export function ReaderControls(props: ReaderControlsProps) {
-  const { width, height } = useWindowDimensions();
+  const { width, height } = useVirtualCanvas();
   const uiScale = clamp(height / 407, 0.78, 1.08);
   const edgeX = clamp(width * 0.02, 14, 28);
   const edgeY = 14 * uiScale;

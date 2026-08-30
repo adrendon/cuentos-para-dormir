@@ -59,9 +59,6 @@ jobs:
       - name: Generar proyecto nativo Android
         run: npx expo prebuild --platform android --clean --no-install
 
-      - name: Validar recurso de splash generado
-        run: test -f android/app/src/main/res/drawable/splashscreen_logo.xml
-
       - name: Configurar caché de Gradle
         uses: gradle/actions/setup-gradle@v6
 

@@ -3,13 +3,11 @@ import {
   Animated,
   Alert,
   Image,
-  LayoutChangeEvent,
   Linking,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,7 +18,7 @@ import { Colors, Fonts, Gradients } from '../theme/colors';
 import { useProfile } from '../hooks/useProfile';
 import { playBookMusic, stopMusic } from '../services/audioService';
 import { Gender } from '../types/book';
-import { getVirtualCanvasSize } from '../theme/layout';
+import { useVirtualCanvas } from '../theme/virtualCanvas';
 
 type SettingsView = 'gate' | 'profile' | 'language' | 'preparing';
 
@@ -49,12 +47,7 @@ const SETTINGS_MUSIC = require('../assets/books/ADayInReverse/ADayInReverse.mp3'
 export default function SettingsScreen() {
   const router = useRouter();
   const { destination = 'profile' } = useLocalSearchParams<{ destination?: 'profile' | 'mail' }>();
-  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
-  const [canvasSize, setCanvasSize] = useState(() =>
-    getVirtualCanvasSize(windowWidth, windowHeight)
-  );
-  const width = canvasSize.width || windowWidth;
-  const height = canvasSize.height || windowHeight;
+  const { width, height } = useVirtualCanvas();
 
   const uiScale = clamp(height / 407, 0.78, 1.08);
   // The character artwork is anchored to the viewport, not to the compact UI
@@ -247,15 +240,7 @@ export default function SettingsScreen() {
     const keyWidth = 62 * gateScale;
     const keyHeight = 44 * gateScale;
     return (
-      <View
-        style={styles.gateBackdrop}
-        onLayout={(event: LayoutChangeEvent) => {
-          const { width: nextWidth, height: nextHeight } = event.nativeEvent.layout;
-          if (nextWidth !== canvasSize.width || nextHeight !== canvasSize.height) {
-            setCanvasSize({ width: nextWidth, height: nextHeight });
-          }
-        }}
-      >
+      <View style={styles.gateBackdrop}>
         <SettingsMusicButton enabled={musicEnabled} onPress={handleMusicToggle} scale={gateScale} />
         <Animated.View
           style={[

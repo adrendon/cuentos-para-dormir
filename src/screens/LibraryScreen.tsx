@@ -7,8 +7,6 @@ import {
   StyleSheet,
   Animated,
   StatusBar,
-  LayoutChangeEvent,
-  useWindowDimensions,
   Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,6 +21,7 @@ import { Book } from '../types/book';
 import { warmBookVisual } from '../assets/books/bookVisualRegistry';
 import { useProfile } from '../hooks/useProfile';
 import { useBookMusic } from '../hooks/useBookMusic';
+import { useVirtualCanvas } from '../theme/virtualCanvas';
 
 const LIBRARY_STARS = [
   [9, 65],
@@ -39,10 +38,7 @@ const clamp = (value: number, min: number, max: number) => Math.min(Math.max(val
 let libraryMotionPlayed = false;
 
 export default function LibraryScreen() {
-  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
-  const [canvasSize, setCanvasSize] = useState({ width: windowWidth, height: windowHeight });
-  const canvasWidth = canvasSize.width || windowWidth;
-  const canvasHeight = canvasSize.height || windowHeight;
+  const { width: canvasWidth, height: canvasHeight } = useVirtualCanvas();
   const router = useRouter();
   const {
     books,
@@ -188,15 +184,7 @@ export default function LibraryScreen() {
     [cardWidth, deleteBook, handleBookPress, handleDownloadComplete, toggleFavorite]
   );
   return (
-    <Animated.View
-      style={[styles.container, { opacity: fadeAnim }]}
-      onLayout={(event: LayoutChangeEvent) => {
-        const { width, height } = event.nativeEvent.layout;
-        if (width !== canvasSize.width || height !== canvasSize.height) {
-          setCanvasSize({ width, height });
-        }
-      }}
-    >
+    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <StatusBar hidden />
       <LinearGradient colors={[...Gradients.background]} style={styles.gradient}>
         <View style={styles.stars} pointerEvents="none">
